@@ -25,7 +25,10 @@ const GOC = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const WEB = path.join(GOC, 'web');
 const CLIP15 = path.join(GOC, 'clip-15s');
 
-const PORT = Number(process.env.PORT) || 7810;
+// Skill /port sẽ truyền PORT vào. Số dự phòng chỉ dùng khi chạy tay — tránh
+// 7800/7801/7802 (dự án clip, motion-ui-graphic, clipvibe-studio) và 7810
+// (Library-Source), là những cổng đã có chủ trong ~/.claude/mb-ports.tsv.
+const PORT = Number(process.env.PORT) || 7803;
 
 kiemTraDuAn();
 
