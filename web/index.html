@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="vi">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sửa clip — Mắt Bão</title>
+<link rel="stylesheet" href="/app.css">
+
+<div id="app">
+  <header class="thanh-tren">
+    <div class="hieu">🎬 Sửa clip</div>
+    <select id="chon-clip" class="chon" aria-label="Chọn clip"></select>
+    <span id="dang-clip" class="phu"></span>
+    <div class="day"></div>
+    <a class="lien-ket" href="/15s/index.html" target="_blank" rel="noopener">Clip hub 15 giây ↗</a>
+  </header>
+
+  <div class="than">
+    <aside class="cot-trai">
+      <div class="tieu-de-cot">Các cảnh</div>
+      <ol id="ds-canh" class="ds-canh"></ol>
+    </aside>
+
+    <main class="giua">
+      <div id="bang-doi-cu" class="bang-bao an">
+        <b>Clip đời cũ.</b> Xem và xuất video được, nhưng chưa sửa trực tiếp được —
+        clip này viết bằng code, vị trí do code tính lúc chạy. Muốn sửa bằng chuột
+        thì cần dựng lại thành clip kiểu mới.
+      </div>
+
+      <div class="san-khau">
+        <div id="boc-khung" class="boc-khung">
+          <iframe id="khung" title="Khung xem clip" referrerpolicy="no-referrer"></iframe>
+          <div id="lop-phu" class="lop-phu"></div>
+        </div>
+      </div>
+
+      <div class="dieu-khien">
+        <button id="nut-chay" class="nut chinh" type="button">▶ Chạy</button>
+        <input id="thanh-tua" class="thanh-tua" type="range" min="0" max="1000" value="0"
+               step="1" aria-label="Tua clip">
+        <span id="dong-ho" class="dong-ho">0,0 / 0,0 giây</span>
+      </div>
+    </main>
+
+    <aside class="cot-phai">
+      <div class="tieu-de-cot">Thuộc tính</div>
+      <div id="bang-thuoc-tinh" class="trong">
+        Bấm vào một thành phần trên khung hình để xem thuộc tính của nó.
+        <p class="ghi-chu">Bảng này sẽ mở khoá ở bước sau — hiện tại chỉ xem, chưa sửa được.</p>
+      </div>
+    </aside>
+  </div>
+
+  <div id="bao" class="bao an" role="status" aria-live="polite"></div>
+</div>
+
+<script type="module" src="/app.js"></script>
+</html>
