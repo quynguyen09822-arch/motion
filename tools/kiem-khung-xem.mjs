@@ -9,7 +9,7 @@
  * Mượn Playwright của dự án clip (nó cài sẵn rồi) để trình sửa không phải có gói
  * phụ thuộc nào.
  *
- *   node tools/kiem-khung-xem.mjs [http://127.0.0.1:7810]
+ *   node tools/kiem-khung-xem.mjs [http://127.0.0.1:7803]
  */
 import { createRequire } from 'node:module';
 import path from 'node:path';
@@ -19,7 +19,7 @@ const PROJ = process.env.PROJ_ROOT
   || '/home/coder/workspace/projects/clipVibehost/hosting-animatic-production';
 const { chromium } = createRequire(path.join(PROJ, 'tools/'))('playwright');
 
-const GOC = process.argv[2] || 'http://127.0.0.1:7810';
+const GOC = process.argv[2] || 'http://127.0.0.1:7803';
 const ANH = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '.kiem');
 
 let hong = 0;

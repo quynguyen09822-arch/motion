@@ -18,7 +18,9 @@ import { fileURLToPath } from 'node:url';
 import { PROJ, SCENES, kiemTraDuAn, soatKichBan } from './proj.js';
 import { duocPhucVu, guiFile } from './static.js';
 import { danhSachClip, docClip, duongDanXem, locSlug } from './clips.js';
-import { chupBanGoc } from './backup.js';
+import { chupBanGoc, lichSu } from './backup.js';
+import { khoiPhuc, luuClip } from './save.js';
+import { docNhap, ghiNhap, xoaNhap } from './drafts.js';
 import { docJson, json, khop, loi } from './router.js';
 
 const GOC = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -77,7 +79,53 @@ const server = http.createServer(async (req, res) => {
       if (!slug) return loi(res, 400, 'Tên clip không hợp lệ.');
       const doc = docClip(slug);
       if (!doc) return loi(res, 404, `Không thấy clip "${slug}".`);
-      return json(res, 200, { ok: true, ...doc });
+      // Nháp mới hơn file thật thì gửi kèm để giao diện HỎI, không tự áp.
+      const nhap = docNhap(slug);
+      const keo = nhap && nhap.luc > doc.suaLuc ? nhap : null;
+      return json(res, 200, { ok: true, ...doc, nhap: keo });
+    }
+
+    /* Lưu — đi qua soát → cất bản cũ → ghi nguyên khối. Xem server/save.js. */
+    if ((m = khop('/api/clip/:slug', p)) && req.method === 'POST') {
+      const slug = locSlug(m.slug);
+      if (!slug) return loi(res, 400, 'Tên clip không hợp lệ.');
+      if (!docClip(slug)) return loi(res, 404, `Không thấy clip "${slug}".`);
+      const than = await docJson(req);
+      const kq = await luuClip(slug, than?.doc);
+      if (!kq.ok) return json(res, 422, { ok: false, vanDe: kq.vanDe });
+      xoaNhap(slug); // lưu xong thì nháp hết nhiệm vụ
+      return json(res, 200, { ...kq, suaLuc: docClip(slug).suaLuc });
+    }
+
+    if ((m = khop('/api/draft/:slug', p)) && req.method === 'PUT') {
+      const slug = locSlug(m.slug);
+      if (!slug) return loi(res, 400, 'Tên clip không hợp lệ.');
+      const than = await docJson(req);
+      if (!than?.doc) return loi(res, 400, 'Thiếu kịch bản.');
+      ghiNhap(slug, than.doc);
+      return json(res, 200, { ok: true });
+    }
+
+    if ((m = khop('/api/draft/:slug', p)) && req.method === 'DELETE') {
+      const slug = locSlug(m.slug);
+      if (!slug) return loi(res, 400, 'Tên clip không hợp lệ.');
+      xoaNhap(slug);
+      return json(res, 200, { ok: true });
+    }
+
+    if ((m = khop('/api/history/:slug', p)) && req.method === 'GET') {
+      const slug = locSlug(m.slug);
+      if (!slug) return loi(res, 400, 'Tên clip không hợp lệ.');
+      return json(res, 200, { ok: true, ban: lichSu(slug) });
+    }
+
+    if ((m = khop('/api/restore/:slug', p)) && req.method === 'POST') {
+      const slug = locSlug(m.slug);
+      if (!slug) return loi(res, 400, 'Tên clip không hợp lệ.');
+      const than = await docJson(req);
+      const kq = await khoiPhuc(slug, String(than?.dau || ''));
+      if (!kq.ok) return json(res, 422, kq);
+      return json(res, 200, { ...kq, ...docClip(slug) });
     }
 
     if (p === '/api/validate' && req.method === 'POST') {

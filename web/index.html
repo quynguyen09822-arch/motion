@@ -7,29 +7,39 @@
 
 <div id="app">
   <header class="thanh-tren">
-    <div class="hieu">🎬 Sửa clip</div>
+    <div class="hieu">Sửa clip</div>
     <select id="chon-clip" class="chon" aria-label="Chọn clip"></select>
     <span id="dang-clip" class="phu"></span>
+
     <div class="day"></div>
-    <a class="lien-ket" href="/15s/index.html" target="_blank" rel="noopener">Clip hub 15 giây ↗</a>
+
+    <button id="nut-lui" class="nut nho" type="button" title="Ctrl+Z">↩</button>
+    <button id="nut-toi" class="nut nho" type="button" title="Ctrl+Shift+Z">↪</button>
+    <span id="dau-ban" class="dau-ban an">chưa lưu</span>
+    <button id="nut-luu" class="nut chinh" type="button" title="Ctrl+S">Lưu</button>
   </header>
 
   <div class="than">
     <aside class="cot-trai">
       <div class="tieu-de-cot">Các cảnh</div>
       <ol id="ds-canh" class="ds-canh"></ol>
+      <div class="tieu-de-cot">Thành phần trong cảnh</div>
+      <div id="ds-lop" class="ds-lop"></div>
     </aside>
 
     <main class="giua">
       <div id="bang-doi-cu" class="bang-bao an">
         <b>Clip đời cũ.</b> Xem và xuất video được, nhưng chưa sửa trực tiếp được —
-        clip này viết bằng code, vị trí do code tính lúc chạy. Muốn sửa bằng chuột
-        thì cần dựng lại thành clip kiểu mới.
+        clip này viết bằng code, vị trí do code tính lúc chạy.
       </div>
 
       <div class="san-khau">
         <div id="boc-khung" class="boc-khung">
           <iframe id="khung" title="Khung xem clip" referrerpolicy="no-referrer"></iframe>
+          <!-- Lớp bắt sự kiện: iframe nuốt hết chuột nên trang cha phải phủ lên
+               rồi tự dò xuống. Nằm khít iframe nên toạ độ khớp 1-1. -->
+          <div id="lop-bat" class="lop-bat"></div>
+          <!-- Lớp vẽ: chỉ để nhìn, không ăn chuột, KHÔNG BAO GIỜ chèn vào iframe. -->
           <div id="lop-phu" class="lop-phu"></div>
         </div>
       </div>
@@ -44,10 +54,7 @@
 
     <aside class="cot-phai">
       <div class="tieu-de-cot">Thuộc tính</div>
-      <div id="bang-thuoc-tinh" class="trong">
-        Bấm vào một thành phần trên khung hình để xem thuộc tính của nó.
-        <p class="ghi-chu">Bảng này sẽ mở khoá ở bước sau — hiện tại chỉ xem, chưa sửa được.</p>
-      </div>
+      <div id="bang-thuoc-tinh" class="bang-tt"></div>
     </aside>
   </div>
 

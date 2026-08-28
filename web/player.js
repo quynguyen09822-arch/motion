@@ -170,6 +170,19 @@ export function taoPlayer(iframe) {
       return iframe.getBoundingClientRect();
     },
 
+    /**
+     * ĐỔI TOẠ ĐỘ CHUỘT: trang cha → khung nhìn của iframe.
+     *
+     * `ev.clientX` đo từ gốc trang cha, còn `elementFromPoint` của tài liệu bên
+     * trong iframe lại tính từ gốc khung nhìn CỦA NÓ. Hai gốc lệch nhau đúng
+     * bằng vị trí iframe trên trang. Quên trừ là dò trượt sang chỗ khác — và
+     * càng cuộn trang thì càng trượt xa.
+     */
+    quyDoi(clientX, clientY) {
+      const r = iframe.getBoundingClientRect();
+      return { x: clientX - r.left, y: clientY - r.top };
+    },
+
     khiDoi(f) {
       nghe.add(f);
       return () => nghe.delete(f);
