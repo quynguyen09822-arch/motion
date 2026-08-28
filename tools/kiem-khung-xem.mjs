@@ -51,7 +51,11 @@ trang.on('response', (r) => {
 });
 
 console.log(`\nMở ${GOC}`);
-await trang.goto(GOC, { waitUntil: 'networkidle' });
+// Chờ tín hiệu sẵn sàng của chính ứng dụng, KHÔNG chờ 'networkidle': trang có
+// khung xem bên trong tự nạp ảnh và phông, mạng không bao giờ thật sự lặng.
+await trang.goto(GOC, { waitUntil: 'domcontentloaded' });
+await trang.waitForSelector('#app[data-trang-thai="san-sang"], #app[data-trang-thai="hong"]',
+  { timeout: 40000 });
 
 /* ---------- 1. Khung xem có với được vào __clip không ---------- */
 console.log('\n1. Khung xem');

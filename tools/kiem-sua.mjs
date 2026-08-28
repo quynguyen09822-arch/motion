@@ -48,7 +48,11 @@ trang.on('console', (m) => {
 });
 
 try {
-  await trang.goto(GOC, { waitUntil: 'networkidle' });
+  // Chờ tín hiệu sẵn sàng của chính ứng dụng, KHÔNG chờ 'networkidle': trang có
+// khung xem bên trong tự nạp ảnh và phông, mạng không bao giờ thật sự lặng.
+await trang.goto(GOC, { waitUntil: 'domcontentloaded' });
+await trang.waitForSelector('#app[data-trang-thai="san-sang"], #app[data-trang-thai="hong"]',
+  { timeout: 40000 });
   await trang.selectOption('#chon-clip', TAM);
   await trang.waitForSelector('#app[data-trang-thai="san-sang"]', { timeout: 30000 });
 

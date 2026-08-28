@@ -21,7 +21,8 @@ import { danhSachClip, docClip, duongDanXem, locSlug } from './clips.js';
 import { chupBanGoc, lichSu } from './backup.js';
 import { khoiPhuc, luuClip } from './save.js';
 import { docNhap, ghiNhap, xoaNhap } from './drafts.js';
-import { docJson, json, khop, loi } from './router.js';
+import { huyViec, khoHopLe, kiemBoCuc, layViec, soDangCho, xuatVideo } from './jobs.js';
+import { docJson, json, khop, loi, moSSE } from './router.js';
 
 const GOC = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const WEB = path.join(GOC, 'web');
@@ -126,6 +127,78 @@ const server = http.createServer(async (req, res) => {
       const kq = await khoiPhuc(slug, String(than?.dau || ''));
       if (!kq.ok) return json(res, 422, kq);
       return json(res, 200, { ...kq, ...docClip(slug) });
+    }
+
+    /* ---------- việc nặng: xuất video, kiểm bố cục ---------- */
+    if (p === '/api/export' && req.method === 'POST') {
+      const than = await docJson(req);
+      const slug = locSlug(than?.slug);
+      if (!slug) return loi(res, 400, 'Tên clip không hợp lệ.');
+      const c = docClip(slug);
+      if (!c) return loi(res, 404, `Không thấy clip "${slug}".`);
+
+      const rong = c.doc?.meta?.width, cao = c.doc?.meta?.height;
+      const hopLe = khoHopLe(rong, cao).map((k) => k.v);
+      if (!hopLe.includes(than.preset)) {
+        // Chọn khổ ngang cho clip dọc thì bộ xuất vẫn chạy và ra video cắt cụt
+        // mà KHÔNG báo lỗi. Chặn ở đây.
+        return loi(res, 400,
+          `Khổ "${than.preset}" không hợp với clip ${rong}×${cao}. Chọn một trong: ${hopLe.join(', ')}.`);
+      }
+
+      const giay = (c.doc.scenes || []).reduce((t, s2) => t + (s2.duration || 0), 0);
+      const dau = new Date().toISOString().slice(0, 16).replace(/[-:T]/g, '');
+      const v = xuatVideo({
+        slug,
+        khungXem: `http://127.0.0.1:${PORT}/clip/scene-player.html?scene=${slug}`,
+        preset: than.preset,
+        chatLuong: than.chatLuong,
+        giay,
+        tenRa: `${slug}-${than.preset}-${dau}.mp4`,
+      });
+      return json(res, 200, { ok: true, id: v.id, giay, dangCho: soDangCho() });
+    }
+
+    if (p === '/api/check-layout' && req.method === 'POST') {
+      const than = await docJson(req);
+      const slug = locSlug(than?.slug);
+      if (!slug) return loi(res, 400, 'Tên clip không hợp lệ.');
+      const v = kiemBoCuc({
+        slug,
+        khungXem: `http://127.0.0.1:${PORT}/clip/scene-player.html?scene=${slug}`,
+      });
+      return json(res, 200, { ok: true, id: v.id, dangCho: soDangCho() });
+    }
+
+    if ((m = khop('/api/job/:id/stream', p)) && req.method === 'GET') {
+      const v = layViec(m.id);
+      if (!v) return loi(res, 404, 'Việc này không còn nữa.');
+      const { gui, dong } = moSSE(req, res);
+      gui({ kieu: 'doi', id: v.id, trangThai: v.trangThai, chang: v.chang,
+        phanTram: Math.round(v.phanTram), ketQua: v.ketQua, loi: v.loi });
+      const bo = (g) => { gui(g); if (g.kieu === 'xong') { v.nghe.delete(bo); dong(); } };
+      v.nghe.add(bo);
+      req.on('close', () => v.nghe.delete(bo));
+      return;
+    }
+
+    if ((m = khop('/api/job/:id', p)) && req.method === 'GET') {
+      const v = layViec(m.id);
+      if (!v) return loi(res, 404, 'Việc này không còn nữa.');
+      return json(res, 200, { ok: true, id: v.id, trangThai: v.trangThai, chang: v.chang,
+        phanTram: Math.round(v.phanTram), ketQua: v.ketQua, loi: v.loi,
+        nhatKy: v.nhatKy.slice(-40) });
+    }
+
+    if ((m = khop('/api/job/:id/cancel', p)) && req.method === 'POST') {
+      return json(res, 200, { ok: huyViec(m.id) });
+    }
+
+    if ((m = khop('/api/khoxuat/:slug', p)) && req.method === 'GET') {
+      const slug = locSlug(m.slug);
+      const c = slug && docClip(slug);
+      if (!c) return loi(res, 404, 'Không thấy clip.');
+      return json(res, 200, { ok: true, kho: khoHopLe(c.doc?.meta?.width, c.doc?.meta?.height) });
     }
 
     if (p === '/api/validate' && req.method === 'POST') {

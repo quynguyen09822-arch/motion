@@ -268,3 +268,58 @@ body {
 
 /* ============ THANH TRÊN ============ */
 .dau-ban { font-size: 12px; color: var(--cam); }
+
+/* ============ NÚT TRÊN ĐẦU CỘT ============ */
+.tieu-de-cot { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.cot-nut { display: flex; gap: 2px; }
+.nut-ti {
+  background: none; border: 1px solid transparent; color: var(--chu-mo);
+  border-radius: 5px; width: 22px; height: 22px; padding: 0;
+  font-size: 13px; line-height: 1; cursor: pointer;
+}
+.nut-ti:hover:not(:disabled) { background: var(--nen-3); border-color: var(--vach); color: var(--chu); }
+.nut-ti:disabled { opacity: .3; cursor: default; }
+
+.menu-them {
+  position: absolute; z-index: 30; background: var(--nen-3);
+  border: 1px solid var(--vach); border-radius: 9px; padding: 5px;
+  box-shadow: 0 12px 34px rgba(0, 0, 0, .55); max-height: 320px; overflow-y: auto;
+}
+.menu-them button {
+  display: block; width: 100%; text-align: left; background: none; border: 0;
+  color: var(--chu); font: inherit; font-size: 13px;
+  padding: 6px 12px; border-radius: 6px; cursor: pointer; white-space: nowrap;
+}
+.menu-them button:hover { background: var(--nhan); color: #061018; }
+
+/* ============ THẺ CỘT PHẢI ============ */
+.the-hang { display: flex; border-bottom: 1px solid var(--vach); flex: none; }
+.the {
+  flex: 1; background: none; border: 0; border-bottom: 2px solid transparent;
+  color: var(--chu-mo); font: inherit; font-size: 12px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: .06em;
+  padding: 11px 6px; cursor: pointer;
+}
+.the[aria-selected="true"] { color: var(--chu); border-bottom-color: var(--nhan); }
+.the:hover { color: var(--chu); }
+
+/* ============ XUẤT VIDEO ============ */
+.nut.rong { width: 100%; }
+.hang-nut { display: flex; gap: 7px; margin-bottom: 10px; }
+.hang-nut .nut.chinh { flex: 1; }
+
+.tien-do {
+  height: 6px; background: var(--nen); border-radius: 3px;
+  overflow: hidden; margin-bottom: 8px;
+}
+.tien-do-vach { height: 100%; width: 0; background: var(--nhan); transition: width .35s ease; }
+
+.ket-qua { margin-top: 10px; display: flex; flex-direction: column; gap: 9px; }
+.xem-truoc { width: 100%; border-radius: 8px; background: #000; display: block; }
+.ket-qua a { text-decoration: none; text-align: center; }
+.nhat-ky {
+  margin: 0; padding: 9px 11px; background: var(--nen); border: 1px solid var(--vach);
+  border-radius: 7px; font-size: 11px; line-height: 1.55; white-space: pre-wrap;
+  max-height: 260px; overflow: auto; font-family: ui-monospace, monospace; color: var(--chu-mo);
+}
+.ke { border: 0; border-top: 1px solid var(--vach); margin: 14px 0; }

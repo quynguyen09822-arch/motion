@@ -17,6 +17,8 @@ import { taoLopPhu } from './overlay.js';
 import { taoDanhSach } from './layers.js';
 import { taoBang, tenMon } from './inspector/index.js';
 import { ganKeo } from './drag.js';
+import { MAU_MON, nhanBanCanh, nhanBanMon, themCanh, themMon, xoaCanh, xoaMon } from './them.js';
+import { taoBangXuat } from './exportpanel.js';
 
 const $ = (id) => document.getElementById(id);
 const chonClip = $('chon-clip'), dangClip = $('dang-clip'), dsCanhEl = $('ds-canh');
@@ -36,6 +38,8 @@ const dsLop = taoDanhSach($('ds-lop'), {
 });
 
 let clips = [], clipDangMo = null, chon = null, dangKeoThanh = false;
+
+const bangXuat = taoBangXuat($('bang-xuat'), { laySlug: () => kho.slug(), bao: (c, h) => bao(c, h) });
 
 /* ---------- lời nhắc ---------- */
 let hen = null;
@@ -132,6 +136,109 @@ kho.khiDoi((viec) => {
   dauBan.classList.toggle('an', !kho.ban());
 });
 
+/* ---------- thêm · xoá · nhân bản ---------- */
+const menuThem = $('menu-them');
+
+$('mon-them').onclick = (ev) => {
+  if (!kho.doc()) return;
+  menuThem.innerHTML = '';
+  // Đang chọn một cụm thì món mới rơi VÀO trong cụm — gần như luôn là ý người
+  // dùng khi họ vừa bấm vào cụm rồi bấm dấu cộng.
+  const t = chon?.monId ? timMon(kho.doc(), chon.canhId, chon.monId) : null;
+  const trongCum = t?.el.kind === 'group' ? t.el.id : null;
+  if (trongCum) {
+    const h = document.createElement('div');
+    h.className = 'num-goi';
+    h.style.padding = '4px 12px';
+    h.textContent = 'Thêm vào trong cụm đang chọn';
+    menuThem.appendChild(h);
+  }
+  for (const m of MAU_MON) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = m.ten;
+    b.onclick = () => {
+      menuThem.classList.add('an');
+      let idMoi = null;
+      kho.sua(`thêm ${m.ten.toLowerCase()}`, (doc) => {
+        idMoi = themMon(doc, chon.canhId, m.kind, trongCum);
+      });
+      if (idMoi) datChon({ canhId: chon.canhId, monId: idMoi });
+      bao(`Đã thêm ${m.ten.toLowerCase()}.`);
+    };
+    menuThem.appendChild(b);
+  }
+  const r = ev.currentTarget.getBoundingClientRect();
+  menuThem.style.left = `${r.left}px`;
+  menuThem.style.top = `${r.bottom + 4}px`;
+  menuThem.classList.remove('an');
+};
+document.addEventListener('click', (ev) => {
+  if (!menuThem.contains(ev.target) && ev.target !== $('mon-them')) menuThem.classList.add('an');
+});
+
+$('mon-nhan').onclick = () => {
+  if (!chon?.monId) return bao('Chọn một thành phần trước đã.');
+  let idMoi = null;
+  kho.sua('nhân bản thành phần', (doc) => { idMoi = nhanBanMon(doc, chon.canhId, chon.monId); });
+  if (idMoi) datChon({ canhId: chon.canhId, monId: idMoi });
+};
+
+$('mon-xoa').onclick = () => {
+  if (!chon?.monId) return bao('Chọn một thành phần trước đã.');
+  const t = timMon(kho.doc(), chon.canhId, chon.monId);
+  const ten = t ? tenMon(t.el) : 'thành phần';
+  kho.sua(`xoá ${ten}`, (doc) => xoaMon(doc, chon.canhId, chon.monId));
+  datChon({ canhId: chon.canhId });
+  bao(`Đã xoá ${ten}. Ctrl+Z để lấy lại.`);
+};
+
+$('canh-them').onclick = () => {
+  if (!kho.doc()) return;
+  let idMoi = null;
+  kho.sua('thêm cảnh', (doc) => { idMoi = themCanh(doc, chon?.canhId); });
+  veLaiCanh();
+  if (idMoi) datChon({ canhId: idMoi });
+};
+
+$('canh-nhan').onclick = () => {
+  if (!chon?.canhId) return;
+  let idMoi = null;
+  kho.sua('nhân bản cảnh', (doc) => { idMoi = nhanBanCanh(doc, chon.canhId); });
+  veLaiCanh();
+  if (idMoi) datChon({ canhId: idMoi });
+};
+
+$('canh-xoa').onclick = () => {
+  if (!chon?.canhId) return;
+  if ((kho.doc()?.scenes || []).length <= 1) {
+    return bao('Clip phải còn ít nhất một cảnh.', true);
+  }
+  kho.sua('xoá cảnh', (doc) => xoaCanh(doc, chon.canhId));
+  veLaiCanh();
+  datChon({ canhId: kho.doc().scenes[0]?.id });
+  bao('Đã xoá cảnh. Ctrl+Z để lấy lại.');
+};
+
+/* Thêm/xoá cảnh làm đổi cả danh sách cảnh — phải chờ bộ dựng nạp xong kịch bản
+   mới rồi mới đọc lại `dsCanh()`, nếu không vẫn thấy danh sách cũ. */
+function veLaiCanh() {
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    veDanhSachCanh(player.dsCanh());
+    danhDauCanh();
+  }));
+}
+
+/* ---------- thẻ cột phải ---------- */
+function doiThe(xuat) {
+  $('the-tt').setAttribute('aria-selected', String(!xuat));
+  $('the-xuat').setAttribute('aria-selected', String(xuat));
+  $('bang-thuoc-tinh').classList.toggle('an', xuat);
+  $('bang-xuat').classList.toggle('an', !xuat);
+}
+$('the-tt').onclick = () => doiThe(false);
+$('the-xuat').onclick = () => doiThe(true);
+
 /* ---------- danh sách clip ---------- */
 async function napDanhSach() {
   const d = await (await fetch('/api/clips')).json();
@@ -204,6 +311,8 @@ async function moClip(slug) {
   datChon({ canhId: ds[0]?.id });
   bang.dat(null);
   capNhat();
+  bangXuat.napKho();
+  doiThe(false);
   bao(`Đã mở "${c.ten}". Bấm vào một thành phần trên khung hình để sửa.`);
   trangThai('san-sang');
 }
@@ -276,6 +385,12 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'ArrowLeft') player.tua(player.giay() - (e.shiftKey ? 1 : 0.1));
   if (e.key === 'ArrowRight') player.tua(player.giay() + (e.shiftKey ? 1 : 0.1));
   if (e.key === 'Escape') datChon({ canhId: chon?.canhId });
+  if ((e.key === 'Delete' || e.key === 'Backspace') && chon?.monId) {
+    e.preventDefault(); $('mon-xoa').click();
+  }
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'd' && chon?.monId) {
+    e.preventDefault(); $('mon-nhan').click();
+  }
 });
 
 window.addEventListener('beforeunload', (e) => {
