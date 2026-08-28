@@ -11,12 +11,28 @@ import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { PROJ, SCENES, tongThoiLuong } from './proj.js';
 
-/** Đời cũ: mỗi clip là một file HTML tự chứa. Danh sách cứng — chúng không đẻ thêm. */
-const DOI_CU = [
-  { slug: 'marketer-52s', ten: 'Vibe Host — Marketer (52 giây, dọc)', file: 'vibe-host-marketer.html' },
-  { slug: 'animatic-18s', ten: 'Vibe Hosting — bản 18 giây', file: 'vibe-hosting-animatic-18s.html' },
-  { slug: 'animatic-90s', ten: 'Vibe Hosting — bản 90 giây', file: 'vibe-hosting-animatic-90s.html' },
-];
+/**
+ * Đời cũ: mỗi clip là một file HTML tự chứa ở gốc dự án. TỰ PHÁT HIỆN chứ không
+ * khai tay — đội làm clip vẫn đang dựng thêm (bản văn phòng VH-02 xuất hiện
+ * ngày 28/08 mà không ai báo), khai tay là clip mới lặng lẽ không hiện ra.
+ */
+const BO_QUA = new Set(['scene-player.html', 'index.html', 'tai-ve.html']);
+
+function timDoiCu() {
+  const ra = [];
+  for (const ten of readdirSync(PROJ).sort()) {
+    if (!ten.endsWith('.html') || ten.includes('.bak') || BO_QUA.has(ten)) continue;
+    const f = path.join(PROJ, ten);
+    let dau = '';
+    try {
+      // Chỉ đọc phần đầu file: mấy bản animatic nặng tới 1,3 MB.
+      dau = readFileSync(f, 'utf8').slice(0, 4000);
+    } catch { continue; }
+    const tieuDe = (dau.match(/<title>([^<]*)<\/title>/) || [])[1]?.trim();
+    ra.push({ slug: ten.replace(/\.html$/, ''), ten: tieuDe || ten, file: ten });
+  }
+  return ra;
+}
 
 /** Tên file chỉ được là chữ thường, số và gạch ngang — không dấu chấm, không gạch chéo. */
 export function locSlug(raw) {
@@ -69,10 +85,8 @@ export async function danhSachClip() {
     }
   }
 
-  for (const cu of DOI_CU) {
-    const f = path.join(PROJ, cu.file);
-    if (!existsSync(f)) continue;
-    ds.push({ ...cu, doi: 1, suaLuc: statSync(f).mtimeMs });
+  for (const cu of timDoiCu()) {
+    ds.push({ ...cu, doi: 1, suaLuc: statSync(path.join(PROJ, cu.file)).mtimeMs });
   }
 
   return ds;

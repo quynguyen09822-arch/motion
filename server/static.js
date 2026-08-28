@@ -35,19 +35,17 @@ const MIME = {
  * mục là đưa khoá lên mạng. Dùng danh sách trắng chứ không phải danh sách đen:
  * mai mốt ai thả file mới vào dự án cũng không vô tình bị lộ.
  */
-const FILE_CHO_PHEP = new Set([
-  'scene-player.html',
-  'vibe-hosting-animatic-18s.html',
-  'vibe-hosting-animatic-90s.html',
-  'vibe-host-marketer.html',
-]);
+// Mọi .html NGAY Ở GỐC dự án đều là trang clip, cho phép hết — khai từng tên
+// thì clip mới dựng xong lại không xem được. Vẫn an toàn: `.env` không phải
+// .html, và luật chặn-đoạn-bắt-đầu-bằng-dấu-chấm bên dưới lo phần còn lại.
+const laTrangClip = (d) => /^[^/]+\.html$/.test(d);
 const THU_MUC_CHO_PHEP = ['scenes/', 'public/', 'out/'];
 
 export function duocPhucVu(duongDan) {
   if (!duongDan || duongDan.includes('..') || duongDan.startsWith('/')) return false;
   // Chặn mọi đoạn bắt đầu bằng dấu chấm: `.env`, `.studio/`, `.git/`…
   if (duongDan.split('/').some((doan) => doan.startsWith('.'))) return false;
-  if (FILE_CHO_PHEP.has(duongDan)) return true;
+  if (laTrangClip(duongDan)) return true;
   return THU_MUC_CHO_PHEP.some((tm) => duongDan.startsWith(tm));
 }
 

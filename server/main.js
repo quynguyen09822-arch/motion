@@ -22,6 +22,7 @@ import { chupBanGoc, lichSu } from './backup.js';
 import { khoiPhuc, luuClip } from './save.js';
 import { docNhap, ghiNhap, xoaNhap } from './drafts.js';
 import { huyViec, khoHopLe, kiemBoCuc, layViec, soDangCho, xuatVideo } from './jobs.js';
+import { docKhung, suaKhung } from './khung.js';
 import { docJson, json, khop, loi, moSSE } from './router.js';
 
 const GOC = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -127,6 +128,20 @@ const server = http.createServer(async (req, res) => {
       const kq = await khoiPhuc(slug, String(than?.dau || ''));
       if (!kq.ok) return json(res, 422, kq);
       return json(res, 200, { ...kq, ...docClip(slug) });
+    }
+
+    /* ---------- khung nhấn trên clip đời cũ ---------- */
+    if ((m = khop('/api/khung/:slug', p)) && req.method === 'GET') {
+      const d = docKhung(m.slug);
+      if (!d) return loi(res, 404, 'Clip này không có khung nhấn để sửa.');
+      return json(res, 200, { ok: true, ...d });
+    }
+
+    if ((m = khop('/api/khung/:slug', p)) && req.method === 'POST') {
+      const than = await docJson(req);
+      const kq = suaKhung(m.slug, than?.kho === 'XOA' ? 'XOA' : 'LOP',
+        Number(than?.chiSo), than?.box);
+      return json(res, kq.ok ? 200 : 422, kq);
     }
 
     /* ---------- việc nặng: xuất video, kiểm bố cục ---------- */

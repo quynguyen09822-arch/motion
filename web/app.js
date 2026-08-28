@@ -19,6 +19,7 @@ import { taoBang, tenMon } from './inspector/index.js';
 import { ganKeo } from './drag.js';
 import { MAU_MON, nhanBanCanh, nhanBanMon, themCanh, themMon, xoaCanh, xoaMon } from './them.js';
 import { taoBangXuat } from './exportpanel.js';
+import { taoKhung } from './khung.js';
 
 const $ = (id) => document.getElementById(id);
 const chonClip = $('chon-clip'), dangClip = $('dang-clip'), dsCanhEl = $('ds-canh');
@@ -40,6 +41,9 @@ const dsLop = taoDanhSach($('ds-lop'), {
 let clips = [], clipDangMo = null, chon = null, dangKeoThanh = false;
 
 const bangXuat = taoBangXuat($('bang-xuat'), { laySlug: () => kho.slug(), bao: (c, h) => bao(c, h) });
+const bangKhung = taoKhung({
+  bocGiua: $('san-khung'), bocBang: $('bang-khung'), bao: (c, h) => bao(c, h),
+});
 
 /* ---------- lời nhắc ---------- */
 let hen = null;
@@ -234,14 +238,21 @@ function veLaiCanh() {
 }
 
 /* ---------- thẻ cột phải ---------- */
-function doiThe(xuat) {
-  $('the-tt').setAttribute('aria-selected', String(!xuat));
-  $('the-xuat').setAttribute('aria-selected', String(xuat));
-  $('bang-thuoc-tinh').classList.toggle('an', xuat);
-  $('bang-xuat').classList.toggle('an', !xuat);
+function doiThe(ten) {
+  for (const [t, the, bang] of [['tt', 'the-tt', 'bang-thuoc-tinh'],
+                                ['xuat', 'the-xuat', 'bang-xuat'],
+                                ['khung', 'the-khung', 'bang-khung']]) {
+    $(the).setAttribute('aria-selected', String(t === ten));
+    $(bang).classList.toggle('an', t !== ten);
+  }
+  // Chỉnh khung diễn ra trên ảnh mockup tĩnh, không dính gì tới khung xem clip —
+  // nên đổi hẳn vùng giữa, không chồng hai thứ lên nhau.
+  $('san-khung').classList.toggle('an', ten !== 'khung');
+  $('san-clip').classList.toggle('an', ten === 'khung');
 }
-$('the-tt').onclick = () => doiThe(false);
-$('the-xuat').onclick = () => doiThe(true);
+$('the-tt').onclick = () => doiThe('tt');
+$('the-xuat').onclick = () => doiThe('xuat');
+$('the-khung').onclick = () => doiThe('khung');
 
 /* ---------- danh sách clip ---------- */
 async function napDanhSach() {
@@ -286,10 +297,20 @@ async function moClip(slug) {
     khoaDieuKhien(true);
     lopBat.style.display = 'none';
     dsCanhEl.innerHTML = '<li class="khong-the">Clip đời cũ không tách được ra từng cảnh.</li>';
-    bao(`Đã mở "${c.ten}" — chỉ xem.`);
+    $('bang-thuoc-tinh').innerHTML =
+      '<div class="trong">Clip đời cũ chưa sửa trực tiếp được.</div>';
+    // Nhưng khung nhấn thì SỬA ĐƯỢC: toạ độ của chúng là số viết thẳng trong
+    // mảng, tính theo pixel ảnh mockup — không phải do code tính lúc chạy.
+    const coKhung = await bangKhung.mo(slug).catch(() => false);
+    $('the-khung').classList.toggle('an', !coKhung);
+    doiThe(coKhung ? 'khung' : 'tt');
+    bao(coKhung
+      ? `Đã mở "${c.ten}". Chỉ xem được, nhưng khung nhấn thì chỉnh được — xem thẻ Khung nhấn.`
+      : `Đã mở "${c.ten}" — chỉ xem.`);
     trangThai('san-sang');
     return;
   }
+  $('the-khung').classList.add('an');
 
   lopBat.style.display = '';
   khoaDieuKhien(false);
@@ -316,7 +337,7 @@ async function moClip(slug) {
   bang.dat(null);
   capNhat();
   bangXuat.napKho();
-  doiThe(false);
+  doiThe('tt');
   bao(`Đã mở "${c.ten}". Bấm vào một thành phần trên khung hình để sửa.`);
   trangThai('san-sang');
 }

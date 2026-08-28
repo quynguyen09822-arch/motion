@@ -328,3 +328,54 @@ body {
    thiếu mấy ký tự hình học, ra ô vuông rỗng. SVG thì máy nào cũng vẽ được. */
 .nut-ti svg { width: 13px; height: 13px; display: block; margin: auto;
   fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; }
+
+/* ============ CHỈNH KHUNG NHẤN ============ */
+.khung-san { position: relative; display: none; max-height: 100%; }
+.khung-anh { display: block; max-height: calc(100vh - 200px); width: auto;
+  max-width: 100%; border-radius: 8px; }
+.khung-trong { color: var(--chu-mo); font-size: 13px; text-align: center; }
+
+.khung-hop {
+  position: absolute; display: none; cursor: move;
+  border: 3px solid var(--cam); border-radius: 12px;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, .5), 0 0 0 9999px rgba(6, 12, 20, .34);
+}
+.khung-hop[data-loai="che"]  { border-color: #7c5cff; }
+.khung-hop[data-loai="xoa"]  { border-color: #2ecc71; border-style: dashed; }
+
+.khung-tay {
+  position: absolute; width: 13px; height: 13px;
+  background: var(--chu); border: 2px solid var(--cam); border-radius: 3px;
+}
+.khung-tay[data-tay^="t"] { top: -7px; }
+.khung-tay[data-tay^="g"] { top: calc(50% - 7px); }
+.khung-tay[data-tay^="d"] { bottom: -7px; }
+.khung-tay[data-tay$="t"] { left: -7px; }
+.khung-tay[data-tay$="g"] { left: calc(50% - 7px); }
+.khung-tay[data-tay$="p"] { right: -7px; }
+.khung-tay[data-tay="tt"], .khung-tay[data-tay="dp"] { cursor: nwse-resize; }
+.khung-tay[data-tay="tp"], .khung-tay[data-tay="dt"] { cursor: nesw-resize; }
+.khung-tay[data-tay="tg"], .khung-tay[data-tay="dg"] { cursor: ns-resize; }
+.khung-tay[data-tay="gt"], .khung-tay[data-tay="gp"] { cursor: ew-resize; }
+
+.khung-so { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+.khung-dau { padding: 12px 12px 8px; margin: 0; border-top: 1px solid var(--vach); }
+.khung-ds { padding: 0 6px 20px; }
+.khung-hang {
+  display: flex; align-items: center; gap: 7px; width: 100%;
+  background: none; border: 0; color: var(--chu); font: inherit; font-size: 12px;
+  padding: 6px 8px; border-radius: 6px; cursor: pointer; text-align: left;
+}
+.khung-hang:hover:not(:disabled) { background: var(--nen-3); }
+.khung-hang.dang { background: var(--nhan); color: #061018; }
+.khung-hang:disabled { opacity: .38; cursor: default; }
+.khung-cham { width: 8px; height: 8px; border-radius: 2px; flex: none; background: var(--cam); }
+.khung-cham[data-loai="che"] { background: #7c5cff; }
+.khung-cham[data-loai="xoa"] { background: #2ecc71; }
+.khung-ten { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.khung-thoi { color: var(--chu-mo); font-size: 11px; flex: none; font-variant-numeric: tabular-nums; }
+.khung-hang.dang .khung-thoi { color: #061018; opacity: .75; }
+.khung-canh {
+  padding: 10px 8px 4px; font-size: 11px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: .06em; color: var(--chu-mo);
+}
