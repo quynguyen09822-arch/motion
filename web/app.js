@@ -174,7 +174,11 @@ $('mon-them').onclick = (ev) => {
   menuThem.classList.remove('an');
 };
 document.addEventListener('click', (ev) => {
-  if (!menuThem.contains(ev.target) && ev.target !== $('mon-them')) menuThem.classList.add('an');
+  // Phải dùng closest(): nút chứa một <svg>, bấm vào là `ev.target` thành cái
+  // svg chứ không phải cái nút, so bằng dấu === sẽ đóng menu ngay khi vừa mở.
+  if (!menuThem.contains(ev.target) && !ev.target.closest?.('#mon-them')) {
+    menuThem.classList.add('an');
+  }
 });
 
 $('mon-nhan').onclick = () => {
