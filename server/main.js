@@ -139,8 +139,10 @@ const server = http.createServer(async (req, res) => {
 
     if ((m = khop('/api/khung/:slug', p)) && req.method === 'POST') {
       const than = await docJson(req);
-      const kq = suaKhung(m.slug, than?.kho === 'XOA' ? 'XOA' : 'LOP',
-        Number(than?.chiSo), than?.box);
+      // KHÔNG ép về 'LOP'/'XOA': từ khi clip có bản ngang và bản dọc, tên mảng
+      // là LOP_N / LOP_D / XOA_N / XOA_D. Ép về tên trơ là ghi nhầm mảng —
+      // hoặc như vừa rồi, không tìm thấy mảng nào cả. suaKhung tự soát tên.
+      const kq = suaKhung(m.slug, String(than?.kho || ''), Number(than?.chiSo), than?.box);
       return json(res, kq.ok ? 200 : 422, kq);
     }
 
