@@ -101,24 +101,40 @@ export function timClipKhung() {
   return ra;
 }
 
-const TEN_LOAI = { vong: 'Vòng sáng', che: 'Miếng hé lộ', xoa: 'Miếng che logo', tep: 'Gói tin bay' };
+const TEN_LOAI = {
+  vong: 'Vòng sáng', xoa: 'Miếng che logo', tep: 'Gói tin bay',
+  che: 'Hé từ trái sang', cheD: 'Hé từ đáy lên', cheU: 'Hé từ trên xuống',
+  mo: 'Mờ dần hiện ra', chu: 'Miếng vá chữ', ma: 'Khung mã HTML',
+  sang: 'Quầng sáng thở',
+};
 
 /*
- * CHỈ ba loại này là hộp chữ nhật thuần, kéo được. Loại khác — như `tep` (gói
- * tin bay từ chỗ này sang chỗ kia, `box` chỉ là điểm xuất phát còn đường đi nằm
- * ở `tu`/`den`) — kéo cái hộp là sai hẳn ý nghĩa. Danh sách TRẮNG, để clip mới
- * đẻ ra loại lạ thì nó tự khoá chứ không âm thầm cho sửa bậy.
+ * LUẬT KÉO ĐƯỢC — theo HÌNH HỌC, không theo tên loại.
+ *
+ * Bản đầu tôi dùng danh sách trắng tên loại (vong/che/xoa). Sai: clip CEO đẻ
+ * thêm sáu tên mới — cheD, cheU, mo, chu, ma, sang — mà tất cả đều chỉ là hộp
+ * chữ nhật trong cùng hệ toạ độ ảnh, chỉ khác nhau ở CÁCH HÉ LỘ chứ không khác
+ * hình học. Danh sách trắng khoá oan 75/89 lớp, và mỗi clip mới lại khoá oan
+ * tiếp. Đội làm clip vẫn đang nghĩ thêm cách hé lộ mới.
+ *
+ * Luật đúng: hễ là hộp bốn số có diện tích dương thì kéo được. Thứ duy nhất
+ * phải loại là lớp mà `box` KHÔNG phải hình chữ nhật — như `tep` (gói tin bay:
+ * `box` chỉ là điểm xuất phát, đường đi nằm ở `tu`/`den`). Loại đó tự lộ ra vì
+ * diện tích bằng 0 và có `tu`/`den` là mảng.
  */
-const LOAI_SUA_DUOC = new Set(['vong', 'che', 'xoa']);
+function laDuongBay(el) {
+  return Array.isArray(el?.tu) || Array.isArray(el?.den);
+}
 
 /** Lớp này có kéo được không, và nếu không thì vì sao. */
-function danhGia(loai, box) {
-  if (!Array.isArray(box) || box.length !== 4) {
+function danhGia(loai, box, el) {
+  if (!Array.isArray(box) || box.length !== 4 || box.some((n) => !Number.isFinite(n))) {
     return { suaDuoc: false, viSao: 'Lớp này không khai toạ độ kiểu hộp bốn số.' };
   }
-  if (!LOAI_SUA_DUOC.has(loai)) {
+  if (laDuongBay(el)) {
     return { suaDuoc: false,
-      viSao: `Loại "${TEN_LOAI[loai] || loai}" không phải hộp chữ nhật thuần — chưa kéo được.` };
+      viSao: `"${TEN_LOAI[loai] || loai}" bay theo đường chứ không đứng một chỗ — `
+        + 'hộp chỉ là điểm xuất phát, chưa kéo được.' };
   }
   if (box[2] <= box[0] || box[3] <= box[1]) {
     return { suaDuoc: false, viSao: 'Hộp này rộng hoặc cao bằng 0 — không phải khung để kéo.' };
@@ -166,7 +182,7 @@ export function docKhung(slug) {
         kho: b.tenLOP, chiSo: i, canh: l.sc, loai,
         ten: chuL[i] || TEN_LOAI[loai] || loai, loaiTen: TEN_LOAI[loai] || loai,
         box: l.box, tu: l.a, den: l.b, anh: anhCuaCanh(l.sc),
-        ...danhGia(loai, l.box),
+        ...danhGia(loai, l.box, l),
       });
     });
 
@@ -184,10 +200,7 @@ export function docKhung(slug) {
         ten: (phang ? null : chuX[i]) || TEN_LOAI.xoa, loaiTen: TEN_LOAI.xoa,
         box: phang ? x.slice(1, 5) : x.box, tu: null, den: null,
         anh: anhCuaCanh(canh),
-        ...(phang
-          ? { suaDuoc: false,
-              viSao: 'Miếng che ở bản này khai kiểu mảng gọn, chưa sửa an toàn được.' }
-          : danhGia('xoa', x.box)),
+        ...danhGia('xoa', phang ? x.slice(1, 5) : x.box, phang ? null : x),
       });
     });
 
@@ -223,28 +236,56 @@ export function suaKhung(slug, kho, chiSo, box) {
   if (!mang) return { ok: false, vanDe: [`Không đọc được mảng ${kho}.`] };
   if (chiSo < 0 || chiSo >= mang.giaTri.length) return { ok: false, vanDe: ['Không có lớp này.'] };
   const muc = mang.giaTri[chiSo];
-  if (Array.isArray(muc)) {
-    return { ok: false, vanDe: ['Lớp này khai kiểu mảng gọn, chưa sửa an toàn được.'] };
-  }
-  const dg = danhGia(muc.k || (kho.startsWith('XOA') ? 'xoa' : 'vong'), muc.box);
+  const phangKhong = Array.isArray(muc);
+  const hopCu = phangKhong ? muc.slice(1, 5) : muc.box;
+  const dg = danhGia(muc.k || (kho.startsWith('XOA') ? 'xoa' : 'vong'), hopCu,
+    phangKhong ? null : muc);
   if (!dg.suaDuoc) return { ok: false, vanDe: [dg.viSao] };
 
-  const dong = mang.khoi.split('\n');
-  let dem = -1, canSua = -1;
-  for (let i = 0; i < dong.length; i++) {
-    if (/box\s*:\s*\[/.test(dong[i]) && ++dem === chiSo) { canSua = i; break; }
-  }
-  if (canSua < 0) return { ok: false, vanDe: ['Không tìm được dòng của lớp này.'] };
-
-  // GIỮ NGUYÊN CĂN LỀ TAY: ép từng số về đúng bề rộng ô cũ, để một sửa đổi hai
-  // con số không biến thành một diff nhìn như viết lại cả file.
-  const cu = dong[canSua];
-  const oCu = cu.match(/box\s*:\s*\[([^\]]*)\]/)[1].split(',');
-  const soMoi = [x0, y0, x1, y1]
+  /*
+   * GIỮ NGUYÊN CĂN LỀ TAY ở cả hai cách: ép từng số về đúng bề rộng ô cũ, để
+   * một sửa đổi hai con số không thành cái diff nhìn như viết lại cả file.
+   */
+  const depSo = (soMoi, oCu) => soMoi
     .map((n, i) => String(n).padStart((oCu[i] ?? '').length, ' ')).join(',');
-  dong[canSua] = cu.replace(/box\s*:\s*\[[^\]]*\]/, `box:[${soMoi}]`);
 
-  const htmlMoi = html.slice(0, mang.viTri) + dong.join('\n')
+  let khoiMoi;
+  if (phangKhong) {
+    /*
+     * Mảng phẳng `[sc,x0,y0,x1,y1]`, có khi HAI mục chung một dòng — đếm theo
+     * dòng là trật. Đếm theo CẶP NGOẶC trong cùng: các mục này toàn số nên
+     * không lồng nhau, `[^[\]]*` bắt đúng từng mục một.
+     */
+    let dem = -1;
+    khoiMoi = mang.khoi.replace(/\[[^[\]]*\]/g, (khop) => {
+      if (++dem !== chiSo) return khop;
+      const o = khop.slice(1, -1).split(',');
+      /*
+       * Ô 0 là số cảnh, ô 1..4 là toạ độ — nhưng CÓ THỂ CÒN Ô PHÍA SAU: bản dọc
+       * khai `[0, 0, 0, 941, 122, null,'#f8f9fd']`, bảy ô, hai ô cuối là cờ và
+       * mã màu. Dựng lại đúng năm ô là nuốt mất chúng, miếng che mất màu mà
+       * không ai biết cho tới lúc xem video. Nên giữ nguyên xi phần đuôi.
+       */
+      const dau = depSo([o[0].trim(), x0, y0, x1, y1], o);
+      const duoi = o.slice(5).join(',');
+      return `[${dau}${duoi ? ',' + duoi : ''}]`;
+    });
+    if (dem < chiSo) return { ok: false, vanDe: ['Không tìm được mục của lớp này.'] };
+  } else {
+    const dong = mang.khoi.split('\n');
+    let dem = -1, canSua = -1;
+    for (let i = 0; i < dong.length; i++) {
+      if (/box\s*:\s*\[/.test(dong[i]) && ++dem === chiSo) { canSua = i; break; }
+    }
+    if (canSua < 0) return { ok: false, vanDe: ['Không tìm được dòng của lớp này.'] };
+    const cu = dong[canSua];
+    const oCu = cu.match(/box\s*:\s*\[([^\]]*)\]/)[1].split(',');
+    dong[canSua] = cu.replace(/box\s*:\s*\[[^\]]*\]/,
+      `box:[${depSo([x0, y0, x1, y1], oCu)}]`);
+    khoiMoi = dong.join('\n');
+  }
+
+  const htmlMoi = html.slice(0, mang.viTri) + khoiMoi
     + html.slice(mang.viTri + mang.khoi.length);
 
   // Cất nguyên cả file TRƯỚC — đây là video đã giao và dự án không có git.
@@ -257,8 +298,10 @@ export function suaKhung(slug, kho, chiSo, box) {
   renameSync(tam, duongDan);
 
   const lai = batMang(readFileSync(duongDan, 'utf8'), kho);
+  const hopLai = lai && (phangKhong
+    ? lai.giaTri[chiSo]?.slice(1, 5) : lai.giaTri[chiSo]?.box);
   if (!lai || lai.giaTri.length !== mang.giaTri.length
-      || String(lai.giaTri[chiSo].box) !== String([x0, y0, x1, y1])) {
+      || String(hopLai) !== String([x0, y0, x1, y1])) {
     copyFileSync(path.join(KHO, slug, `${dau}.html`), duongDan);
     return { ok: false, vanDe: ['Ghi xong đọc lại không khớp — đã trả lại bản cũ.'] };
   }
