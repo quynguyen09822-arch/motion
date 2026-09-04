@@ -411,3 +411,8 @@ body {
 .the-nho.cam { border-color: #6b4a1c; background: #2a1f12; color: #e0a86a; }
 .video-hang.dang .the-nho { background: rgba(6,16,24,.18); border-color: rgba(6,16,24,.3); color: #061018; }
 .video-boc .nut { text-decoration: none; text-align: center; }
+
+.ly-do { max-width: 520px; text-align: left; color: var(--chu-mo); font-size: 13px; }
+.ly-do h4 { margin: 0 0 10px; color: var(--chu); font-size: 15px; }
+.ly-do ul { margin: 0 0 12px; padding-left: 20px; line-height: 1.7; }
+.ly-do li { margin-bottom: 5px; }

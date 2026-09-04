@@ -308,12 +308,14 @@ async function moClip(slug) {
       '<div class="trong">Clip đời cũ chưa sửa trực tiếp được.</div>';
     // Nhưng khung nhấn thì SỬA ĐƯỢC: toạ độ của chúng là số viết thẳng trong
     // mảng, tính theo pixel ảnh mockup — không phải do code tính lúc chạy.
-    const coKhung = await bangKhung.mo(slug).catch(() => false);
-    $('the-khung').classList.toggle('an', !coKhung);
-    doiThe(coKhung ? 'khung' : 'tt');
-    bao(coKhung
-      ? `Đã mở "${c.ten}". Chỉ xem được, nhưng khung nhấn thì chỉnh được — xem thẻ Khung nhấn.`
-      : `Đã mở "${c.ten}" — chỉ xem.`);
+    // Luôn mở thẻ Khung nhấn cho clip đời cũ: chỉnh được thì cho chỉnh, không
+    // chỉnh được thì bày lý do ra. Ẩn thẻ đi là bắt người dùng đi hỏi.
+    const kq = await bangKhung.mo(slug).catch(() => ({ ok: false, thieu: [] }));
+    $('the-khung').classList.remove('an');
+    doiThe('khung');
+    bao(kq.ok
+      ? `Đã mở "${c.ten}". Chỉ xem được, nhưng khung nhấn thì chỉnh được.`
+      : `Đã mở "${c.ten}" — clip này chưa chỉnh khung được, lý do ở cột bên phải.`);
     trangThai('san-sang');
     return;
   }

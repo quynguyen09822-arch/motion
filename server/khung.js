@@ -152,6 +152,44 @@ function ghiChu(khoi) {
   return ra;
 }
 
+/**
+ * VÌ SAO CLIP NÀY KHÔNG CHỈNH ĐƯỢC KHUNG.
+ *
+ * Trước đây clip không hợp quy ước thì lặng lẽ không hiện thẻ "Khung nhấn", và
+ * người dùng phải đi hỏi mới biết vì sao. Giờ nó tự nói ra thiếu đúng cái gì,
+ * đối chiếu với docs/QUY-UOC-CLIP.md.
+ */
+export function chanDoan(slug) {
+  const ten = `${slug}.html`;
+  const f = path.join(PROJ, ten);
+  if (!existsSync(f)) return ['Không thấy file clip.'];
+  const html = readFileSync(f, 'utf8');
+  const thieu = [];
+
+  const coMang = /const LOP[A-Z0-9_]*\s*=\s*\[/.test(html);
+  if (!coMang) {
+    const tenKhac = [...html.matchAll(/const ([A-Z][A-Z0-9_]{2,})\s*=\s*\[/g)]
+      .map((m) => m[1]).filter((t) => /VONG|KHUNG|HIGH|BOX/.test(t));
+    thieu.push(tenKhac.length
+      ? `Mảng khung đang đặt tên "${tenKhac[0]}" — quy ước là LOP (miếng che là XOA).`
+      : 'Không có mảng LOP nào — clip này không khai khung nhấn thành dữ liệu.');
+  }
+
+  if (!/const MK[A-Z0-9_]*\s*=\s*'/.test(html) || !/const ANH[A-Z0-9_]*\s*=\s*\[/.test(html)) {
+    thieu.push('Không có ảnh storyboard (thiếu MK và ANH) — không có gì để kéo khung lên trên.');
+  }
+
+  if (coMang) {
+    const bt = bienThe(html);
+    if (!bt.length) thieu.push('Có mảng LOP nhưng đọc không ra — cú pháp lạ.');
+    else if (!bt.some((b) => b.lop.giaTri?.some((l) => Array.isArray(l?.box)))) {
+      thieu.push('Các mục trong LOP không có trường `box` — quy ước là '
+        + '{sc, box:[trái,trên,phải,dưới], …}, không phải mảng vị trí.');
+    }
+  }
+  return thieu.length ? thieu : null;
+}
+
 export function docKhung(slug) {
   const ct = timClipKhung()[slug];
   if (!ct) return null;

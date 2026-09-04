@@ -213,6 +213,27 @@ export function taoKhung({ bocGiua, bocBang, bao }) {
 
   nutVe.onclick = () => { box = [...goc]; veHop(); };
 
+  /** Clip không hợp quy ước: bày lý do ra giữa màn hình. */
+  function veLyDo(d) {
+    dulieu = null;
+    san.style.display = 'none';
+    trong.style.display = '';
+    trong.innerHTML = '';
+    const h = el('div', 'ly-do');
+    h.appendChild(el('h4', null, 'Clip này chưa chỉnh khung được'));
+    const ul = el('ul');
+    for (const t of d.thieu || [d.loi]) ul.appendChild(el('li', null, t));
+    h.appendChild(ul);
+    h.appendChild(el('p', 'num-goi',
+      `Quy ước đầy đủ ở ${d.quyUoc || 'docs/QUY-UOC-CLIP.md'} — có sẵn khối để dán vào prompt dựng clip.`));
+    trong.appendChild(h);
+    dsBoc.innerHTML = '';
+    bocBan.style.display = 'none';
+    oSo.style.display = 'none';
+    khoaBao.style.display = 'none';
+    nutLuu.style.display = nutVe.style.display = 'none';
+  }
+
   /* ---------- dựng cột phải ---------- */
   const muc = el('section', 'muc');
   muc.appendChild(el('h3', 'muc-ten', 'Khung nhấn'));
@@ -227,17 +248,24 @@ export function taoKhung({ bocGiua, bocBang, bao }) {
   return {
     async mo(slug) {
       const d = await (await fetch(`/api/khung/${slug}`)).json();
-      if (!d.ok) { bao(d.loi, true); return false; }
+      if (!d.ok) {
+        // Không chỉnh được thì NÓI RÕ thiếu cái gì, đừng chỉ im lặng ẩn thẻ đi.
+        veLyDo(d);
+        return { ok: false, thieu: d.thieu || [] };
+      }
       dulieu = d;
       banI = 0;
       dangChon = -1;
       box = goc = null;
       hop.style.display = 'none';
       san.style.display = 'none';
+      trong.textContent = 'Chọn một khung ở cột bên phải để chỉnh.';
+      oSo.style.display = '';
+      nutLuu.style.display = nutVe.style.display = '';
       trong.style.display = '';
       veChonBan();
       veDanhSach();
-      return true;
+      return { ok: true };
     },
     co: (slug) => Boolean(dulieu && dulieu.slug === slug),
   };
