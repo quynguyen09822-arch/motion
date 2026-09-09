@@ -45,6 +45,7 @@ const TEN_DEP = {
   'trien-khai-web': 'Triển khai web',
   '18s': 'Vibe Hosting 18 giây',
   'vibe-hosting': 'Vibe Hosting — bản đầu',
+  'thu-ve-lai-s02': 'S02 · Một đường link',
   'scene-thu-nghiem': 'Cảnh thử nghiệm',
   'cta-mat-bao': 'Thẻ kêu gọi Mắt Bão',
   'thuong-hieu': 'Nhận diện thương hiệu',
@@ -72,6 +73,11 @@ export function phanLoai(goc, ten) {
      nào khác, gỡ hết là chủ đề rỗng. */
   const dau = (khongLuu.match(/^vibe-host(?:ing)?/) || ['vibe-hosting'])[0];
   let con = khongLuu.replace(/^vibe-host(ing)?-/, '');
+
+  /* Bộ xuất video dán mốc thời gian vào tên file (`-202609090911`). Không gỡ
+     thì MỖI LẦN XUẤT thành một chủ đề riêng — đúng cái đống lộn xộn vừa dọn.
+     Ngày giờ đã hiện ở cột bên phải mỗi hàng rồi, không cần trong tên mục. */
+  con = con.replace(/-\d{10,14}$/, '');
 
   const bien = [];
   /* Đuôi số là bản dựng lại lần thứ mấy, không phải chủ đề — `vibe-hosting-doc-2`
