@@ -60,7 +60,7 @@ Ba trường, đều không bắt buộc: `ink` (chữ chính), `inkSoft` (dòng
 Bản gốc nằm ở `.hub-video-backups/scene-player/2026-09-09T145117/`.
 
 ```bash
-cp matbao-hub-video/.hub-video-backups/scene-player/2026-09-09T145117/scene-player.html \
+cp projects/matbao-hub-video/.hub-video-backups/scene-player/2026-09-09T145117/scene-player.html \
    projects/clipVibehost/hosting-animatic-production/scene-player.html
 ```
 
