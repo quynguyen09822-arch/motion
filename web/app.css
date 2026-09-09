@@ -416,3 +416,14 @@ body {
 .ly-do h4 { margin: 0 0 10px; color: var(--chu); font-size: 15px; }
 .ly-do ul { margin: 0 0 12px; padding-left: 20px; line-height: 1.7; }
 .ly-do li { margin-bottom: 5px; }
+
+/* Hộp mỏng: giấu tay nắm giữa, không thì chúng phủ kín chỗ để nắm mà dời. */
+.khung-hop.mong-ngang .khung-tay[data-tay="tg"],
+.khung-hop.mong-ngang .khung-tay[data-tay="dg"],
+.khung-hop.mong-doc  .khung-tay[data-tay="gt"],
+.khung-hop.mong-doc  .khung-tay[data-tay="gp"] { display: none; }
+/* Bé cả hai chiều thì giấu hết — dời bằng chuột, co giãn thì gõ số. */
+.khung-hop.be-ti .khung-tay { display: none; }
+.khung-hop.mong-ngang .khung-tay, .khung-hop.mong-doc .khung-tay {
+  width: 10px; height: 10px; border-width: 1.5px;
+}
