@@ -32,12 +32,11 @@ OUT = GOC / 'scenes' / 'thu-trien-khai-doc.json'
 KIEM = pathlib.Path(__file__).parent / f'kiem-{OUT.stem}.json'
 
 # ══ MÀU ════════════════════════════════════════════════════════════════════
-# Nền khung hình là MÀU KHOÁ, không phải màu thật. `tools/ghep-bg.mjs` cắt màu
-# này ra rồi lồng `public/video/BG.mp4` (đã làm mờ) vào chỗ đó — định dạng kịch
-# bản cảnh không có kiểu `video` nên nền động chỉ ghép được ở khâu ffmpeg.
-# Hồng cánh sen vì nó không có trong bảng màu của clip lẫn của trang AIRTEX,
-# nên cắt không ăn nhầm thứ gì.
-NEN      = '#ff00ff'
+# Nền là ẢNH TĨNH cắt từ `public/video/BG.mp4` (xem tools/chup-bg-tinh.mjs).
+# Đặt thẳng vào clip nên nhìn đúng ở cả công cụ sửa lẫn video xuất ra, không
+# cần bước ghép nào. Màu dưới đây chỉ là lớp lót phòng khi ảnh chưa tải kịp.
+NEN      = '#0a1c12'
+BG_ANH   = 'public/image/bg-tinh.png'
 GIAY     = '#ffffff'
 RAIL     = '#1d2839'      # dải biểu tượng bên trái
 RAIL_SANG = '#2b3a50'
@@ -89,6 +88,11 @@ def khung(dong=False):
     va = (lambda x: 'none') if dong else (lambda x: x)
 
     khoi('nen', 0, 0, W, H, NEN, r=0, **{'in': {'kind': 'none', 'dur': .001}})
+    # Ảnh nền phải khai qua `v.anh`: `.k-image{position:relative}` đè lên
+    # `.el{position:absolute}` nên ảnh nằm trong dòng chảy và xếp chồng dồn
+    # xuống. Clip này có tới chín ảnh (bảy nền + trang máy tính + trang điện
+    # thoại) nên không bù trừ là mọi ảnh từ cái thứ hai đều rơi khỏi khung.
+    v.anh('bg', 0, 0, W, H, BG_ANH, radius=0, at=0, vao='none', dai=.001)
     the('app', AX, AY, AW, AH, d(.1), vien='#dfe4ea', r=20, vao=va('pop'), day=1)
 
     # Dải biểu tượng: khối bo tròn, rồi một miếng vuông ép phẳng mép phải —
