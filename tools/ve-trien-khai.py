@@ -1,33 +1,41 @@
 #!/usr/bin/env python3
-"""Clip thử nghiệm: KÉO THẢ MỘT FILE HTML VÀO DASHBOARD RỒI NÓ CHẠY.
+"""Clip thử: KÉO THẢ MỘT FILE HTML VÀO VIBE HOSTING RỒI TRANG CHẠY.
 
-Kịch bản (13,6 giây, không lời):
+Dựng lại giao diện THẬT, không phỏng đoán. Bản trước tôi tự nghĩ ra một
+dashboard chung chung; bản này đọc từ ảnh chụp sản phẩm trong dự án:
 
-  Cảnh 1 (0 → 5,4)   Dashboard Vibe Host hiện ra. Con trỏ nhặt tệp
-                     `ttindex.html` ở góc trên rồi thả vào vùng nhận tệp.
-  Cảnh 2 (5,4 → 9,8) Thanh tiến trình chạy, các bước lần lượt xong. Tới bước
-                     cấp SSL thì một thẻ SSL bật ra GIỮA KHUNG HÌNH.
-  Cảnh 3 (9,8 → 13,6) CAMERA ZOOM vào dashboard. Đèn database chuyển xanh,
-                     rồi CDN. Trang đã chạy.
+    public/image/triển khai website.png   ← màn "Đưa website lên mạng"
+    public/image/trang chủ.png            ← bộ nhận diện, thanh bên, thẻ gói
+    public/image/database khởi tạo.png    ← giao diện lúc ĐANG chạy tiến trình
+
+Màu lấy bằng cách đọc thẳng pixel của mấy ảnh đó (xem khối MÀU), không ước
+bằng mắt.
+
+Kịch bản (15 giây, không lời):
+
+  Cảnh 1 (5,0)  Màn "Đưa website lên mạng", bước 1 "Mã nguồn". Con trỏ kéo
+                `ttindex.html` thả vào thẻ "Tải file" — thẻ sáng viền cam.
+  Cảnh 2 (4,2)  Bước nhảy sang 3 "Đưa lên mạng". Thẻ tiến trình chạy từng
+                bước. Tới bước cấp SSL thì thẻ SSL bật ra GIỮA KHUNG HÌNH.
+  Cảnh 3 (2,8)  CAMERA ZOOM vào thẻ tiến trình. Database bật đèn xanh.
+  Cảnh 4 (3,0)  Camera lùi ra, trang AIRTEX bật ra giữa khung.
 
 HỆ TOẠ ĐỘ — cùng kỷ luật với `ve-s02.py`:
-
   · Không có số rời rạc; mọi vị trí suy từ khối HÌNH HỌC.
-  · Toạ độ bên trong dashboard là toạ độ TƯƠNG ĐỐI, `M()` cộng gốc vào.
   · `kiem_trong()` chặn thành phần thò ra ngoài khung hoặc ngoài khối cha.
-  · `kiem_camera()` chặn khung ngắm zoom ra ngoài mép clip — lỗi này không
-    báo gì, chỉ lòi nền trống ra ở rìa video.
+  · `kiem_dong()` chặn các dòng xếp chồng dọc cấn nhau.
+  · `kiem_camera()` chặn khung ngắm zoom lọt ra ngoài mép clip.
+  · `kiem_sao()` chặn cặp `*…*` bắc qua dấu `|` (xem chú thích ở hàm đó).
 
-BA CHỖ CỦA ĐỊNH DẠNG PHẢI BIẾT TRƯỚC, không thì dựng sai mà không hiểu vì sao:
-
-  1. Phần tử THUỘC VỀ MỘT CẢNH. Sang cảnh khác là biến mất. Muốn dashboard
-     đứng yên suốt ba cảnh thì phải KHAI LẠI ở từng cảnh — nên nó được viết
-     thành hàm `dashboard()` gọi ba lần.
-  2. `at` tính từ ĐẦU CẢNH, không phải từ đầu clip.
-  3. Con trỏ chuột nằm NGOÀI `#cam` nên không bị camera phóng theo. Chỉ dùng
-     nó ở cảnh không zoom.
+BA CHỖ CỦA ĐỊNH DẠNG PHẢI BIẾT TRƯỚC:
+  1. Phần tử thuộc về MỘT cảnh; sang cảnh khác là mất. Khung ứng dụng phải
+     khai lại ở cả bốn cảnh — viết thành hàm gọi bốn lần.
+  2. `at` tính từ ĐẦU CẢNH.
+  3. Con trỏ chuột nằm NGOÀI `#cam` nên camera không phóng nó theo. Chỉ dùng
+     ở cảnh không zoom.
 """
 import json
+import math
 import pathlib
 import sys
 
@@ -36,61 +44,61 @@ GOC = pathlib.Path('/home/coder/workspace/projects/clipVibehost/hosting-animatic
 OUT = GOC / 'scenes' / 'thu-trien-khai-html.json'
 KIEM = pathlib.Path(__file__).parent / f'kiem-{OUT.stem}.json'
 
-# ══ MÀU ════════════════════════════════════════════════════════════════════
-NEN      = '#eef1f6'
-NAV      = '#252b38'
-NAV_SANG = '#333c4e'
-GOI_NEN  = '#2f3849'
+# ══ MÀU — đọc pixel từ chính ảnh chụp sản phẩm ═════════════════════════════
+NEN_APP  = '#212230'   # nền trang + thanh bên
+MUC_SANG = '#383945'   # mục menu đang chọn
+GOI_NEN  = '#2a2b38'   # thẻ gói dưới chân thanh bên
+GOI_HUY  = '#40414c'   # huy hiệu "Gói Vibe Host Pro"
+CAM      = '#fd7401'   # cam thương hiệu (ô logo)
+CAM_CHU  = '#fd5d01'   # chữ "Hosting"
+CAM_BUOC = '#e77442'   # vòng tròn bước đang ở
+CAM_NUT  = '#eea17f'   # nút "Tiếp tục"
+CAM_MO   = '#fdf5f2'   # nền thẻ đang chọn
 GIAY     = '#ffffff'
-VIEN     = '#e3e7ee'
-CAM      = '#ed7225'
-CAM_MO   = '#fdece0'
-XAM_NEN  = '#f2f4f8'
-MUC      = '#1e2430'
-MUC_NAV  = '#e9ecf3'
-MUC_GOI  = '#aeb8ca'
-MO       = '#8a93a6'
-LUC      = '#1aa053'      # xanh lá "xong"
+VIEN     = '#e7e9ee'
+VIEN_MO  = '#f1f3f6'
+NEN_NHAT = '#f7f8fa'
+MUC      = '#1b2334'   # chữ tối trên nền trắng
+MO       = '#6f7789'
+NHAT     = '#9aa1b0'
+NAV_CHU  = '#b6bac6'   # chữ menu thường
+NAV_SANG = '#ffffff'
+LUC      = '#1aa053'
 LUC_MO   = '#e4f6ec'
-CHO      = '#c8cedb'      # xám "chưa tới"
-TIM      = '#2b1b46'      # nền trang AIRTEX (đọc từ chính trang đó)
-VANG     = '#f2c45a'      # vàng mặt trăng của trang AIRTEX
+CHO      = '#c8cedb'
+TIM      = '#2b1b46'   # nền trang AIRTEX
+VANG     = '#f2c45a'
 
 # ══ HÌNH HỌC ═══════════════════════════════════════════════════════════════
-DX, DY = 48, 48                 # góc trái trên dashboard
-DW, DH = W - 2 * DX, H - 2 * DY  # 1184 × 624
-SW = 196                        # bề rộng thanh bên
-MX = DX + SW                    # mép trái vùng chính (tuyệt đối)
-MW = DW - SW                    # bề rộng vùng chính = 988
-DAU_H = 84                      # chiều cao dải đầu vùng chính
+SW = 190                      # bề rộng thanh bên
+MX, MY = 198, 10              # góc trái trên thẻ trắng vùng chính
+MW, MH = W - MX - 8, H - 20    # 1074 × 700
+THANH_H = 56                  # dải tài khoản trên cùng
 
-LE_TRONG = 32                   # lề trong vùng chính
-COT_TRAI_W = 520
-COT_PHAI_W = 320
-NOI_DUNG_Y = DAU_H + 36         # mép trên hai cột (tương đối dashboard)
-NOI_DUNG_H = 400
-
-# tuyệt đối
-TX = MX + LE_TRONG                        # 276 — mép trái cột trái
-PX = TX + COT_TRAI_W + 36                 # 832 — mép trái cột phải
-NY = DY + NOI_DUNG_Y                      # 216
-
-# Khung ngắm khi zoom. Camera đặt điểm (mx,my) vào giữa khung, độc lập với
-# mức phóng: x = mx - W/2, y = my - H/2.
-ZOOM = 1.38
-# Mép trái khung ngắm phải nằm TRƯỚC chữ "Triển khai website" (ở x=276): ngắm
-# lệch phải thì nó cắt mất chữ đầu, nhìn như lỗi chứ không như cố ý.
-ZOOM_X = 730
-# Mép trên khung ngắm đặt đúng mép trên dashboard: ngắm cao hơn thì tiêu đề
-# "Triển khai website" bị cắt ngang mặt chữ.
-ZOOM_Y = DY + H / 2 / ZOOM
+LE = 34                       # lề trong vùng chính
+BODY_Y = MY + 160             # mép trên hai cột nội dung
+BODY_H = 400
+COT_W = 690                   # bề rộng thẻ nội dung
+COT_X = MX + LE               # 232
+PHAI_X = COT_X + COT_W + 22   # 944
+PHAI_W = MX + MW - LE / 2 - PHAI_X   # tới mép phải trừ lề
 
 MENU = ['Trang chủ', 'Triển khai website', 'Triển khai từ mẫu',
-        'Tạo database', 'Sao lưu', 'SSL & bảo mật']
+        'Tạo database', 'Sao lưu', 'Kết nối AI Agent']
 MENU_SANG = 1
-MENU_Y0, MENU_BUOC = 100, 34
-GOI_H = 104
-GOI_HANG = [('Dịch vụ', '5/10'), ('CPU', '1.4/4 core'), ('RAM', '0.9/8 GB')]
+MENU_Y0, MENU_BUOC = 88, 31
+GOI_HANG = [('Dịch vụ', '0/10'), ('CPU', '0/4 core'), ('RAM', '0/8 GB')]
+
+BUOC_TEN = ['Mã nguồn', 'Chuẩn bị', 'Đưa lên mạng']
+BUOC_X = [960, 1090, 1220]
+BUOC_Y = MY + 96
+
+# Khung ngắm khi zoom: camera đặt điểm (mx,my) vào giữa khung, độc lập với mức
+# phóng. Ngắm sao cho thẻ tiến trình (232…922 ngang, 170…570 dọc) lọt TRỌN vào
+# khung — cắt ngang mép thẻ thì nhìn như lỗi chứ không như cố ý. Mép trái khung
+# cũng phải qua khỏi thanh bên (kết thúc ở x=190), không thì lòi ra một dải tối.
+ZOOM = 1.5
+ZOOM_X, ZOOM_Y = 620, 400
 
 HE_SO_RONG = 0.62
 BU_RONG = 6
@@ -105,15 +113,8 @@ def cao_chu(s, size):
 
 
 # ══ DỰNG PHẦN TỬ ═══════════════════════════════════════════════════════════
-canhs = []          # [{id, duration, camera, elements}]
-els = None          # danh sách của cảnh đang mở
-hop = {}            # (canh, id) → (x, y, w, h)
-trong = {}          # id → id khối cha
-dem_id = {}         # để id không trùng khi khai lại dashboard ở nhiều cảnh
-dong_bang = []      # (cảnh, tên dòng, y trên, y dưới) — các dòng XẾP CHỒNG DỌC
-                    # trong bảng triển khai. Khai ra để `kiem_dong()` canh:
-                    # chúng đều là con của `db` nên phép kiểm con-trong-cha
-                    # không thấy gì, mà chồng nhau thì mất chữ.
+canhs, els = [], None
+hop, trong, dong_bang = {}, {}, []
 
 
 def mo_canh(id, giay, camera=None, camera_muot=None):
@@ -124,7 +125,6 @@ def mo_canh(id, giay, camera=None, camera_muot=None):
     if camera_muot is not None:
         c['cameraMove'] = camera_muot
     canhs.append(c)
-    return c
 
 
 def E(id, kind, x, y, w, h, *, chua=None, **kw):
@@ -138,7 +138,6 @@ def E(id, kind, x, y, w, h, *, chua=None, **kw):
     hop[(canhs[-1]['id'], id)] = (round(x), round(y), round(w or 0), round(h or 0))
     if chua:
         trong[id] = chua
-    return d
 
 
 def khoi(id, x, y, w, h, fill, *, r=10, at=None, vao='rise', dai=.45, xoay=None,
@@ -155,7 +154,7 @@ def khoi(id, x, y, w, h, fill, *, r=10, at=None, vao='rise', dai=.45, xoay=None,
     E(id, 'panel', x, y, w, h, chua=chua, **d)
 
 
-def chu(id, x, y, text, size=12, *, w=None, at=None, mau=None, align='left',
+def chu(id, x, y, text, size=11, *, w=None, at=None, mau=None, align='left',
         vao='rise', dai=.45, song=None, chua=None, **kw):
     if w is None:
         w = rong_chu(text, size)
@@ -171,353 +170,426 @@ def chu(id, x, y, text, size=12, *, w=None, at=None, mau=None, align='left',
     E(id, 'text', x, y, w, cao_chu(text, size), chua=chua, **d)
 
 
-def M(rx, ry):
-    """Toạ độ tương đối dashboard → tuyệt đối."""
-    return DX + rx, DY + ry
+def the(id, x, y, w, h, at, *, nen=GIAY, vien=VIEN, r=12, vao='rise', dai=.45,
+        chua=None, song=None):
+    """Thẻ trắng có viền mảnh. Định dạng không có `border` nên viền là một khối
+    lớn hơn 1px nằm dưới — trên nền trắng mà thiếu viền thì thẻ tan vào nền."""
+    khoi(f'{id}-v', x - 1, y - 1, w + 2, h + 2, vien, r=r + 1, at=at, vao=vao,
+         dai=dai, chua=chua, song=song)
+    khoi(id, x, y, w, h, nen, r=r, at=at, vao=vao, dai=dai, chua=chua, song=song)
 
 
-def dau_tick(id, cx, cy, R, mau, at, *, chua=None, day=None):
-    """Dấu tick vẽ bằng HAI THANH XOAY, không dùng ký tự.
-
-    Ký tự ✓ phụ thuộc phông máy đang chạy — máy này đã ra ô vuông với `＋` và
-    `⧉` rồi. Hai hình chữ nhật bo tròn xoay 45° thì máy nào cũng ra như nhau.
-    """
-    T = day or max(3, R * 0.19)
-    # A→B (xuống phải), B→C (lên phải). Toạ độ theo phần của R.
+def dau_tick(id, cx, cy, R, mau, at, *, chua=None, day=None, vao='fade'):
+    """Dấu tick vẽ bằng HAI THANH XOAY, không dùng ký tự — ký tự ✓ phụ thuộc
+    phông máy đang chạy (máy này đã ra ô vuông với `＋` và `⧉`)."""
+    T = day or max(2.4, R * 0.2)
     for i, (ax, ay, bx, by) in enumerate([(-.42, .02, -.10, .32), (-.10, .32, .44, -.30)]):
-        import math
         x1, y1, x2, y2 = ax * R, ay * R, bx * R, by * R
-        dai_thanh = math.hypot(x2 - x1, y2 - y1) + T * .3
+        d = math.hypot(x2 - x1, y2 - y1) + T * .3
         goc = math.degrees(math.atan2(y2 - y1, x2 - x1))
-        mx, my = (x1 + x2) / 2, (y1 + y2) / 2
-        khoi(f'{id}-t{i}', cx + mx - dai_thanh / 2, cy + my - T / 2,
-             dai_thanh, T, mau, r=T / 2, at=at, vao='fade', dai=.25,
-             xoay=goc, chua=chua)
+        khoi(f'{id}-t{i}', cx + (x1 + x2) / 2 - d / 2, cy + (y1 + y2) / 2 - T / 2,
+             d, T, mau, r=T / 2, at=at, vao=vao, dai=.25, xoay=goc, chua=chua)
 
 
-def bieu_tuong_db(id, x, y, w, h, mau, at, *, chua=None):
-    """Hình trụ database: nắp bo tròn + thân + đáy bo tròn."""
-    nap = max(6, h * 0.28)
-    khoi(f'{id}-than', x, y + nap / 2, w, h - nap, mau, r=2, at=at, vao='fade', chua=chua)
-    khoi(f'{id}-nap', x, y, w, nap, mau, r=nap / 2, at=at, vao='fade', chua=chua)
-    khoi(f'{id}-day', x, y + h - nap, w, nap, mau, r=nap / 2, at=at, vao='fade', chua=chua)
+def vien_dut(id, x, y, w, h, mau, at, *, day=2, net=13, khe=9, chua=None):
+    """Viền nét đứt rải bằng vòng lặp — đổi kích thước vùng là viền tự chạy lại."""
+    buoc = net + khe
+    for i, cx in enumerate(range(0, int(w - net) + 1, buoc)):
+        for cy, t in ((y, 'tr'), (y + h - day, 'du')):
+            khoi(f'{id}-{t}{i}', x + cx, cy, net, day, mau, r=day / 2, at=at,
+                 vao='fade', dai=.3, chua=chua)
+    for i, cy in enumerate(range(buoc, int(h - net) + 1, buoc)):
+        for cx, t in ((x, 'tra'), (x + w - day, 'ph')):
+            khoi(f'{id}-{t}{i}', cx, y + cy, day, net, mau, r=day / 2, at=at,
+                 vao='fade', dai=.3, chua=chua)
 
 
-# ══ DASHBOARD — khai lại nguyên vẹn ở mỗi cảnh ═════════════════════════════
-def dashboard(dong=False):
-    """Vẽ khung dashboard + thanh bên + dải đầu.
+# ══ KHUNG ỨNG DỤNG — khai lại nguyên vẹn ở mỗi cảnh ════════════════════════
+def khung_app(dong=False):
+    """Thanh bên + thẻ trắng vùng chính + dải tài khoản.
 
-    `dong=True` (cảnh 2, 3): mọi thứ đứng sẵn từ giây 0, không diễn lại. Nếu để
-    nó diễn lại thì mỗi lần sang cảnh cả dashboard nhấp nháy dựng lại từ đầu.
+    `dong=True` (cảnh 2, 3, 4): đứng sẵn từ giây 0, không diễn lại — để nó diễn
+    lại thì mỗi lần chuyển cảnh cả ứng dụng nhấp nháy dựng từ đầu.
     """
-    def t(x):
-        return 0 if dong else x
+    t = (lambda x: 0) if dong else (lambda x: x)
+    v = (lambda x: 'none') if dong else (lambda x: x)
 
-    def v(x):
-        return 'none' if dong else x
+    khoi('nen', 0, 0, W, H, NEN_APP, r=0, **{'in': {'kind': 'none', 'dur': .001}})
 
-    khoi('vien', DX - 2, DY - 2, DW + 4, DH + 4, '#dde2ea', r=20,
-         at=t(.12), vao=v('pop'))
-    khoi('db', DX, DY, DW, DH, GIAY, r=18, at=t(.15), vao=v('pop'))
-    khoi('nav', DX, DY, SW, DH, NAV, r=18, at=t(.18), vao=v('fade'), chua='db')
-
-    # logo
-    khoi('logo-o', *M(22, 26), 26, 26, CAM, r=13, at=t(.25), vao=v('pop'), chua='db')
-    chu('logo', *M(58, 28), 'Vibe Host', size=17, at=t(.27), mau=MUC_NAV, vao=v('rise'), chua='db')
-    chu('kglv', *M(22, 72), 'KHÔNG GIAN LÀM VIỆC', size=9, at=t(.3), mau=MUC_GOI,
-        vao=v('rise'), chua='db')
+    # ── thanh bên ─────────────────────────────────────────────────────────
+    khoi('logo-o', 14, 16, 26, 26, CAM, r=8, at=t(.15), vao=v('pop'))
+    chu('logo-ve', 14, 23, 'VE', size=11, w=26, align='center', at=t(.18),
+        mau='#ffffff', vao=v('fade'))
+    # `*Hosting*` lấy màu nhấn của clip — đúng cách trang thật tô chữ đó.
+    chu('logo-ten', 48, 22, 'Vibe *Hosting*', size=14, at=t(.2), mau=NAV_SANG,
+        vao=v('rise'))
+    khoi('logo-gap', 152, 20, 15, 13, '#565a68', r=3, at=t(.24), vao=v('fade'))
+    chu('kglv', 14, 62, 'KHÔNG GIAN LÀM VIỆC', size=8, at=t(.28), mau='#7c8598',
+        vao=v('rise'))
 
     for i, ten in enumerate(MENU):
-        ry = MENU_Y0 + i * MENU_BUOC
+        y = MENU_Y0 + i * MENU_BUOC
         if i == MENU_SANG:
-            khoi('menu-sang', *M(12, ry - 7), SW - 24, 30, NAV_SANG, r=8,
-                 at=t(.34), vao=v('fade'), chua='db')
-        khoi(f'menu-ic{i}', *M(28, ry + 3), 12, 12,
-             CAM if i == MENU_SANG else '#5b6577', r=3,
-             at=t(.34 + i * .035), vao=v('fade'), chua='db')
-        chu(f'menu{i}', *M(50, ry), ten, size=11, w=SW - 50 - 12,
-            at=t(.34 + i * .035), mau=MUC_NAV if i == MENU_SANG else MUC_GOI,
-            vao=v('rise'), chua='db')
+            khoi('menu-sang', 8, y - 6, SW - 16, 27, MUC_SANG, r=8, at=t(.32),
+                 vao=v('fade'))
+        khoi(f'menu-ic{i}', 20, y + 2, 13, 13, CAM if i == MENU_SANG else '#5e6373',
+             r=3, at=t(.32 + i * .035), vao=v('fade'))
+        chu(f'menu{i}', 42, y, ten, size=11, w=SW - 42 - 10,
+            at=t(.32 + i * .035), mau=NAV_SANG if i == MENU_SANG else NAV_CHU,
+            vao=v('rise'))
 
-    gy = DH - GOI_H - 22
-    khoi('goi', *M(12, gy), SW - 24, GOI_H, GOI_NEN, r=10, at=t(.56), vao=v('fade'), chua='db')
-    chu('goi-ten', *M(24, gy + 11), 'Gói Vibe Host Pro', size=10, at=t(.58),
-        mau=MUC_NAV, vao=v('rise'), chua='db')
+    gy = H - 116
+    khoi('goi', 8, gy, SW - 16, 100, GOI_NEN, r=10, at=t(.56), vao=v('fade'))
+    chu('goi-ten', 20, gy + 12, 'VAYS', size=11, at=t(.58), mau=NAV_SANG,
+        vao=v('rise'), chua='goi')
+    khoi('goi-huy', 76, gy + 10, 96, 17, GOI_HUY, r=8, at=t(.6), vao=v('fade'), chua='goi')
+    chu('goi-huy-c', 76, gy + 14, 'Gói Vibe Host Pro', size=8, w=96, align='center',
+        at=t(.62), mau='#d6d9e2', vao=v('fade'), chua='goi-huy')
     for i, (k, val) in enumerate(GOI_HANG):
-        ry = gy + 38 + i * 21
-        chu(f'goi-k{i}', *M(24, ry), k, size=10, w=64, at=t(.6 + i * .04),
-            mau=MUC_GOI, vao=v('rise'), chua='db')
-        chu(f'goi-v{i}', *M(SW - 24 - 76, ry), val, size=10, w=76, align='right',
-            at=t(.6 + i * .04), mau=MUC_NAV, vao=v('rise'), chua='db')
+        ry = gy + 42 + i * 20
+        chu(f'goi-k{i}', 20, ry, k, size=9, w=70, at=t(.64 + i * .04), mau='#9aa0ae',
+            vao=v('rise'), chua='goi')
+        chu(f'goi-v{i}', SW - 20 - 62, ry, val, size=9, w=62, align='right',
+            at=t(.64 + i * .04), mau='#dfe2ea', vao=v('rise'), chua='goi')
 
-    # dải đầu vùng chính
-    chu('dau-ten', *M(SW + LE_TRONG, 28), 'Triển khai website', size=20,
-        at=t(.4), vao=v('rise'), chua='db')
-    chu('dau-phu', *M(SW + LE_TRONG, 57), 'airtex-trungthu.vibehost.vn', size=11,
-        at=t(.44), mau=MO, vao=v('rise'), chua='db')
-    khoi('dau-gach', *M(SW, DAU_H), MW, 1, VIEN, r=0, at=t(.46), vao=v('fade'), chua='db')
-    for i in range(3):
-        khoi(f'dau-ic{i}', *M(DW - 40 - i * 32, 34), 14, 14, '#c8cedb', r=4,
-             at=t(.48 + i * .03), vao=v('fade'), chua='db')
+    # ── thẻ trắng vùng chính ──────────────────────────────────────────────
+    khoi('app', MX, MY, MW, MH, GIAY, r=14, at=t(.12), vao=v('pop'))
 
-
-# ══ CỘT PHẢI — ba hàng trạng thái ══════════════════════════════════════════
-# (nhãn, y tương đối trong cột)
-HANG = [('Chứng chỉ SSL', 0), ('Database', 100), ('CDN & bộ nhớ đệm', 200)]
-HANG_H = 84
-
-
-def the_trang_thai(i, ten, ry, mau_cham, phu, mau_phu, at, *, hau='', vao='rise',
-                   nhuong=None):
-    """Một thẻ trạng thái ở cột phải. `hau` cho phép khai lại cùng thẻ với id khác.
-
-    `nhuong` là giây mà thẻ XANH sẽ đè lên thẻ này. Chữ và chấm của thẻ xám phải
-    tan TRƯỚC mốc đó — nếu để chúng cùng mờ chuyển với thẻ xanh thì trong khoảng
-    giao nhau hai lớp chữ hiện chồng lên nhau, đọc thành một đống nhoè.
-    Riêng nền thẻ thì cứ chồng, đổi màu thôi nên không sao.
-    """
-    y = NY + ry
-    idp = f'tt{i}{hau}'
-    tan = {}
-    if nhuong is not None:
-        tan = {'song': max(.01, nhuong - .2), 'out': {'kind': 'fade', 'dur': .18}}
-    khoi(idp, PX, y, COT_PHAI_W, HANG_H, XAM_NEN, r=12, at=at, vao=vao, chua='db')
-    khoi(f'{idp}-cham', PX + 18, y + 18, 12, 12, mau_cham, r=6, at=at + .04,
-         vao='pop', chua=idp, **tan)
-    chu(f'{idp}-ten', PX + 42, y + 14, ten, size=13, at=at + .04, chua=idp, **tan)
-    chu(f'{idp}-phu', PX + 42, y + 38, phu, size=11, at=at + .07, mau=mau_phu,
-        chua=idp, **tan)
-    return idp
+    # dải tài khoản
+    R = MX + MW
+    khoi('tb-en', R - 238, MY + 18, 34, 24, NEN_NHAT, r=6, at=t(.42), vao=v('fade'), chua='app')
+    chu('tb-en-c', R - 238, MY + 24, 'EN', size=9, w=34, align='center',
+        at=t(.44), mau=MO, vao=v('fade'), chua='tb-en')
+    khoi('tb-toi', R - 192, MY + 18, 24, 24, NEN_NHAT, r=12, at=t(.44), vao=v('fade'), chua='app')
+    khoi('tb-toi-c', R - 186, MY + 24, 12, 12, '#8b93a3', r=6, at=t(.46), vao=v('fade'), chua='tb-toi')
+    khoi('tb-vach', R - 160, MY + 20, 1, 20, VIEN, r=0, at=t(.46), vao=v('fade'), chua='app')
+    khoi('tb-ava', R - 146, MY + 17, 26, 26, CAM, r=7, at=t(.48), vao=v('pop'), chua='app')
+    chu('tb-ava-c', R - 146, MY + 24, 'VE', size=10, w=26, align='center',
+        at=t(.5), mau='#ffffff', vao=v('fade'), chua='tb-ava')
+    chu('tb-ten', R - 114, MY + 17, 'Nguyễn văn mười', size=10, w=100,
+        at=t(.5), vao=v('rise'), chua='app')
+    chu('tb-mail', R - 114, MY + 32, 'quynd@matbao.com', size=8, w=100,
+        at=t(.52), mau=NHAT, vao=v('rise'), chua='app')
+    khoi('tb-gach', MX, MY + THANH_H, MW, 1, VIEN_MO, r=0, at=t(.54), vao=v('fade'), chua='app')
 
 
-def vien_dut(id, x, y, w, h, mau, at, *, day=2, net=14, khe=10, chua=None):
-    """Viền nét đứt — định dạng không có `border`, nên rải từng vạch nhỏ.
+def dai_buoc(dang, dong=False):
+    """Dải ba bước ở góc phải trên. `dang` là chỉ số bước đang đứng (0-based);
+    các bước trước nó hiện dấu tick."""
+    t = (lambda x: 0) if dong else (lambda x: x)
+    v = (lambda x: 'none') if dong else (lambda x: x)
+    for i, ten in enumerate(BUOC_TEN):
+        cx = BUOC_X[i]
+        if i:
+            khoi(f'bn{i}', BUOC_X[i - 1] + 15, BUOC_Y - 1, cx - BUOC_X[i - 1] - 30, 2,
+                 CAM_BUOC if i <= dang else '#dfe6e6', r=1, at=t(.6), vao=v('fade'), chua='app')
+        xong = i < dang
+        khoi(f'bo{i}', cx - 13, BUOC_Y - 13, 26, 26,
+             CAM_BUOC if i <= dang else '#edf1f1', r=13, at=t(.62 + i * .05),
+             vao=v('pop'), chua='app')
+        if xong:
+            dau_tick(f'bt{i}', cx, BUOC_Y, 9, '#ffffff', t(.66 + i * .05), chua='app')
+        else:
+            chu(f'bs{i}', cx - 13, BUOC_Y - 6, str(i + 1), size=11, w=26, align='center',
+                at=t(.66 + i * .05), mau='#ffffff' if i == dang else NHAT,
+                vao=v('fade'), chua='app')
+        chu(f'bl{i}', cx - 46, BUOC_Y + 20, ten, size=9, w=92, align='center',
+            at=t(.68 + i * .05), mau=MUC if i <= dang else NHAT, vao=v('rise'), chua='app')
 
-    Vạch sinh bằng vòng lặp chứ không gõ tay: đổi kích thước vùng là viền tự
-    chạy lại cho khít, không ai phải đếm.
-    """
-    n = 0
-    buoc = net + khe
-    for cx in range(0, int(w - net) + 1, buoc):
-        for cy, ten in ((y, 'tr'), (y + h - day, 'du')):
-            khoi(f'{id}-{ten}{n}', x + cx, cy, net, day, mau, r=day / 2,
-                 at=at, vao='fade', dai=.3, chua=chua)
-        n += 1
-    n = 0
-    for cy in range(buoc, int(h - net) + 1, buoc):
-        for cx, ten in ((x, 'tra'), (x + w - day, 'ph')):
-            khoi(f'{id}-{ten}{n}', cx, y + cy, day, net, mau, r=day / 2,
-                 at=at, vao='fade', dai=.3, chua=chua)
-        n += 1
+
+def cot_phai(tom_tat, at, *, hau='', dong=False):
+    """Cột phải: Tóm tắt triển khai · Starter AI đề xuất · Lưu ý."""
+    v = 'none' if dong else 'rise'
+    x, w = PHAI_X, PHAI_W
+    the(f'tt{hau}', x, BODY_Y, w, 138, at, vao='none' if dong else 'rise', chua='app')
+    chu(f'tt{hau}-td', x + 22, BODY_Y + 20, 'Tóm tắt triển khai', size=13, at=at + .04,
+        vao=v, chua=f'tt{hau}')
+    for i, (k, val, mau) in enumerate(tom_tat):
+        ry = BODY_Y + 54 + i * 26
+        chu(f'tt{hau}-k{i}', x + 22, ry, k, size=10, w=110, at=at + .06 + i * .04,
+            mau=MO, vao=v, chua=f'tt{hau}')
+        chu(f'tt{hau}-v{i}', x + w - 22 - 150, ry, val, size=10, w=150, align='right',
+            at=at + .06 + i * .04, mau=mau, vao=v, chua=f'tt{hau}')
+
+    y2 = BODY_Y + 152
+    the(f'ai{hau}', x, y2, w, 86, at + .1, nen=NEN_NHAT, vien=VIEN_MO,
+        vao='none' if dong else 'rise', chua='app')
+    khoi(f'ai{hau}-ic', x + 20, y2 + 18, 13, 13, CAM, r=3, at=at + .12, vao='fade', chua=f'ai{hau}')
+    chu(f'ai{hau}-td', x + 40, y2 + 16, 'Starter — AI đề xuất', size=11, at=at + .12,
+        vao=v, chua=f'ai{hau}')
+    chu(f'ai{hau}-p', x + 40, y2 + 40, 'Phù hợp cho lần đưa website lên|mạng đầu tiên; đổi được sau.',
+        size=9, w=w - 60, at=at + .14, mau=MO, vao=v, chua=f'ai{hau}')
+
+    y3 = y2 + 100
+    LUU_Y = ['Website được cấp SSL miễn phí.', 'Triển khai thường mất 1–3 phút.',
+             'Nâng cấp tài nguyên bất kỳ lúc nào.']
+    the(f'ly{hau}', x, y3, w, 110, at + .16, nen=NEN_NHAT, vien=VIEN_MO,
+        vao='none' if dong else 'rise', chua='app')
+    khoi(f'ly{hau}-ic', x + 20, y3 + 16, 13, 13, CAM, r=3, at=at + .18, vao='fade', chua=f'ly{hau}')
+    chu(f'ly{hau}-td', x + 40, y3 + 14, 'Lưu ý', size=11, at=at + .18, vao=v, chua=f'ly{hau}')
+    for i, d in enumerate(LUU_Y):
+        ry = y3 + 40 + i * 22
+        dau_tick(f'ly{hau}-t{i}', x + 27, ry + 6, 7, LUC, at + .2 + i * .04, chua=f'ly{hau}')
+        chu(f'ly{hau}-d{i}', x + 40, ry, d, size=9, w=w - 60, at=at + .2 + i * .04,
+            mau=MO, vao=v, chua=f'ly{hau}')
 
 
-def the_tep(id, x, y, at, *, vao='rise', dai=.45, song=None, chua=None):
-    """Thẻ tệp `ttindex.html` — thứ được kéo thả."""
-    w, h = 250, 64
-    khoi(id, x, y, w, h, GIAY, r=12, at=at, vao=vao, dai=dai, song=song, chua=chua)
-    khoi(f'{id}-o', x + 14, y + 14, 36, 36, CAM_MO, r=9, at=at + .03, vao='fade',
+# ══════════════════════════════════════════════════════════════════════════
+# CẢNH 1 — chọn nguồn, kéo thả tệp vào thẻ "Tải file"
+# ══════════════════════════════════════════════════════════════════════════
+C1 = 5.0
+mo_canh('c1-keo-tha', C1)
+khung_app()
+dai_buoc(0)
+
+chu('td', MX + LE, MY + 84, 'Đưa website lên mạng', size=23, at=.7, chua='app')
+chu('td-phu', MX + LE, MY + 118,
+    'Chọn mã nguồn, kiểm tra thông tin rồi để VAYS lo phần kỹ thuật',
+    size=11, w=440, at=.74, mau=MO, chua='app')
+
+the('nd', COT_X, BODY_Y, COT_W, BODY_H, .8, chua='app')
+chu('nd-td', COT_X + 24, BODY_Y + 22, 'Chọn nguồn', size=15, at=.84, chua='nd')
+
+# năm thẻ nguồn, đúng thứ tự và câu chữ của sản phẩm
+NGUON = [
+    ('Tải file', 'Kéo-thả hoặc chọn|file .zip, .html, .htm'),
+    ('Dán HTML', 'Dán trực tiếp mã|HTML vào ô soạn thảo'),
+    ('GitHub', 'Kết nối GitHub|(OAuth), tự deploy'),
+    ('Git URL', 'Clone từ URL repo|công khai'),
+    ('Vercel', 'Import từ Vercel|Project URL + Token'),
+]
+NG_X, NG_W, NG_H = COT_X + 24, (COT_W - 48 - 24) / 3, 62
+NG_Y = [BODY_Y + 52, BODY_Y + 52 + NG_H + 12]
+T_CHON = 2.75          # giây thẻ "Tải file" được chọn
+
+
+def the_nguon(i, ten, phu, at):
+    x = NG_X + (i % 3) * (NG_W + 12)
+    y = NG_Y[i // 3]
+    the(f'ng{i}', x, y, NG_W, NG_H, at, nen='#fcfcfd', vien='#eceff4', r=10, chua='nd')
+    khoi(f'ng{i}-o', x + 12, y + 16, 30, 30, '#f2f4f8', r=8, at=at + .03, vao='pop', chua=f'ng{i}')
+    chu(f'ng{i}-t', x + 50, y + 13, ten, size=11, w=NG_W - 60, at=at + .04, chua=f'ng{i}')
+    chu(f'ng{i}-p', x + 50, y + 31, phu, size=8, w=NG_W - 60, at=at + .06, mau=MO, chua=f'ng{i}')
+    return x, y
+
+
+for i, (ten, phu) in enumerate(NGUON):
+    the_nguon(i, ten, phu, .9 + i * .07)
+
+# thẻ "Tải file" sáng viền cam khi tệp rơi vào
+TF_X, TF_Y = NG_X, NG_Y[0]
+khoi('ng0-vien', TF_X - 2, TF_Y - 2, NG_W + 4, NG_H + 4, CAM_BUOC, r=12,
+     at=T_CHON, vao='fade', dai=.3, chua='nd')
+khoi('ng0-nen', TF_X, TF_Y, NG_W, NG_H, CAM_MO, r=10, at=T_CHON, vao='fade', dai=.3, chua='nd')
+khoi('ng0-o2', TF_X + 12, TF_Y + 16, 30, 30, '#fbe3d5', r=8, at=T_CHON + .04, vao='fade', chua='ng0-nen')
+chu('ng0-t2', TF_X + 50, TF_Y + 13, 'Tải file', size=11, w=NG_W - 60, at=T_CHON + .04, chua='ng0-nen')
+chu('ng0-p2', TF_X + 50, TF_Y + 31, 'ttindex.html  ·  68 KB', size=8, w=NG_W - 60,
+    at=T_CHON + .06, mau=CAM_CHU, chua='ng0-nen')
+khoi('ng0-dau', TF_X + NG_W - 22, TF_Y + 8, 15, 15, CAM_BUOC, r=8, at=T_CHON + .1,
+     vao='pop', dai=.35, chua='ng0-nen')
+dau_tick('ng0-tick', TF_X + NG_W - 14.5, TF_Y + 15.5, 5.5, '#ffffff', T_CHON + .16,
+         chua='ng0-nen', day=1.8)
+
+# ── khu "Tải file" bên dưới lưới nguồn ────────────────────────────────────
+TAI_Y = NG_Y[1] + NG_H + 24
+khoi('nd-gach', COT_X + 24, TAI_Y - 12, COT_W - 48, 1, VIEN_MO, r=0, at=1.3,
+     vao='fade', chua='nd')
+chu('tai-td', COT_X + 24, TAI_Y, 'Tải file', size=13, at=1.32, chua='nd')
+THA_X, THA_Y = COT_X + 24, TAI_Y + 26
+THA_W, THA_H = COT_W - 48, 104
+khoi('tha', THA_X, THA_Y, THA_W, THA_H, '#fafbfc', r=10, at=1.36, vao='fade', chua='nd')
+vien_dut('tha-v', THA_X, THA_Y, THA_W, THA_H, '#cfd6e3', 1.4, chua='nd')
+khoi('tha-o', THA_X + THA_W / 2 - 19, THA_Y + 20, 38, 38, '#f2f4f8', r=10, at=1.44,
+     vao='pop', song=T_CHON - 1.44 - .3, chua='nd', **{'out': {'kind': 'fade', 'dur': .2}})
+chu('tha-c', THA_X, THA_Y + 68, 'Kéo-thả tệp .html vào đây', size=11, w=THA_W,
+    align='center', at=1.5, mau=MO, song=T_CHON - 1.5 - .3, chua='nd',
+    **{'out': {'kind': 'fade', 'dur': .2}})
+
+# thẻ tệp: bản nổi ở góc trên, và bản rơi vào ô
+def the_tep(id, x, y, at, *, vao='rise', song=None, chua=None):
+    w, h = 232, 58
+    the(id, x, y, w, h, at, vao=vao, r=10, song=song, chua=chua)
+    khoi(f'{id}-o', x + 13, y + 13, 32, 32, CAM_MO, r=8, at=at + .03, vao='fade',
          song=song, chua=id)
-    chu(f'{id}-ic', x + 14, y + 24, '< >', size=13, w=36, align='center',
-        at=at + .05, mau=CAM, vao='fade', song=song, chua=id)
-    chu(f'{id}-ten', x + 62, y + 14, 'ttindex.html', size=13, at=at + .05,
-        vao='fade', song=song, chua=id)
-    chu(f'{id}-phu', x + 62, y + 36, 'HTML  ·  68 KB', size=10, at=at + .07,
+    chu(f'{id}-ic', x + 13, y + 22, '< >', size=12, w=32, align='center', at=at + .05,
+        mau=CAM_CHU, vao='fade', song=song, chua=f'{id}-o')
+    chu(f'{id}-t', x + 56, y + 12, 'ttindex.html', size=12, at=at + .05, vao='fade',
+        song=song, chua=id)
+    chu(f'{id}-p', x + 56, y + 32, 'HTML  ·  68 KB', size=9, w=140, at=at + .07,
         mau=MO, vao='fade', song=song, chua=id)
 
 
-# ══════════════════════════════════════════════════════════════════════════
-# CẢNH 1 — dashboard hiện ra, kéo thả tệp vào
-# ══════════════════════════════════════════════════════════════════════════
-C1 = 4.8
-mo_canh('c1-keo-tha', C1)
-khoi('nen', 0, 0, W, H, NEN, r=0, **{'in': {'kind': 'none', 'dur': .001}})
-dashboard()
+the_tep('tep-a', MX + MW - 268, MY + 78, 1.25, song=1.45)
+the_tep('tep-b', THA_X + (THA_W - 232) / 2, THA_Y + (THA_H - 58) / 2, T_CHON - .1,
+        vao='fall', chua='nd')
 
-# vùng nhận tệp
-khoi('tha', TX, NY, COT_TRAI_W, NOI_DUNG_H, '#fafbfd', r=14, at=.8, vao='fade', chua='db')
-vien_dut('tha-v', TX, NY, COT_TRAI_W, NOI_DUNG_H, '#cfd6e3', .84, chua='db')
-T_THA = 2.8         # giây tệp chạm vùng nhận
-khoi('tha-o', TX + COT_TRAI_W / 2 - 27, NY + 96, 54, 54, XAM_NEN, r=14, at=.95,
-     vao='pop', song=T_THA - .95 - .45, chua='db',
-     **{'out': {'kind': 'fade', 'dur': .25}})
-khoi('tha-tep', TX + COT_TRAI_W / 2 - 13, NY + 108, 26, 30, '#b9c1d0', r=4, at=1.0,
-     vao='pop', song=T_THA - 1.0 - .45, chua='db',
-     **{'out': {'kind': 'fade', 'dur': .25}})
-chu('tha-chu', TX, NY + 176, 'Kéo tệp .html vào đây', size=17, w=COT_TRAI_W,
-    align='center', at=1.05, song=T_THA - 1.05 - .45, chua='db',
-    **{'out': {'kind': 'fade', 'dur': .25}})
-chu('tha-phu', TX, NY + 210, 'hoặc bấm để chọn từ máy', size=11, w=COT_TRAI_W,
-    align='center', at=1.1, mau=MO, song=T_THA - 1.1 - .45, chua='db',
-    **{'out': {'kind': 'fade', 'dur': .25}})
+# nút Tiếp tục
+NUT_Y = BODY_Y + BODY_H - 52
+khoi('nut', COT_X + COT_W - 24 - 118, NUT_Y, 118, 34, CAM_NUT, r=17, at=1.6, vao='fade', chua='nd')
+chu('nut-c', COT_X + COT_W - 24 - 118, NUT_Y + 10, 'Tiếp tục  →', size=11, w=118,
+    align='center', at=1.62, mau='#ffffff', chua='nut')
 
-# ba thẻ trạng thái, đều đang xám
-for i, (ten, ry) in enumerate(HANG):
-    the_trang_thai(i, ten, ry, CHO, ['Chưa cấp', 'Chưa kết nối', 'Chưa bật'][i],
-                   MO, 1.2 + i * .12)
+cot_phai([('Nguồn', 'Chưa chọn', NHAT), ('Tên website', 'Chưa đặt', NHAT),
+          ('Địa chỉ', 'Chưa đặt', NHAT)], 1.0)
+cot_phai([('Nguồn', 'Tải file', CAM_CHU), ('Tên website', 'airtex-trungthu', MUC),
+          ('Địa chỉ', 'Chưa đặt', NHAT)], T_CHON + .25, hau='x')
 
-# thẻ tệp nổi ở góc trên phải, rồi biến mất đúng lúc bản kia rơi xuống
-the_tep('tep-a', 900, 96, 1.3, song=1.5)
-
-# con trỏ: tới nhặt tệp, kéo xuống vùng nhận, thả
+# con trỏ: nhặt tệp ở góc trên phải, kéo xuống thả vào thẻ "Tải file"
 els.append({
     'id': 'tro', 'kind': 'pointer', 'x': 0, 'y': 0,
-    'path': [{'t': 1.0, 'x': 1235, 'y': 46}, {'t': 1.7, 'x': 1004, 'y': 126},
-             {'t': 1.95, 'x': 1004, 'y': 126}, {'t': 2.8, 'x': 545, 'y': 320},
-             {'t': 4.4, 'x': 545, 'y': 320}],
-    'clicks': [{'t': 1.8, 'x': 1004, 'y': 126}, {'t': 2.85, 'x': 545, 'y': 320}],
+    'path': [{'t': .95, 'x': W - 20, 'y': 40},
+             {'t': 1.62, 'x': MX + MW - 160, 'y': MY + 106},
+             {'t': 1.9, 'x': MX + MW - 160, 'y': MY + 106},
+             {'t': 2.72, 'x': TF_X + NG_W / 2, 'y': TF_Y + NG_H / 2},
+             {'t': 4.6, 'x': TF_X + NG_W / 2, 'y': TF_Y + NG_H / 2}],
+    'clicks': [{'t': 1.75, 'x': MX + MW - 160, 'y': MY + 106},
+               {'t': 2.78, 'x': TF_X + NG_W / 2, 'y': TF_Y + NG_H / 2}],
 })
 
-# tệp rơi vào ô, ô sáng lên màu cam
-khoi('tha-sang', TX, NY, COT_TRAI_W, NOI_DUNG_H, '#fdf3ec', r=14, at=3.1,
-     vao='fade', dai=.3, chua='db')
-vien_dut('tha-vs', TX, NY, COT_TRAI_W, NOI_DUNG_H, CAM, 3.12, chua='db')
-the_tep('tep-b', TX + (COT_TRAI_W - 250) / 2, NY + (NOI_DUNG_H - 64) / 2 - 20,
-        2.85, vao='fall', **{'chua': 'db'})
-chu('tha-nhan', TX, NY + NOI_DUNG_H / 2 + 44, 'Đã nhận tệp — sẵn sàng triển khai',
-    size=12, w=COT_TRAI_W, align='center', at=3.5, mau=CAM, chua='db')
-
 
 # ══════════════════════════════════════════════════════════════════════════
-# BẢNG TRIỂN KHAI — dùng chung cảnh 2 và 3
+# THẺ TIẾN TRÌNH — dựng theo `public/image/database khởi tạo.png`
 # ══════════════════════════════════════════════════════════════════════════
-BUOC = ['Tải tệp lên', 'Cài đặt máy chủ', 'Cấp chứng chỉ SSL', 'Kết nối database']
-VACH_N = 26                      # số vạch của thanh tiến trình
-VACH_KHE = 3
-BUOC_BUOC = 46                   # khoảng cách dọc giữa hai bước
+BUOC_CHAY = [
+    ('Tải mã nguồn', 'Đang tải ttindex.html lên máy chủ…'),
+    ('Cài đặt máy chủ', 'Dựng môi trường chạy web tĩnh…'),
+    ('Cấp chứng chỉ SSL', 'Xin chứng chỉ Let\'s Encrypt…'),
+    ('Kết nối database', 'Gắn cơ sở dữ liệu airtex_db…'),
+]
+HANG_Y0, HANG_BUOC = BODY_Y + 142, 44
+VACH_N, VACH_KHE = 30, 3
 
 
-def bang_trien_khai(tieu_de, vach_da, vach_toi, moc, *, hau='', t0=.18, buoc=.1):
-    """Bảng "đang triển khai": thanh vạch + bốn bước + (tuỳ chọn) thẻ xem trước.
+def the_tien_trinh(moc, vach_da, vach_toi, *, hau='', t0=.15, buoc=.09, phan_tram=None):
+    """`moc[i]`: None = chưa bắt đầu · 0 = xong sẵn · >0 = đánh dấu xong ở giây đó.
+    Bước ngay sau bước xong cuối cùng được coi là ĐANG CHẠY."""
+    the(f'tk{hau}', COT_X, BODY_Y, COT_W, BODY_H, 0, vao='none', chua='app')
+    chu(f'tk{hau}-td', COT_X + 26, BODY_Y + 22, 'Đưa website lên mạng', size=15,
+        at=0, vao='none', chua=f'tk{hau}')
+    chu(f'tk{hau}-p', COT_X + 26, BODY_Y + 46, 'Hệ thống đang triển khai ttindex.html — 68 KB',
+        size=10, at=0, vao='none', mau=MO, chua=f'tk{hau}')
+    khoi(f'tk{hau}-g', COT_X + 26, BODY_Y + 74, COT_W - 52, 1, VIEN_MO, r=0,
+         at=0, vao='none', chua=f'tk{hau}')
+    chu(f'tk{hau}-td2', COT_X + 26, BODY_Y + 92, 'Đang đưa website lên mạng…', size=13,
+        at=0, vao='none', chua=f'tk{hau}')
+    chu(f'tk{hau}-p2', COT_X + 26, BODY_Y + 116,
+        'Hệ thống đang xử lý — quá trình chạy nền, bạn có thể chờ tại đây.',
+        size=10, w=COT_W - 60, at=0, vao='none', mau=MO, chua=f'tk{hau}')
+    dong_bang.append((canhs[-1]['id'], 'phần đầu thẻ', BODY_Y + 92, BODY_Y + 130))
 
-    `vach_da` là số vạch ĐÃ sáng sẵn từ đầu cảnh, `vach_toi` là số vạch sáng khi
-    cảnh kết thúc. Tách hai con số này ra vì cảnh 3 phải nối tiếp cảnh 2: để
-    chung một tham số thì sang cảnh mới cả thanh chạy lại từ số không, nhìn như
-    quay ngược.
+    xong_cuoi = max([i for i, m in enumerate(moc) if m is not None], default=-1)
+    for i, (ten, phu) in enumerate(BUOC_CHAY):
+        y = HANG_Y0 + i * HANG_BUOC
+        dong_bang.append((canhs[-1]['id'], f'bước {i + 1} · {ten}', y, y + 34))
+        m = moc[i]
+        chay = m is None and i == xong_cuoi + 1
+        if m is None:
+            khoi(f'tk{hau}-o{i}', COT_X + 26, y + 1, 17, 17,
+                 '#fdf0e9' if chay else '#f4f6f9', r=9, at=0, vao='none', chua=f'tk{hau}')
+            khoi(f'tk{hau}-r{i}', COT_X + 30, y + 5, 9, 9,
+                 CAM_BUOC if chay else '#dfe3ea', r=5, at=0, vao='none', chua=f'tk{hau}-o{i}')
+        else:
+            khoi(f'tk{hau}-o{i}', COT_X + 26, y + 1, 17, 17, LUC_MO, r=9,
+                 at=m, vao='none' if m == 0 else 'pop', dai=.3, chua=f'tk{hau}')
+            dau_tick(f'tk{hau}-k{i}', COT_X + 34.5, y + 9.5, 6, LUC, m + (0 if m == 0 else .05),
+                     chua=f'tk{hau}', day=1.9)
+        chu(f'tk{hau}-t{i}', COT_X + 54, y, ten, size=11.5, at=m or 0,
+            vao='none' if (m is None or m == 0) else 'rise',
+            mau=None if (m is not None or chay) else NHAT, chua=f'tk{hau}')
+        if chay:
+            bx = COT_X + 54 + rong_chu(ten, 11.5) + 8
+            khoi(f'tk{hau}-b{i}', bx, y - 1, 58, 16, NEN_NHAT, r=8, at=0, vao='none', chua=f'tk{hau}')
+            chu(f'tk{hau}-bc{i}', bx, y + 2, 'Đang chạy', size=8, w=58, align='center',
+                at=0, vao='none', mau=MO, chua=f'tk{hau}-b{i}')
+        chu(f'tk{hau}-s{i}', COT_X + 54, y + 18,
+            phu if (m is not None or chay) else 'Chưa bắt đầu', size=9,
+            w=COT_W - 90, at=m or 0, vao='none' if (m is None or m == 0) else 'rise',
+            mau=MO if (m is not None or chay) else NHAT, chua=f'tk{hau}')
 
-    `moc[i]`: None = chưa tới · 0 = đã xong từ trước · >0 = đánh dấu ở giây đó.
-    """
-    khoi(f'bang{hau}', TX, NY, COT_TRAI_W, NOI_DUNG_H, '#fafbfd', r=14,
-         at=0, vao='none', chua='db')
-    chu(f'bang{hau}-td', TX + 28, NY + 26, tieu_de, size=16, at=0, vao='none', chua='db')
-    chu(f'bang{hau}-phu', TX + 28, NY + 54, 'ttindex.html  ·  68 KB', size=11,
-        at=0, vao='none', mau=MO, chua='db')
-
-    # Thanh tiến trình là NHIỀU VẠCH sáng dần, không phải một khối phình ra —
-    # định dạng không cho đổi bề rộng theo thời gian.
-    tw = COT_TRAI_W - 56
+    # thanh tiến trình: nhiều vạch sáng dần — không đổi được bề rộng theo thời gian
+    ty = BODY_Y + BODY_H - 78
+    dong_bang.append((canhs[-1]['id'], 'thanh tiến trình', ty, ty + 6))
+    tw = COT_W - 52
     vw = (tw - VACH_KHE * (VACH_N - 1)) / VACH_N
     for i in range(VACH_N):
         if i < vach_da:
-            mau, at_, vao = CAM, 0, 'none'
+            mau, at_, vao = CAM_BUOC, 0, 'none'
         elif i < vach_toi:
-            mau, at_, vao = CAM, round(t0 + (i - vach_da) * buoc, 2), 'pop'
+            mau, at_, vao = CAM_BUOC, round(t0 + (i - vach_da) * buoc, 2), 'pop'
         else:
-            mau, at_, vao = '#e6eaf1', 0, 'none'
-        khoi(f'bang{hau}-v{i}', TX + 28 + i * (vw + VACH_KHE), NY + 92, vw, 8,
-             mau, r=4, at=at_, vao=vao, dai=.2, chua='db')
+            mau, at_, vao = '#eef1f4', 0, 'none'
+        khoi(f'tk{hau}-v{i}', COT_X + 26 + i * (vw + VACH_KHE), ty, vw, 6, mau, r=3,
+             at=at_, vao=vao, dai=.18, chua=f'tk{hau}')
+    cy = ty + 18
+    dong_bang.append((canhs[-1]['id'], 'dòng thời gian', cy, cy + 12))
+    chu(f'tk{hau}-dc', COT_X + 26, cy, 'Đã chạy: 00:0' + str(len([m for m in moc if m is not None])),
+        size=9, at=0, vao='none', mau=MO, chua=f'tk{hau}')
+    chu(f'tk{hau}-pt', COT_X + COT_W - 26 - 60, cy, phan_tram or f'{round(vach_toi / VACH_N * 100)}%',
+        size=9, w=60, align='right', at=0, vao='none', mau=MO, chua=f'tk{hau}')
 
-    for i, ten in enumerate(BUOC):
-        y = NY + 132 + i * BUOC_BUOC
-        t = moc[i]
-        tinh = t is None or t == 0
-        khoi(f'bang{hau}-o{i}', TX + 28, y, 24, 24,
-             '#eef1f6' if t is None else LUC_MO, r=12,
-             at=t or 0, vao='none' if tinh else 'pop', dai=.3, chua='db')
-        if t is None:
-            khoi(f'bang{hau}-cho{i}', TX + 37, y + 9, 6, 6, CHO, r=3, at=0,
-                 vao='none', chua='db')
-        else:
-            dau_tick(f'bang{hau}-tick{i}', TX + 40, y + 12, 11, LUC,
-                     (t + .04) if t else 0, chua='db')
-        chu(f'bang{hau}-b{i}', TX + 64, y + 4, ten, size=12, at=t or 0,
-            vao='none' if tinh else 'rise', mau=MO if t is None else None, chua='db')
 
-    dong_bang.append((canhs[-1]['id'], 'thanh tiến trình', NY + 92, NY + 100))
-    for i in range(len(BUOC)):
-        y = NY + 132 + i * BUOC_BUOC
-        dong_bang.append((canhs[-1]['id'], f'bước {i + 1} · {BUOC[i]}', y, y + 26))
-    return NY + 132 + len(BUOC) * BUOC_BUOC      # mép dưới của danh sách bước
-
+TOM_TAT_XONG = [('Nguồn', 'Tải file', CAM_CHU),
+                ('Tên website', 'airtex-trungthu', MUC),
+                ('Địa chỉ', 'airtex-trungthu.vibehost.vn', MUC)]
 
 # ══════════════════════════════════════════════════════════════════════════
-# CẢNH 2 — đang triển khai, thẻ SSL bật ra giữa khung hình
+# CẢNH 2 — đang đưa lên mạng, thẻ SSL bật ra giữa khung hình
 # ══════════════════════════════════════════════════════════════════════════
 C2 = 4.2
 mo_canh('c2-trien-khai', C2)
-khoi('nen', 0, 0, W, H, NEN, r=0, **{'in': {'kind': 'none', 'dur': .001}})
-dashboard(dong=True)
-bang_trien_khai('Đang triển khai…', 0, 20, [.45, 1.15, 2.05, None], t0=.18, buoc=.1)
-
-# cột phải: SSL chuyển xanh đúng lúc bước SSL xong
-the_trang_thai(0, 'Chứng chỉ SSL', HANG[0][1], CHO, 'Đang cấp…', MO, 0,
-               vao='none', nhuong=2.05)
-the_trang_thai(1, 'Database', HANG[1][1], CHO, 'Chưa kết nối', MO, 0, vao='none')
-the_trang_thai(2, 'CDN & bộ nhớ đệm', HANG[2][1], CHO, 'Chưa bật', MO, 0, vao='none')
-the_trang_thai(0, 'Chứng chỉ SSL', HANG[0][1], LUC, 'Đã cấp · Let\'s Encrypt',
-               LUC, 2.05, hau='x', vao='fade')
+khung_app(dong=True)
+dai_buoc(2, dong=True)
+chu('td', MX + LE, MY + 84, 'Đưa website lên mạng', size=23, at=0, vao='none', chua='app')
+chu('td-phu', MX + LE, MY + 118, 'Chọn mã nguồn, kiểm tra thông tin rồi để VAYS lo phần kỹ thuật',
+    size=11, w=440, at=0, vao='none', mau=MO, chua='app')
+the_tien_trinh([.4, 1.1, 2.0, None], 0, 22, t0=.15, buoc=.09)
+cot_phai(TOM_TAT_XONG, 0, dong=True)
 
 # ── THẺ SSL BẬT RA GIỮA KHUNG HÌNH ────────────────────────────────────────
-PW, PH = 420, 300
-PPX, PPY = (W - PW) / 2, (H - PH) / 2        # đúng tâm khung: 430, 210
-T_SSL, SONG_SSL = 2.1, 1.5
-khoi('ssl-bong', PPX - 3, PPY - 3, PW + 6, PH + 6, '#00000014', r=27,
+PW, PH = 420, 292
+PPX, PPY = (W - PW) / 2, (H - PH) / 2
+T_SSL, SONG_SSL = 2.05, 1.45
+khoi('ssl-bong', PPX - 4, PPY - 4, PW + 8, PH + 8, '#00000018', r=26,
      at=T_SSL, vao='pop', dai=.5, song=SONG_SSL)
-khoi('ssl', PPX, PPY, PW, PH, GIAY, r=24, at=T_SSL, vao='pop', dai=.5, song=SONG_SSL)
-khoi('ssl-vong', PPX + PW / 2 - 54, PPY + 42, 108, 108, LUC_MO, r=54,
+khoi('ssl', PPX, PPY, PW, PH, GIAY, r=22, at=T_SSL, vao='pop', dai=.5, song=SONG_SSL)
+khoi('ssl-vong', PPX + PW / 2 - 52, PPY + 38, 104, 104, LUC_MO, r=52,
      at=T_SSL + .08, vao='pop', dai=.5, song=SONG_SSL - .08, chua='ssl')
-khoi('ssl-tron', PPX + PW / 2 - 40, PPY + 56, 80, 80, LUC, r=40,
+khoi('ssl-tron', PPX + PW / 2 - 38, PPY + 52, 76, 76, LUC, r=38,
      at=T_SSL + .14, vao='pop', dai=.45, song=SONG_SSL - .14, chua='ssl')
-dau_tick('ssl-dau', PPX + PW / 2, PPY + 96, 34, '#ffffff', T_SSL + .3, chua='ssl', day=7)
-chu('ssl-td', PPX, PPY + 176, 'Đã cấp chứng chỉ SSL', size=22, w=PW,
-    align='center', at=T_SSL + .34, song=SONG_SSL - .34, chua='ssl')
-chu('ssl-phu', PPX, PPY + 212, 'Kết nối tới trang đã được mã hoá', size=12, w=PW,
+dau_tick('ssl-dau', PPX + PW / 2, PPY + 90, 32, '#ffffff', T_SSL + .3, chua='ssl', day=7)
+chu('ssl-td', PPX, PPY + 166, 'Đã cấp chứng chỉ SSL', size=21, w=PW, align='center',
+    at=T_SSL + .34, song=SONG_SSL - .34, chua='ssl')
+chu('ssl-phu', PPX, PPY + 200, 'Website đã được cấp SSL miễn phí', size=11, w=PW,
     align='center', at=T_SSL + .4, mau=MO, song=SONG_SSL - .4, chua='ssl')
-khoi('ssl-nhan', PPX + PW / 2 - 66, PPY + 244, 132, 26, LUC_MO, r=13,
+khoi('ssl-nhan', PPX + PW / 2 - 64, PPY + 230, 128, 26, LUC_MO, r=13,
      at=T_SSL + .46, vao='pop', song=SONG_SSL - .46, chua='ssl')
-chu('ssl-nhan-c', PPX + PW / 2 - 66, PPY + 250, 'HTTPS đang bật', size=11, w=132,
+chu('ssl-nhan-c', PPX + PW / 2 - 64, PPY + 236, 'HTTPS đang bật', size=11, w=128,
     align='center', at=T_SSL + .5, mau=LUC, song=SONG_SSL - .5, chua='ssl')
 
 
 # ══════════════════════════════════════════════════════════════════════════
-# CẢNH 3 — CAMERA ZOOM vào dashboard, database bật đèn xanh
+# CẢNH 3 — CAMERA ZOOM vào thẻ tiến trình, database bật đèn xanh
 # ══════════════════════════════════════════════════════════════════════════
 C3 = 2.8
-mo_canh('c3-zoom', C3,
-        camera={'x': ZOOM_X - W / 2, 'y': ZOOM_Y - H / 2, 'scale': ZOOM},
-        camera_muot=1.1)
-khoi('nen', 0, 0, W, H, NEN, r=0, **{'in': {'kind': 'none', 'dur': .001}})
-dashboard(dong=True)
-T_DB, T_CDN = .9, 1.7            # giây database và CDN bật đèn xanh
-DAY_BUOC = bang_trien_khai('Đã triển khai xong', 20, VACH_N, [0, 0, 0, T_DB + .05],
-                           t0=.08, buoc=.09)
+T_DB = .85
+mo_canh('c3-zoom', C3, camera={'x': ZOOM_X - W / 2, 'y': ZOOM_Y - H / 2, 'scale': ZOOM},
+        camera_muot=1.0)
+khung_app(dong=True)
+dai_buoc(2, dong=True)
+chu('td', MX + LE, MY + 84, 'Đưa website lên mạng', size=23, at=0, vao='none', chua='app')
+chu('td-phu', MX + LE, MY + 118, 'Chọn mã nguồn, kiểm tra thông tin rồi để VAYS lo phần kỹ thuật',
+    size=11, w=440, at=0, vao='none', mau=MO, chua='app')
+the_tien_trinh([0, 0, 0, T_DB], 22, VACH_N, t0=.05, buoc=.06, phan_tram='100%')
+cot_phai(TOM_TAT_XONG, 0, dong=True)
 
-# ── cột phải: SSL đã xanh sẵn; database và CDN bật lên trong cảnh này ──────
-the_trang_thai(0, 'Chứng chỉ SSL', HANG[0][1], LUC, 'Đã cấp · Let\'s Encrypt',
-               LUC, 0, vao='none')
-the_trang_thai(1, 'Database', HANG[1][1], CHO, 'Đang kết nối…', MO, 0,
-               vao='none', nhuong=T_DB)
-the_trang_thai(2, 'CDN & bộ nhớ đệm', HANG[2][1], CHO, 'Chưa bật', MO, 0,
-               vao='none', nhuong=T_CDN)
-
-# ĐÈN XANH DATABASE — thẻ xanh chồng lên thẻ xám, kèm biểu tượng hình trụ
-dbY = NY + HANG[1][1]
-khoi('db-xanh', PX, dbY, COT_PHAI_W, HANG_H, LUC_MO, r=12, at=T_DB, vao='fade', dai=.35, chua='db')
-bieu_tuong_db('db-hinh', PX + 18, dbY + 22, 22, 30, LUC, T_DB + .06, chua='db-xanh')
-chu('db-ten', PX + 52, dbY + 18, 'Database', size=13, at=T_DB + .06, chua='db-xanh')
-chu('db-phu', PX + 52, dbY + 42, 'Đã kết nối  ·  airtex_db', size=11, at=T_DB + .1,
-    mau=LUC, chua='db-xanh')
-khoi('db-den', PX + COT_PHAI_W - 34, dbY + HANG_H / 2 - 7, 14, 14, LUC, r=7,
-     at=T_DB + .14, vao='pop', dai=.4, chua='db-xanh')
-
-cdnY = NY + HANG[2][1]
-khoi('cdn-xanh', PX, cdnY, COT_PHAI_W, HANG_H, LUC_MO, r=12, at=T_CDN, vao='fade',
-     dai=.35, chua='db')
-khoi('cdn-cham', PX + 18, cdnY + 26, 12, 12, LUC, r=6, at=T_CDN + .06, vao='pop', chua='cdn-xanh')
-chu('cdn-ten', PX + 52, cdnY + 18, 'CDN & bộ nhớ đệm', size=13, at=T_CDN + .06, chua='cdn-xanh')
-chu('cdn-phu', PX + 52, cdnY + 42, 'Đã bật  ·  12 điểm phát', size=11, at=T_CDN + .1,
-    mau=LUC, chua='cdn-xanh')
-khoi('cdn-den', PX + COT_PHAI_W - 34, cdnY + HANG_H / 2 - 7, 14, 14, LUC, r=7,
-     at=T_CDN + .14, vao='pop', dai=.4, chua='cdn-xanh')
+# đèn xanh database: chấm sáng nhấp ở hàng cuối
+dbY = HANG_Y0 + 3 * HANG_BUOC
+khoi('db-den-vong', COT_X + COT_W - 60, dbY + 2, 16, 16, LUC_MO, r=8,
+     at=T_DB + .1, vao='pop', dai=.45, chua='tk')
+khoi('db-den', COT_X + COT_W - 56, dbY + 6, 8, 8, LUC, r=4, at=T_DB + .16,
+     vao='pop', dai=.4, chua='db-den-vong')
+chu('db-xong', COT_X + COT_W - 60 - 96, dbY + 3, 'Đã kết nối', size=9, w=90,
+    align='right', at=T_DB + .2, mau=LUC, chua='tk')
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -527,14 +599,15 @@ khoi('cdn-den', PX + COT_PHAI_W - 34, cdnY + HANG_H / 2 - 7, 14, 14, LUC, r=7,
 # đi ngược chiều nhau nên mắt bám vào trang, không bám vào dashboard.
 # Màu lấy thẳng từ `public/html-foot/ttindex.html`.
 # ══════════════════════════════════════════════════════════════════════════
-C4 = 3.2
+C4 = 3.0
 mo_canh('c4-bat-ra', C4, camera_muot=.85)
-khoi('nen', 0, 0, W, H, NEN, r=0, **{'in': {'kind': 'none', 'dur': .001}})
-dashboard(dong=True)
-bang_trien_khai('Đã triển khai xong', VACH_N, VACH_N, [0, 0, 0, 0])
-the_trang_thai(0, 'Chứng chỉ SSL', HANG[0][1], LUC, 'Đã cấp · Let\'s Encrypt', LUC, 0, vao='none')
-the_trang_thai(1, 'Database', HANG[1][1], LUC, 'Đã kết nối · airtex_db', LUC, 0, vao='none')
-the_trang_thai(2, 'CDN & bộ nhớ đệm', HANG[2][1], LUC, 'Đã bật · 12 điểm phát', LUC, 0, vao='none')
+khung_app(dong=True)
+dai_buoc(2, dong=True)
+chu('td', MX + LE, MY + 84, 'Đưa website lên mạng', size=23, at=0, vao='none', chua='app')
+chu('td-phu', MX + LE, MY + 118, 'Chọn mã nguồn, kiểm tra thông tin rồi để VAYS lo phần kỹ thuật',
+    size=11, w=440, at=0, vao='none', mau=MO, chua='app')
+the_tien_trinh([0, 0, 0, 0], VACH_N, VACH_N, phan_tram='100%')
+cot_phai(TOM_TAT_XONG, 0, dong=True)
 
 # ── cửa sổ trình duyệt ────────────────────────────────────────────────────
 BW, BH = 760, 430
@@ -626,6 +699,8 @@ chu('tr-gia', *P(446, 314), '359.000đ', size=19, w=180, at=T_TR + .74,
     mau=VANG, chua='tr-the')
 
 
+
+
 # ══ KIỂM TRA TRƯỚC KHI GHI ═════════════════════════════════════════════════
 loi = []
 
@@ -661,9 +736,9 @@ def kiem_dong():
             if b[2] < a[3]:
                 loi.append(f'[{c["id"]}] "{a[1]}" ({a[2]:.0f}–{a[3]:.0f}) '
                            f'cấn "{b[1]}" ({b[2]:.0f}–{b[3]:.0f}).')
-        if d and d[-1][3] > NY + NOI_DUNG_H - 6:
+        if d and d[-1][3] > BODY_Y + BODY_H - 6:
             loi.append(f'[{c["id"]}] "{d[-1][1]}" xuống tới {d[-1][3]:.0f}, '
-                       f'tràn khỏi bảng kết thúc ở {NY + NOI_DUNG_H}.')
+                       f'tràn khỏi thẻ kết thúc ở {BODY_Y + BODY_H}.')
 
 
 def kiem_sao():
@@ -740,9 +815,9 @@ if loi:
 
 doc = {
     'version': 1,
-    'meta': {'name': 'Kéo thả HTML → chạy ngay', 'width': W, 'height': H,
-             'density': 1, 'bg': NEN, 'accent': CAM, 'accent2': '#f4a261',
-             'hot': CAM, 'hot2': '#e3272c', 'ink': MUC,
+    'meta': {'name': 'Kéo thả HTML → Vibe Hosting chạy ngay', 'width': W, 'height': H,
+             'density': 1, 'bg': NEN_APP, 'accent': CAM_CHU, 'accent2': '#ff9a3c',
+             'hot': CAM_CHU, 'hot2': '#e3272c', 'ink': MUC,
              'inkSoft': '#5d6678', 'inkFaint': '#98a1b2'},
     'scenes': canhs,
 }
