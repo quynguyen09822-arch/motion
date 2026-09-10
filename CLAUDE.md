@@ -187,11 +187,21 @@ thẳng cũng chạy vì nó không chạm `node:` lẫn `document`.
 2. **Chỉ báo khi CHẮC.** Món dùng `place`, màu viết bằng `color-mix` → im. Mỗi
    lời báo sai dạy người dùng rằng bảng này nói nhảm, và từ đó họ bỏ qua cả lời
    báo đúng.
-3. **Ba phép kiểm của §3.2 đã bị BỎ vì không hợp nội dung dự án** — cỡ chữ tối
-   thiểu, màu viết cứng, lề an toàn. Mấy clip này *vẽ lại giao diện sản phẩm
-   thật*, nên chữ 8px trong thanh bên giả lập và màu đọc thẳng từ ảnh chụp sản
-   phẩm đều là **cố ý**. Ba phép ấy báo 1.474 lỗi trên 11 clip, không một lỗi
-   nào đáng sửa. Đừng thêm lại mà không đo trên clip thật trước.
+3. **Bốn phép kiểm của §3.2 đã bị BỎ vì không tính được từ dữ liệu** — cỡ chữ
+   tối thiểu, màu viết cứng, lề an toàn, và "thò ra ngoài mép".
+
+   Ba phép đầu: mấy clip này *vẽ lại giao diện sản phẩm thật*, nên chữ 8px trong
+   thanh bên giả lập và màu đọc thẳng từ ảnh chụp sản phẩm đều là **cố ý**. Ba
+   phép ấy báo 1.474 lỗi trên 11 clip, không một lỗi nào đáng sửa.
+
+   Phép thứ tư sai từ gốc: **với `image` và `video`, `w`/`h` khai trong dữ liệu
+   KHÔNG phải kích thước lúc vẽ** — bộ dựng còn co theo tỉ lệ file, theo `fit`,
+   và theo `measureFit()`. Ảnh nền của `thu-trien-khai-doc` khai `h: 1280` nhưng
+   vẽ ra 1920, nên nó bị kêu "thò ra ngoài mép" 9 lần trong khi phủ khung hoàn
+   toàn đúng ý. Phép ấy bắt được **0** lỗi thật.
+
+   Muốn đo bố cục thật thì đã có `/api/check-layout` — nó mở Chromium đo trên
+   khung hình đã dựng. Đừng đoán hình học từ JSON.
 
 ## 6. Clip đời cũ (đời 1)
 

@@ -64,7 +64,16 @@ function duyet(els, cha = null, ra = []) {
   return ra;
 }
 
-/** Khung của một món, chỉ khi CHẮC: có x/y/w/h thật và không dùng `place`. */
+/**
+ * Khung của một món, chỉ khi CHẮC: có x/y/w/h thật và không dùng `place`.
+ *
+ * CHỈ dùng để dò xem một món chữ nằm trên khối màu nào. KHÔNG dùng để phán xem
+ * món có lọt trong khung hình không: với `image` và `video`, w/h khai trong dữ
+ * liệu KHÔNG phải kích thước lúc vẽ — bộ dựng còn co giãn theo tỉ lệ file ảnh,
+ * theo `fit`, và theo `measureFit()`. Đã mắc: phép kiểm "thò ra ngoài mép" tính
+ * từ số khai báo oan 9 lần trên `thu-trien-khai-doc` (ảnh nền khai h=1280 nhưng
+ * vẽ ra 1920) trong khi chưa bắt được lỗi thật nào.
+ */
 function khungChac(el) {
   if (el.place) return null;              // vùng đặt sẵn — bộ dựng tự tính, không đoán
   const x = so(el.x), y = so(el.y), w = so(el.w), h = so(el.h);
@@ -221,18 +230,6 @@ export function soatChatLuong(doc) {
           'Mở bảng thuộc tính, mục Nội dung → "File video" rồi chọn một file.');
       }
 
-      /* ---------- lề an toàn ---------- */
-      const khung = khungChac(el);
-      if (khung && rong > 0 && cao > 0 && el.kind !== 'nen' && el.kind !== 'sweep' && !cha) {
-        const tran = khung.x < 0 || khung.y < 0 || khung.x2 > rong || khung.y2 > cao;
-        if (tran) {
-          o('THO_RA_NGOAI', 'Bố cục',
-            `${canhTen} · "${monTen}" thò ra ngoài mép khung hình `
-            + `(${Math.round(khung.x)},${Math.round(khung.y)} → `
-            + `${Math.round(khung.x2)},${Math.round(khung.y2)} trên khung ${rong}×${cao}).`,
-            'Kéo nó vào trong, hoặc thu nhỏ lại.');
-        }
-      }
     }
   });
 
