@@ -5,15 +5,19 @@
   "canh": [
     {
       "id": "c1-keo-tha",
-      "moc": 5.25
+      "moc": 4.65
     },
     {
       "id": "c2-trien-khai",
-      "moc": 9.65
+      "moc": 8.85
     },
     {
       "id": "c3-zoom",
-      "moc": 13.45
+      "moc": 11.65
+    },
+    {
+      "id": "c4-bat-ra",
+      "moc": 14.85
     }
   ],
   "trong": {
@@ -298,11 +302,48 @@
     "cdn-ten": "cdn-xanh",
     "cdn-phu": "cdn-xanh",
     "cdn-den": "cdn-xanh",
-    "xem": "db",
-    "xem-trang": "xem",
-    "xem-td": "xem",
-    "xem-phu": "xem",
-    "xem-nhan": "xem",
-    "xem-nhan-c": "xem"
+    "br-thanh": "br",
+    "br-cham0": "br",
+    "br-cham1": "br",
+    "br-cham2": "br",
+    "br-url": "br",
+    "br-khoa": "br-url",
+    "br-diachi": "br-url",
+    "tr-nen": "br",
+    "tr-tim": "br",
+    "tr-km": "br",
+    "tr-km-c": "br",
+    "tr-logo": "br",
+    "tr-ten": "br",
+    "tr-nv0": "br",
+    "tr-nv1": "br",
+    "tr-nv2": "br",
+    "tr-cta0": "br",
+    "tr-cta0-c": "br",
+    "tr-trang": "br",
+    "tr-day": "br",
+    "tr-den0": "br",
+    "tr-den1": "br",
+    "tr-den2": "br",
+    "tr-den3": "br",
+    "tr-den4": "br",
+    "tr-den5": "br",
+    "tr-td": "br",
+    "tr-phu": "br",
+    "tr-cta1": "br",
+    "tr-cta1-c": "br",
+    "tr-the": "br",
+    "tr-nhan": "br",
+    "tr-nhan-c": "br",
+    "tr-ao": "tr-the",
+    "tr-tay0": "tr-the",
+    "tr-tay1": "tr-the",
+    "tr-mau0": "tr-the",
+    "tr-mau1": "tr-the",
+    "tr-mau2": "tr-the",
+    "tr-mau3": "tr-the",
+    "tr-mau4": "tr-the",
+    "tr-sp": "tr-the",
+    "tr-gia": "tr-the"
   }
 }
