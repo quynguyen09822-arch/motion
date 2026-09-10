@@ -1,0 +1,33 @@
+/**
+ * CHỤP TRANG `public/html-foot/ttindex.html` LÀM ẢNH XEM TRƯỚC CHO CLIP.
+ *
+ * Cảnh cuối của `thu-trien-khai-html` bật ra một cửa sổ trình duyệt hiển thị
+ * chính trang vừa triển khai. Trước đây tôi vẽ tay lại trang bằng khối và chữ —
+ * nhìn hao hao nhưng không phải nó. Vẽ tay một trang thật thì không bao giờ
+ * giống: sai phông, thiếu mây, thiếu sao, thiếu ảnh áo.
+ *
+ * Khổ 1520×784 = đúng 2× vùng trang bên trong cửa sổ của clip (760×392). Giữ
+ * đúng tỉ lệ thì `fit: cover` không cắt mất gì, và 2× thì vẫn nét khi xuất
+ * 1080p (lúc đó sân khấu phóng 1,5×).
+ *
+ * Chạy: node tools/chup-ttindex.mjs
+ */
+import path from 'node:path';
+import { chromium } from '/home/coder/workspace/projects/clipVibehost/hosting-animatic-production/tools/node_modules/playwright/index.mjs';
+
+const PROJ = '/home/coder/workspace/projects/clipVibehost/hosting-animatic-production';
+const NGUON = path.join(PROJ, 'public/html-foot/ttindex.html');
+const RA = path.join(PROJ, 'public/image/ttindex-xem-truoc.png');
+
+const b = await chromium.launch();
+const p = await b.newPage({ viewport: { width: 1520, height: 784 }, deviceScaleFactor: 1 });
+await p.goto(`file://${NGUON}`, { waitUntil: 'load' });
+await p.waitForTimeout(2000);
+// Trang có hiệu ứng hiện dần khi cuộn (`.rv`). Không ép thì phần dưới màn hình
+// đầu tiên vẫn trong suốt lúc chụp.
+await p.evaluate(() => document.querySelectorAll('.rv')
+  .forEach((n) => n.classList.add('in', 'vis', 'show')));
+await p.waitForTimeout(600);
+await p.screenshot({ path: RA });
+await b.close();
+console.log(`✓ ${RA}`);

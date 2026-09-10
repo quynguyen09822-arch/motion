@@ -614,92 +614,37 @@ BW, BH = 760, 430
 BX, BY = (W - BW) / 2, (H - BH) / 2          # 260, 145 — đúng tâm khung
 THANH = 38                                    # dải điều khiển trên cùng
 T_BAT = .5
-khoi('br-bong', BX - 5, BY - 5, BW + 10, BH + 10, '#0000001c', r=21,
+khoi('br-bong', BX - 5, BY - 5, BW + 10, BH + 10, '#0000001c', r=15,
      at=T_BAT, vao='pop', dai=.55)
-khoi('br', BX, BY, BW, BH, '#0b0f24', r=16, at=T_BAT, vao='pop', dai=.55)
-khoi('br-thanh', BX, BY, BW, THANH, '#171c34', r=16, at=T_BAT + .04, vao='fade', chua='br')
+khoi('br', BX, BY, BW, BH, '#0b0f24', r=10, at=T_BAT, vao='pop', dai=.55)
+# ── ruột trang: ẢNH CHỤP THẬT của `public/html-foot/ttindex.html` ────────
+#
+# Trước đây tôi vẽ tay lại trang bằng khối và chữ — nhìn hao hao nhưng không
+# phải nó: sai phông, sai bố cục, thiếu mây, thiếu sao, thiếu ảnh áo. Vẽ tay
+# một trang thật thì không bao giờ giống được.
+#
+# Ảnh chụp ở khổ 1520×784, đúng 2× vùng trang trong cửa sổ (760×392), nên
+# không co giãn méo và vẫn nét khi xuất 1080p. Sinh lại bằng:
+#     node tools/chup-ttindex.mjs
+# Ảnh nằm ĐÚNG vùng trang (dưới dải điều khiển), khổ khớp đúng tỉ lệ ảnh chụp
+# nên `cover` không cắt mất gì. Đặt phủ cả cửa sổ thì dải điều khiển che mất
+# dải khuyến mãi và logo AIRTEX ở đầu trang — đã mắc một lần.
+T_TR = T_BAT + .28
+E('tr', 'image', BX, BY + THANH, BW, BH - THANH,
+  src='public/image/ttindex-xem-truoc.png', radius=0, fit='cover',
+  chua='br', **{'at': round(T_TR, 2), 'in': {'kind': 'fade', 'ease': 'out', 'dur': .5}})
+
+# Dải điều khiển khai SAU ảnh để nằm trên nó.
+khoi('br-thanh', BX, BY, BW, THANH, '#171c34', r=10, at=T_BAT + .04, vao='fade', chua='br')
 for i, mau in enumerate(['#ff5f57', '#febc2e', '#28c840']):
     khoi(f'br-cham{i}', BX + 18 + i * 18, BY + 14, 10, 10, mau, r=5,
-         at=T_BAT + .08 + i * .03, vao='pop', dai=.3, chua='br')
+         at=T_BAT + .08 + i * .03, vao='pop', dai=.3, chua='br-thanh')
 khoi('br-url', BX + 84, BY + 9, 320, 20, '#242a45', r=10, at=T_BAT + .14,
-     vao='fade', chua='br')
+     vao='fade', chua='br-thanh')
 khoi('br-khoa', BX + 94, BY + 14, 8, 10, LUC, r=2, at=T_BAT + .17, vao='pop',
      dai=.3, chua='br-url')
 chu('br-diachi', BX + 108, BY + 13, 'airtex-trungthu.vibehost.vn', size=10,
     w=286, at=T_BAT + .18, mau='#c9d2ea', chua='br-url')
-
-# ── ruột trang: toạ độ tương đối vùng trang ───────────────────────────────
-PGX, PGY = BX, BY + THANH
-PGW, PGH = BW, BH - THANH
-
-
-def P(rx, ry):
-    return PGX + rx, PGY + ry
-
-
-T_TR = T_BAT + .3
-khoi('tr-nen', PGX, PGY, PGW, PGH, '#0a0d22', r=0, at=T_TR, vao='fade', dai=.4, chua='br')
-khoi('tr-tim', PGX, PGY, PGW, PGH, '#2b1b46', r=0, at=T_TR, vao='fade', dai=.4, chua='br')
-
-# dải khuyến mãi
-khoi('tr-km', PGX, PGY, PGW, 26, '#3a2a5e', r=0, at=T_TR + .04, vao='fade', chua='br')
-chu('tr-km-c', PGX, PGY + 7, 'Ưu đãi Trung Thu *giảm đến 42%*  ·  Miễn phí giao toàn quốc',
-    size=10, w=PGW, align='center', at=T_TR + .06, mau='#e9ddff', chua='br')
-
-# đầu trang
-khoi('tr-logo', *P(24, 40), 16, 16, VANG, r=8, at=T_TR + .1, vao='pop', dai=.3, chua='br')
-chu('tr-ten', *P(48, 40), 'AIRTEX', size=14, at=T_TR + .12, mau='#ffffff', chua='br')
-# Ba mục thôi, không phải bốn: mục thứ tư chạy tới x=664, đúng chỗ mặt trăng.
-for i, nv in enumerate(['Công nghệ vải', 'Bộ sưu tập', 'Combo ưu đãi']):
-    chu(f'tr-nv{i}', *P(292 + i * 94, 43), nv, size=9, w=90, align='center',
-        at=T_TR + .14 + i * .03, mau='#b9a9d4', chua='br')
-khoi('tr-cta0', *P(PGW - 106, 34), 82, 26, VANG, r=13, at=T_TR + .18, vao='pop',
-     dai=.35, chua='br')
-chu('tr-cta0-c', *P(PGW - 106, 42), 'Đặt ngay', size=10, w=82, align='center',
-    at=T_TR + .2, mau='#2b1b46', chua='br')
-
-# mặt trăng + dây đèn lồng
-# Mặt trăng nằm DƯỚI dải đầu trang (nó vẽ sau nên che nút "Đặt ngay" nếu đặt
-# cao) và TRÊN thẻ sản phẩm (thẻ vẽ sau nên phủ mờ lên nó — đúng như trang gốc).
-khoi('tr-trang', *P(PGW - 152, 78), 128, 128, VANG, r=64, at=T_TR + .22,
-     vao='pop', dai=.55, chua='br')
-khoi('tr-day', *P(0, 96), PGW, 1, '#6b5a92', r=0, at=T_TR + .26, vao='fade', chua='br')
-for i, mau in enumerate(['#e0574f', '#f0a93c', '#e8564f', '#f2c45a', '#dd5a8e', '#e0574f']):
-    khoi(f'tr-den{i}', *P(46 + i * 104, 96), 15, 21, mau, r=7,
-         at=T_TR + .28 + i * .035, vao='fall', dai=.4, chua='br')
-
-# câu tiêu đề
-chu('tr-td', *P(24, 136), 'Mặc mát như *gió đêm rằm*,|công nghệ giấu|trong từng sợi vải',
-    size=25, w=390, at=T_TR + .36, mau='#ffffff', chua='br')
-chu('tr-phu', *P(24, 262), 'Bộ sưu tập áo thun AirCool 3.0 — hạ nhiệt tức thì|2.4°C, kháng khuẩn ion bạc Ag+, chống tia UV.',
-    size=10, w=390, at=T_TR + .46, mau='#b9a9d4', chua='br')
-khoi('tr-cta1', *P(24, 306), 168, 34, VANG, r=17, at=T_TR + .52, vao='pop', dai=.4, chua='br')
-chu('tr-cta1-c', *P(24, 316), 'Xem combo Trung Thu →', size=11, w=168,
-    align='center', at=T_TR + .54, mau='#2b1b46', chua='br')
-
-# thẻ sản phẩm bên phải
-khoi('tr-the', *P(430, 128), 306, 226, '#ffffff10', r=14, at=T_TR + .5, vao='pop',
-     dai=.45, chua='br')
-khoi('tr-nhan', *P(444, 118), 148, 22, '#dd5a8e', r=11, at=T_TR + .56, vao='pop',
-     dai=.35, chua='br')
-chu('tr-nhan-c', *P(444, 124), 'BÁN CHẠY NHẤT · -28%', size=9, w=148,
-    align='center', at=T_TR + .58, mau='#ffffff', chua='br')
-khoi('tr-ao', *P(548, 156), 70, 78, '#26407a', r=10, at=T_TR + .6, vao='pop',
-     dai=.4, chua='tr-the')
-khoi('tr-tay0', *P(528, 160), 26, 20, '#26407a', r=6, at=T_TR + .62, vao='fade',
-     xoay=-16, chua='tr-the')
-khoi('tr-tay1', *P(612, 160), 26, 20, '#26407a', r=6, at=T_TR + .62, vao='fade',
-     xoay=16, chua='tr-the')
-for i, mau in enumerate(['#3d63c4', '#1b1e2a', '#ece7dd', '#a63a4a', '#4c8464']):
-    khoi(f'tr-mau{i}', *P(492 + i * 36, 250), 22, 22, mau, r=11,
-         at=T_TR + .64 + i * .03, vao='pop', dai=.3, chua='tr-the')
-chu('tr-sp', *P(446, 292), 'Áo thun AirCool Basic', size=11, w=180,
-    at=T_TR + .7, mau='#ffffff', chua='tr-the')
-chu('tr-gia', *P(446, 314), '359.000đ', size=19, w=180, at=T_TR + .74,
-    mau=VANG, chua='tr-the')
-
-
-
 
 # ══ KIỂM TRA TRƯỚC KHI GHI ═════════════════════════════════════════════════
 loi = []
