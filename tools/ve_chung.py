@@ -91,6 +91,37 @@ def chu(id, x, y, text, size=11, *, w=None, at=None, mau=None, align='left',
     E(id, 'text', x, y, w, cao_chu(text, size), chua=chua, **d)
 
 
+_anh_cao = 0
+
+
+def anh(id, x, y, w, h, src, *, radius=0, fit='cover', at=None, vao='fade',
+        dai=.5, chua=None, **kw):
+    """Ảnh — CÓ BÙ TRỪ DÒNG CHẢY.
+
+    `scene-player.html` dòng 150 đặt `.k-image{position:relative}`, đè lên
+    `.el{position:absolute}` ở dòng 52 (cùng độ ưu tiên, luật sau thắng). Nghĩa
+    là ảnh KHÔNG được đặt tuyệt đối mà nằm trong dòng chảy: ảnh thứ hai bắt đầu
+    từ đáy ảnh thứ nhất rồi mới cộng `top`. Mọi cảnh lại nằm chung một `#cam`
+    nên chồng dồn qua cả các cảnh — ảnh thứ tư trong clip rơi xuống y=2034.
+
+    Clip nào chỉ có MỘT ảnh thì không bao giờ thấy lỗi này, nên nó nằm im cho
+    tới khi có clip thứ hai dùng nhiều ảnh.
+
+    Ở đây trừ sẵn tổng chiều cao các ảnh đã khai trước đó. `hop` vẫn ghi vị trí
+    MONG MUỐN để phép kiểm nói đúng chuyện; số đo thật do `kiem-canh.mjs` xác
+    nhận lại bằng trình duyệt.
+    """
+    global _anh_cao
+    d = {'src': src, 'radius': radius, 'fit': fit}
+    if at is not None:
+        d['in'] = {'kind': vao, 'ease': 'out', 'dur': dai}
+        d['at'] = round(at, 2)
+    d.update(kw)
+    E(id, 'image', x, y - _anh_cao, w, h, chua=chua, **d)
+    hop[(canhs[-1]['id'], id)] = (round(x), round(y), round(w), round(h))
+    _anh_cao += round(h)
+
+
 def the(id, x, y, w, h, at, *, nen='#ffffff', vien='#e7e9ee', r=12, vao='rise',
         dai=.45, chua=None, song=None, day=1):
     """Thẻ có viền mảnh. Định dạng không có `border` nên viền là một khối lớn
@@ -129,6 +160,20 @@ def vien_dut(id, x, y, w, h, mau, at, *, day=2, net=13, khe=9, chua=None):
 def cam_ngam(x, y, phong):
     """Khung ngắm phóng `phong` lần, đặt điểm (x,y) vào giữa khung."""
     return {'x': x - W / 2, 'y': y - H / 2, 'scale': phong}
+
+
+def neo_man(x, y, cam):
+    """Ngược của `man_hinh`: muốn một PHẦN TỬ hiện ra ở điểm (x,y) trên MÀN HÌNH
+    thì phải đặt nó ở đâu trên sân khấu.
+
+    Cần vì camera phóng MỌI THỨ trong `#cam`, kể cả câu thuyết minh. Cảnh nào
+    đẩy máy vào giao diện mà đặt viên thuốc ở toạ độ sân khấu thì nó cũng bị
+    phóng theo và văng ra ngoài khung. Đặt qua hàm này (và chia cỡ chữ cho mức
+    phóng) thì nó đứng yên đúng chỗ, đúng cỡ, dù máy đẩy vào bao nhiêu.
+    """
+    s = cam.get('scale', 1)
+    mx, my = cam['x'] + W / 2, cam['y'] + H / 2
+    return (mx + (x - W / 2) / s, my + (y - H / 2) / s)
 
 
 def man_hinh(x, y, cam):
