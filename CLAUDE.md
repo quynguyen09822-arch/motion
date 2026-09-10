@@ -77,6 +77,7 @@ clip. Node 22 tự lột kiểu file `.ts` nên `types.ts` nạp thẳng đượ
 | `inspector/index.js` `fields.js` | dựng bảng thuộc tính từ schema |
 | `exportpanel.js` `videos.js` `khung.js` | ba thẻ còn lại của cột phải |
 | `soat.js` | **soát chất lượng** — JS thuần, cả trình duyệt lẫn Node dùng chung |
+| `zoom.js` | phóng khung làm việc bằng Ctrl+lăn, phóng quanh con trỏ |
 
 **Luồng dữ liệu một chiều, không ngoại lệ:**
 
@@ -103,6 +104,10 @@ nó (`getBoundingClientRect`, hệ số phóng).
    `docs/DUNG-CHAY.md`.
 3. **Không bao giờ thêm `export=1`** vào URL iframe — tham số đó tắt `fit()`, mọi
    phép đo lệch hết.
+   **Có BA tầng phóng giữa pixel màn hình và toạ độ sân khấu**, không phải hai:
+   `#stage` (co cho vừa khung) × `#cam` (máy quay) × phóng của trang cha
+   (Ctrl+lăn, `web/zoom.js`). `player.quyDoi` chia cho tầng thứ ba,
+   `player.hesoPhong` nhân nó vào. Quên tầng nào là bấm một đằng trúng một nẻo.
 4. **Không ghi vào DOM của iframe.** Lớp phủ vẽ ở trang cha. Ngoại lệ duy nhất là
    `drag.js` đặt tạm `left`/`top` trong lúc kéo, và xoá ngay khi thả. Chèn bậy là
    làm bẩn đúng cái trang mà `export-video.mjs` sẽ đem đi quay thành phim.
@@ -219,6 +224,7 @@ node tools/kiem-khung-xem.mjs       # với được vào window.__clip trong if
 node tools/kiem-soat.mjs            # bảng soát chất lượng: bắt đúng, không bắt thừa
 node tools/kiem-chay-dung.mjs       # nút Chạy/Dừng, kể cả đường lùi khi bộ dựng thiếu pause()
 node tools/kiem-nen-video.mjs       # món video: chạy trong khung xem VÀ lọt vào video xuất ra
+node tools/kiem-phong.mjs           # Ctrl+lăn phóng khung: bấm và kéo có còn trúng không
 ```
 
 Riêng **`node tools/kiem-lichsu.mjs`** chạy bằng Node trần — không cần server,

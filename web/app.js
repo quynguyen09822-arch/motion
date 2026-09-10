@@ -21,6 +21,7 @@ import { MAU_MON, nhanBanCanh, nhanBanMon, themCanh, themMon, xoaCanh, xoaMon } 
 import { taoBangXuat } from './exportpanel.js';
 import { taoKhung } from './khung.js';
 import { taoBangVideo } from './videos.js';
+import { taoZoom } from './zoom.js';
 
 const $ = (id) => document.getElementById(id);
 const chonClip = $('chon-clip'), dangClip = $('dang-clip'), dsCanhEl = $('ds-canh');
@@ -129,6 +130,19 @@ lopBat.addEventListener('mousemove', (ev) => {
   if (c) lopPhu.veRe(c.canhId, c.monId); else lopPhu.xoaRe();
 });
 lopBat.addEventListener('mouseleave', () => lopPhu.xoaRe());
+
+/* ---------- phóng to / thu nhỏ khung làm việc ---------- */
+const zoom = taoZoom({ boc: bocKhung, san: $('san-clip'), player, bao });
+player.datPhongCha(() => zoom.heSo());   // để quyDoi/hesoPhong tính đúng khi đang phóng
+
+const chiPhong = $('chi-phong'), soPhong = $('so-phong');
+zoom.khiDoi((z) => {
+  soPhong.textContent = `${Math.round(z * 100)}%`;
+  chiPhong.classList.toggle('an', Math.abs(z - 1) < 0.001);
+  // Lớp phủ vẽ theo khung của món trong iframe; phóng xong phải vẽ lại cho khớp.
+  veLopPhu();
+});
+$('phong-lai').onclick = () => zoom.datLai();
 
 const keo = ganKeo({
   lopBat, player, kho,
@@ -316,9 +330,13 @@ async function moClip(slug) {
   $('bang-thuoc-tinh').innerHTML = '';
   lopPhu.xoa();
 
+  zoom.datLai();          // clip mới thì về 100%, đừng giữ mức phóng của clip cũ
   try {
     await player.mo(c.xem, c.doi);
   } catch (e) { bao(e.message, true); trangThai('hong'); return; }
+  // Lăn chuột NGAY TRÊN khung hình chỉ tới được nếu nghe từ bên trong iframe —
+  // sự kiện chuột không vượt qua ranh giới iframe. Gắn lại sau mỗi lần mở.
+  zoom.noiVaoKhung();
 
   if (c.doi !== 2) {
     khoaDieuKhien(true);
@@ -434,6 +452,14 @@ document.addEventListener('keydown', (e) => {
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
     e.preventDefault();
     return e.shiftKey ? nutToi.click() : nutLui.click();
+  }
+  /* Ctrl+0 về 100%, Ctrl +/- phóng từng nấc — giống mọi phần mềm khác, để không
+     phải học lại. Dùng `e.code` cho phím trừ/cộng vì `e.key` đổi theo bố cục
+     bàn phím, còn số 0 thì bắt cả hàng phím số lẫn bàn phím số. */
+  if (e.ctrlKey || e.metaKey) {
+    if (e.code === 'Digit0' || e.code === 'Numpad0') { e.preventDefault(); return zoom.datLai(); }
+    if (e.code === 'Equal' || e.code === 'NumpadAdd') { e.preventDefault(); return zoom.motNac(true); }
+    if (e.code === 'Minus' || e.code === 'NumpadSubtract') { e.preventDefault(); return zoom.motNac(false); }
   }
   if (trongO) return;
   if (e.code === 'Space') { e.preventDefault(); nutChay.click(); }

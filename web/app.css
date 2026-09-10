@@ -559,3 +559,21 @@ body {
   width: 100%; border-radius: 8px; background: #000; display: block;
   max-height: 130px; object-fit: cover;
 }
+
+/* ---------- phóng to khung làm việc ---------- */
+.giua { position: relative; }
+.chi-phong {
+  position: absolute; right: 16px; top: 14px; z-index: 20;
+  display: flex; align-items: center; gap: 8px;
+  padding: 5px 6px 5px 12px; border-radius: 999px;
+  background: color-mix(in srgb, var(--nen-2) 86%, transparent);
+  backdrop-filter: blur(14px);
+  border: 1px solid var(--vach);
+  font-size: 12px; font-variant-numeric: tabular-nums;
+  animation: bao-hien var(--nhip) var(--da-vao);
+}
+.chi-phong .nut { border-radius: 999px; }
+/* Đang phóng thì bỏ bo góc và bóng đổ: hai thứ đó bị phóng theo, thành ra viền
+   dày cộp và bóng loang lổ ở mức 400%. */
+.boc-khung.dang-phong { border-radius: 0; box-shadow: none; }
+#san-clip.dang-doi { cursor: grabbing; }

@@ -65,6 +65,15 @@ export function taoPlayer(iframe) {
    * bộ dựng tự đặt `DUNG = true`, nhưng trang cha đã thôi báo nên nút vẫn đứng
    * nguyên nhãn "❚❚ Dừng" và đồng hồ đóng băng.
    */
+  /*
+   * HỆ SỐ PHÓNG CỦA TRANG CHA (nút Ctrl + lăn chuột). Mặc định 1.
+   *
+   * Nó KHÔNG nằm trong iframe nên `hesoPhong()` không thấy — mà mọi phép quy đổi
+   * chuột đều phải tính nó, nếu không: phóng to 2 lần rồi bấm là trúng chỗ cách
+   * đó gấp đôi, kéo một phân thì món nhảy hai phân.
+   */
+  let layPhongCha = () => 1;
+
   let chayNhipTruoc = false;
   function vongLap() {
     const chay = dangChayThat();
@@ -241,7 +250,9 @@ export function taoPlayer(iframe) {
           return 1;
         }
       };
-      return doc(d.querySelector('#stage')) * doc(d.querySelector('#cam'));
+      // Nhân cả phóng của trang cha: `dx` mà `drag.js` đo được là pixel MÀN HÌNH,
+      // đã đi qua cả hai tầng phóng trong iframe LẪN tầng phóng của trang cha.
+      return doc(d.querySelector('#stage')) * doc(d.querySelector('#cam')) * (layPhongCha() || 1);
     },
 
     /** Khung của iframe trên màn hình — để lớp phủ ở trang cha vẽ đúng chỗ. */
@@ -259,7 +270,32 @@ export function taoPlayer(iframe) {
      */
     quyDoi(clientX, clientY) {
       const r = iframe.getBoundingClientRect();
-      return { x: clientX - r.left, y: clientY - r.top };
+      // Chia cho hệ số phóng của trang cha: `r` đã là khung ĐÃ PHÓNG, còn
+      // `elementFromPoint` bên trong iframe thì tính bằng pixel CHƯA phóng.
+      const z = layPhongCha() || 1;
+      return { x: (clientX - r.left) / z, y: (clientY - r.top) / z };
+    },
+
+    /** Trang cha khai hệ số phóng của nó vào đây. Xem `web/zoom.js`. */
+    datPhongCha(f) { layPhongCha = typeof f === 'function' ? f : () => 1; },
+
+    /**
+     * Nghe lăn chuột NGAY TRONG tài liệu của iframe.
+     *
+     * Sự kiện chuột không vượt qua ranh giới iframe, nên trang cha không thấy cú
+     * lăn nào xảy ra bên trong. Với clip đời 2 thì lớp bắt phủ kín nên không sao;
+     * clip đời cũ thì lớp bắt bị ẩn, và nếu không có hàm này thì Ctrl+lăn ngay
+     * trên khung hình không ăn — chỉ ăn ở viền ngoài, một tính năng nửa vời.
+     *
+     * Đây là GẮN NGHE, không phải ghi vào DOM: không thêm bớt thẻ nào, không đổi
+     * kiểu dáng gì, nên trang đem đi quay phim vẫn sạch. Mà bộ xuất cũng mở trang
+     * bằng trình duyệt riêng của nó, không dính gì tới trình sửa.
+     */
+    ngheLan(f) {
+      const d = win?.document;
+      if (!d) return () => {};
+      d.addEventListener('wheel', f, { passive: false });
+      return () => d.removeEventListener('wheel', f);
     },
 
     khiDoi(f) {
