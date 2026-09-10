@@ -45,9 +45,15 @@ import sys
 # `K` và cộng gốc `(AX, AY)`. Nhờ vậy mọi hàm vẽ giao diện dùng chung cho cả
 # hai khổ, không có bản sao nào để trôi khỏi nhau.
 #
-#   node/python tools/ve-trien-khai.py            → khổ dọc 9:16 (mặc định)
-#   python3 tools/ve-trien-khai.py --ngang        → khổ ngang 16:9
-DOC = '--ngang' not in sys.argv
+# File này CHỈ làm khổ ngang 16:9. Khổ dọc đã chuyển sang
+# `tools/ve-trien-khai-doc.py`: clip dọc của đội không thu nhỏ giao diện ngang
+# mà DỰNG LẠI theo chiều dọc (nền sáng, thanh bên co còn dải biểu tượng, nội
+# dung xếp thành chồng thẻ). Dùng chung một bộ số cho hai khổ nghe hay nhưng
+# cho ra một khung dọc đầy khoảng trống và chữ quá nhỏ để đọc trên điện thoại.
+if '--doc' in sys.argv:
+    print('Khổ dọc nằm ở tools/ve-trien-khai-doc.py', file=sys.stderr)
+    sys.exit(1)
+DOC = False
 
 if DOC:
     # 720×1280, KHÔNG phải 1080×1920. `export-video.mjs` luôn dựng khổ dọc trong
