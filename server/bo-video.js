@@ -47,6 +47,7 @@ const TEN_DEP = {
   'vibe-hosting': 'Vibe Hosting — bản đầu',
   'thu-ve-lai-s02': 'S02 · Một đường link',
   'thu-trien-khai-html': 'Kéo thả HTML → chạy ngay',
+  'thu-trien-khai-doc': 'Kéo thả HTML → chạy ngay (dọc 9:16)',
   'scene-thu-nghiem': 'Cảnh thử nghiệm',
   'cta-mat-bao': 'Thẻ kêu gọi Mắt Bão',
   'thuong-hieu': 'Nhận diện thương hiệu',

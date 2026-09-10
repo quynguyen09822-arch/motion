@@ -46,7 +46,13 @@ const b = await chromium.launch();
 let tongLoi = 0;
 
 for (const ke of banKe) {
-  const p = await b.newPage({ viewport: { width: 1360, height: 820 } });
+  /*
+   * Cửa sổ phải BẰNG ĐÚNG khổ clip. Mở cửa sổ nhỏ hơn thì `fit()` thu sân khấu
+   * lại — clip dọc 1080×1920 trong cửa sổ 1360×820 bị thu còn 0,43×, chữ 10px
+   * rơi xuống 3,5px. Ở cỡ đó chữ không còn co giãn tuyến tính nữa (hinting,
+   * cỡ chữ tối thiểu), nên phép đo bề rộng báo bừa hàng chục lỗi không có thật.
+   */
+  const p = await b.newPage({ viewport: { width: ke.w, height: ke.h } });
   const loiJS = [];
   p.on('pageerror', (e) => loiJS.push(String(e)));
   await p.goto(`http://127.0.0.1:7803/clip/scene-player.html?scene=${ke.slug}`, { waitUntil: 'load' });
@@ -64,6 +70,8 @@ for (const ke of banKe) {
       const cu = cam.style.transform;
       cam.style.transform = 'none';          // gỡ camera để đo toạ độ gốc
       const goc = cam.getBoundingClientRect();
+      // Sân khấu vẫn có thể bị `fit()` thu nhẹ (lề của trang). Quy về toạ độ gốc.
+      const ti = k.w / goc.width;
 
       const doRong = (n) => {
         const dong = [...n.querySelectorAll('.t .d, .s')];
@@ -81,17 +89,23 @@ for (const ke of banKe) {
       const doc = {};
       for (const n of document.querySelectorAll('.el')) {
         const r = n.getBoundingClientRect();
+        const d = doRong(n);
         doc[`${n.dataset.scene}::${n.dataset.el}`] = {
           canh: n.dataset.scene, ten: n.dataset.el,
-          x: r.left - goc.left, y: r.top - goc.top, w: r.width, h: r.height,
-          ...doRong(n),
+          x: (r.left - goc.left) * ti, y: (r.top - goc.top) * ti,
+          w: r.width * ti, h: r.height * ti,
+          ...(d.can != null ? { can: d.can * ti } : {}),
         };
       }
       cam.style.transform = cu;
-      return { doc, cuaCanh: canhId };
+      return { doc, ti };
     }, { ke, canhId: canh.id });
 
     const lam = (n) => `${Math.round(n)}`;
+    if (Math.abs(kq.ti - 1) > 0.02) {
+      loi.push(`[${canh.id}] sân khấu bị thu ${(1 / kq.ti).toFixed(3)}× — phép đo chữ`
+        + ' không tin được ở tỉ lệ này.');
+    }
     for (const r of Object.values(kq.doc)) {
       if (r.canh !== canh.id) continue;      // chỉ tin số của cảnh đang chốt
       const id = r.ten;

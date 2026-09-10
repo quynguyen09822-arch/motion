@@ -1,23 +1,31 @@
 {
-  "slug": "thu-trien-khai-html",
-  "w": 1280,
-  "h": 720,
+  "slug": "thu-trien-khai-doc",
+  "w": 720,
+  "h": 1280,
   "canh": [
     {
-      "id": "c1-keo-tha",
-      "moc": 4.85
+      "id": "c1-toan-canh",
+      "moc": 2.65
     },
     {
-      "id": "c2-trien-khai",
+      "id": "c2-keo-tha",
+      "moc": 6.45
+    },
+    {
+      "id": "c3-tien-trinh",
       "moc": 9.05
     },
     {
-      "id": "c3-zoom",
-      "moc": 11.85
+      "id": "c4-ssl",
+      "moc": 11.25
     },
     {
-      "id": "c4-bat-ra",
-      "moc": 14.85
+      "id": "c5-database",
+      "moc": 13.45
+    },
+    {
+      "id": "c6-bat-ra",
+      "moc": 16.05
     }
   ],
   "trong": {
@@ -40,6 +48,13 @@
     "tb-ten": "app",
     "tb-mail": "app",
     "tb-gach": "app",
+    "chip0-c": "chip0",
+    "chip0-t": "chip0",
+    "chip1-c": "chip1",
+    "chip1-t": "chip1",
+    "chip2-c": "chip2",
+    "chip2-t": "chip2",
+    "cta-c": "cta",
     "bo0": "app",
     "bs0": "app",
     "bl0": "app",
@@ -154,24 +169,6 @@
     "tha-c": "nd",
     "nut": "nd",
     "nut-c": "nut",
-    "ng0-vien": "nd",
-    "ng0-nen": "nd",
-    "ng0-o2": "ng0-nen",
-    "ng0-t2": "ng0-nen",
-    "ng0-p2": "ng0-nen",
-    "ng0-dau": "ng0-nen",
-    "ng0-tick-t0": "ng0-nen",
-    "ng0-tick-t1": "ng0-nen",
-    "tep-b-v": "nd",
-    "tep-b": "nd",
-    "tep-b-o": "tep-b",
-    "tep-b-ic": "tep-b-o",
-    "tep-b-t": "tep-b",
-    "tep-b-p": "tep-b",
-    "tep-a-o": "tep-a",
-    "tep-a-ic": "tep-a-o",
-    "tep-a-t": "tep-a",
-    "tep-a-p": "tep-a",
     "tt-v": "app",
     "tt": "app",
     "tt-td": "tt",
@@ -199,6 +196,20 @@
     "ly-t2-t0": "ly",
     "ly-t2-t1": "ly",
     "ly-d2": "ly",
+    "ng0-vien": "nd",
+    "ng0-nen": "nd",
+    "ng0-o2": "ng0-nen",
+    "ng0-t2": "ng0-nen",
+    "ng0-p2": "ng0-nen",
+    "ng0-dau": "ng0-nen",
+    "ng0-tick-t0": "ng0-nen",
+    "ng0-tick-t1": "ng0-nen",
+    "tep-b-v": "nd",
+    "tep-b": "nd",
+    "tep-b-o": "tep-b",
+    "tep-b-ic": "tep-b-o",
+    "tep-b-t": "tep-b",
+    "tep-b-p": "tep-b",
     "ttx-v": "app",
     "ttx": "app",
     "ttx-td": "ttx",
@@ -226,6 +237,10 @@
     "lyx-t2-t0": "lyx",
     "lyx-t2-t1": "lyx",
     "lyx-d2": "lyx",
+    "tep-a-o": "tep-a",
+    "tep-a-ic": "tep-a-o",
+    "tep-a-t": "tep-a",
+    "tep-a-p": "tep-a",
     "bt0-t0": "app",
     "bt0-t1": "app",
     "bt1-t0": "app",
