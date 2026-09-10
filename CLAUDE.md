@@ -96,7 +96,10 @@ nó (`getBoundingClientRect`, hệ số phóng).
    `save.js` **không** thêm xuống dòng cuối file — mở rồi lưu lại phải ra file y
    nguyên từng byte.
 2. **Chỉ `player.js` được chạm `window.__clip`.** `__clip.load()` tua về giây 0,
-   nên `nap()` luôn nhớ giây hiện tại rồi tua lại.
+   nên `nap()` luôn nhớ giây hiện tại rồi tua lại. **`seek()` KHÔNG dừng phim** —
+   dừng phải gọi `pause()`, và trạng thái chạy/đứng phải hỏi `clip.paused` chứ
+   đừng tự giữ cờ riêng (cờ riêng lệch ngay lần đầu phim tự chạy hết). Xem
+   `docs/DUNG-CHAY.md`.
 3. **Không bao giờ thêm `export=1`** vào URL iframe — tham số đó tắt `fit()`, mọi
    phép đo lệch hết.
 4. **Không ghi vào DOM của iframe.** Lớp phủ vẽ ở trang cha. Ngoại lệ duy nhất là
@@ -209,6 +212,7 @@ node tools/kiem-canh.mjs [slug]     # đo bố cục một cảnh bằng trình 
 node tools/kiem-goi-a.mjs           # thêm/xoá/nhân bản, kéo bằng chuột thật, xuất video
 node tools/kiem-khung-xem.mjs       # với được vào window.__clip trong iframe không
 node tools/kiem-soat.mjs            # bảng soát chất lượng: bắt đúng, không bắt thừa
+node tools/kiem-chay-dung.mjs       # nút Chạy/Dừng, kể cả đường lùi khi bộ dựng thiếu pause()
 ```
 
 Riêng **`node tools/kiem-lichsu.mjs`** chạy bằng Node trần — không cần server,
@@ -297,4 +301,11 @@ mới**, không phải sửa dần repo này — nói rõ với người dùng t
 Tài liệu áp thẳng vào repo này nằm trong `docs/`: `QUY-UOC-CLIP.md` (dựng clip
 sao cho sửa được bằng chuột), `STITCH.md` (MCP Stitch dựng màn hình UI),
 `MAU-CHU-RIENG.md` (sửa đổi đã làm trong `scene-player.html` của dự án chung —
-nay có núm "Màu chữ riêng" trong bảng thuộc tính, không phải sửa tay JSON nữa).
+nay có núm "Màu chữ riêng" trong bảng thuộc tính, không phải sửa tay JSON nữa),
+`DUNG-CHAY.md` (thêm `pause()`/`paused` vào `scene-player.html`, kèm đường lùi và
+cách khôi phục).
+
+**Hai file `docs/*.md` trên ghi các sửa đổi trong `scene-player.html` — file của
+dự án chung, có người thay hằng ngày.** Thay cả file là hai đoạn ấy biến mất và
+hỏng lặng lẽ. Mỗi file có mục "khôi phục" và có bài kiểm canh; đọc trước khi
+đụng vào bộ dựng.
