@@ -59,6 +59,7 @@ clip. Node 22 tự lột kiểu file `.ts` nên `types.ts` nạp thẳng đượ
 | `jobs.js` | hàng đợi **một slot**, chạy `export-video.mjs` / `check-layout.mjs`, SSE tiến độ |
 | `khung.js` | đọc/sửa "khung nhấn" của clip **đời cũ** bằng `node:vm` |
 | `videos.js` + `bo-video.js` | liệt kê `out/`, đo bằng `ffprobe`, xếp theo bộ dự án |
+| `nguonvideo.js` | liệt kê `public/video/`, **đo codec** để biết file nào trình duyệt mở được |
 
 `server/main.js` có một import đi ngược sang `web/`: `soatChatLuong` từ
 `web/soat.js`. Cố ý — xem mục 5.1.
@@ -139,7 +140,11 @@ nó (`getBoundingClientRect`, hệ số phóng).
                               } ] } ] }
 ```
 
-- 24 `kind`; tên tiếng Việt và núm của từng loại ở `web/inspector/schema.js`.
+- 25 `kind`; tên tiếng Việt và núm của từng loại ở `web/inspector/schema.js`.
+- `kind: "video"` — nền động hoặc phim lồng trong khung. **Chromium không giải mã
+  HEVC**, mà `public/video/BG.mp4`/`intro.mp4`/`outro.mp4` đều là HEVC → thả vào
+  là ô đen câm lặng. Núm chọn file có nút chuyển sang H.264. Xem
+  `docs/VIDEO-TRONG-CLIP.md`.
 - Món mới **bắt buộc** có `id` không trùng trong cảnh, `kind`, và `x`/`y` là số —
   kể cả khi nằm trong cụm và hai số đó vô nghĩa. Thiếu là không lưu được.
 - `place` là **vùng** (đặt cả chỗ lẫn bề rộng), không phải điểm. Món có `place`
@@ -213,6 +218,7 @@ node tools/kiem-goi-a.mjs           # thêm/xoá/nhân bản, kéo bằng chuộ
 node tools/kiem-khung-xem.mjs       # với được vào window.__clip trong iframe không
 node tools/kiem-soat.mjs            # bảng soát chất lượng: bắt đúng, không bắt thừa
 node tools/kiem-chay-dung.mjs       # nút Chạy/Dừng, kể cả đường lùi khi bộ dựng thiếu pause()
+node tools/kiem-nen-video.mjs       # món video: chạy trong khung xem VÀ lọt vào video xuất ra
 ```
 
 Riêng **`node tools/kiem-lichsu.mjs`** chạy bằng Node trần — không cần server,
@@ -303,9 +309,10 @@ sao cho sửa được bằng chuột), `STITCH.md` (MCP Stitch dựng màn hìn
 `MAU-CHU-RIENG.md` (sửa đổi đã làm trong `scene-player.html` của dự án chung —
 nay có núm "Màu chữ riêng" trong bảng thuộc tính, không phải sửa tay JSON nữa),
 `DUNG-CHAY.md` (thêm `pause()`/`paused` vào `scene-player.html`, kèm đường lùi và
-cách khôi phục).
+cách khôi phục), `VIDEO-TRONG-CLIP.md` (thành phần `video`, bẫy HEVC, cách đổi
+định dạng).
 
-**Hai file `docs/*.md` trên ghi các sửa đổi trong `scene-player.html` — file của
+**Ba file `docs/*.md` trên ghi các sửa đổi trong `scene-player.html` — file của
 dự án chung, có người thay hằng ngày.** Thay cả file là hai đoạn ấy biến mất và
 hỏng lặng lẽ. Mỗi file có mục "khôi phục" và có bài kiểm canh; đọc trước khi
 đụng vào bộ dựng.

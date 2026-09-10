@@ -12,6 +12,7 @@
  * ⇒ mất luôn `window.__clip` ⇒ không còn cách nào bấm chọn hay xem trước tại chỗ.
  * Cùng một origin là điều kiện sống còn của trình sửa, không phải chuyện tiện tay.
  */
+import { existsSync } from 'node:fs';
 import http from 'node:http';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -21,7 +22,8 @@ import { danhSachClip, docClip, duongDanXem, locSlug } from './clips.js';
 import { chupBanGoc, lichSu } from './backup.js';
 import { khoiPhuc, luuClip } from './save.js';
 import { docNhap, ghiNhap, xoaNhap } from './drafts.js';
-import { huyViec, khoHopLe, kiemBoCuc, layViec, soDangCho, xuatVideo } from './jobs.js';
+import { chuyenVideo, huyViec, khoHopLe, kiemBoCuc, layViec, soDangCho, xuatVideo } from './jobs.js';
+import { THU_MUC, danhSachVideo as nguonVideo, duongDanThat, locTen, tenBanChuyen } from './nguonvideo.js';
 import { chanDoan, docKhung, suaKhung } from './khung.js';
 import { BO, danhSachVideo } from './videos.js';
 import { docJson, json, khop, loi, moSSE } from './router.js';
@@ -131,6 +133,29 @@ const server = http.createServer(async (req, res) => {
       const kq = await khoiPhuc(slug, String(than?.dau || ''));
       if (!kq.ok) return json(res, 422, kq);
       return json(res, 200, { ...kq, ...docClip(slug) });
+    }
+
+    /* ---------- nguồn video để đặt vào clip ---------- */
+    if (p === '/api/nguon-video' && req.method === 'GET') {
+      return json(res, 200, { ok: true, thuMuc: THU_MUC, video: await nguonVideo() });
+    }
+
+    /* Chuyển một file sang H.264. Đi qua hàng đợi việc nặng chung với xuất video
+       — hai thứ đều ăn CPU, chạy song song thì cả hai cùng chậm. */
+    if (p === '/api/chuyen-video' && req.method === 'POST') {
+      const than = await docJson(req);
+      const ten = locTen(than?.ten);
+      if (!ten) return loi(res, 400, 'Tên file không hợp lệ.');
+      const vao = duongDanThat(ten);
+      if (!existsSync(vao)) return loi(res, 404, `Không thấy file "${ten}".`);
+      const raTen = tenBanChuyen(ten);
+      const ds = await nguonVideo();
+      const nguon = ds.find((v) => v.ten === ten);
+      if (nguon?.chayDuoc) {
+        return loi(res, 400, `"${ten}" đã là định dạng trình duyệt xem được rồi.`);
+      }
+      const v = chuyenVideo({ ten, vao, ra: duongDanThat(raTen), giay: nguon?.giay });
+      return json(res, 200, { ok: true, id: v.id, ra: `${THU_MUC}/${raTen}`, dangCho: soDangCho() });
     }
 
     /* ---------- video đã xuất ---------- */

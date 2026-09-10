@@ -552,3 +552,10 @@ body {
     transition-duration: .001ms !important;
   }
 }
+
+/* ---------- núm chọn video ---------- */
+.num-video { display: flex; flex-direction: column; gap: 7px; }
+.video-xem-truoc {
+  width: 100%; border-radius: 8px; background: #000; display: block;
+  max-height: 130px; object-fit: cover;
+}

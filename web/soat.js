@@ -211,6 +211,16 @@ export function soatChatLuong(doc) {
         if (k) khoiTruoc.push({ el, khung: k });
       }
 
+      /* ---------- video chưa chọn file ---------- */
+      /* Một món video không có `src` ra đúng một ô ĐEN, không lỗi, không báo gì.
+         Bảng thuộc tính đã cảnh báo lúc chọn file sai định dạng, nhưng món vừa
+         thêm vào thì mặc định còn rỗng — rất dễ quên rồi xuất video mới thấy. */
+      if (el.kind === 'video' && !String(el.src || '').trim()) {
+        o('VIDEO_TRONG', 'Video',
+          `${canhTen} · "${monTen}" chưa chọn file video — chỗ này sẽ là một ô đen.`,
+          'Mở bảng thuộc tính, mục Nội dung → "File video" rồi chọn một file.');
+      }
+
       /* ---------- lề an toàn ---------- */
       const khung = khungChac(el);
       if (khung && rong > 0 && cao > 0 && el.kind !== 'nen' && el.kind !== 'sweep' && !cha) {
