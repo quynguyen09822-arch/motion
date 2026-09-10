@@ -25,6 +25,8 @@ import { huyViec, khoHopLe, kiemBoCuc, layViec, soDangCho, xuatVideo } from './j
 import { chanDoan, docKhung, suaKhung } from './khung.js';
 import { BO, danhSachVideo } from './videos.js';
 import { docJson, json, khop, loi, moSSE } from './router.js';
+// Bộ soát nằm trong web/ vì trình duyệt cũng phải tải được nó — xem đầu file đó.
+import { soatChatLuong } from '../web/soat.js';
 
 const GOC = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const WEB = path.join(GOC, 'web');
@@ -228,10 +230,19 @@ const server = http.createServer(async (req, res) => {
       return json(res, 200, { ok: true, kho: khoHopLe(c.doc?.meta?.width, c.doc?.meta?.height) });
     }
 
+    /* Soát HAI TẦNG. `vanDe` là tầng hợp lệ (validateScene) — có cái này thì
+       không lưu được. `chatLuong` là tầng xem được (soat.js) — chỉ để báo, KHÔNG
+       chặn lưu: một clip tương phản thấp vẫn là clip hợp lệ, và người dùng có
+       quyền cố tình làm vậy. Chặn lưu vì lời khuyên là cách nhanh nhất biến một
+       công cụ thành thứ người ta tìm cách đi vòng. */
     if (p === '/api/validate' && req.method === 'POST') {
       const than = await docJson(req);
       const vanDe = await soatKichBan(than?.doc);
-      return json(res, 200, { ok: vanDe.length === 0, vanDe });
+      const cl = soatChatLuong(than?.doc);
+      return json(res, 200, {
+        ok: vanDe.length === 0, vanDe,
+        chatLuong: { soNang: cl.soNang, soNhe: cl.soNhe, loi: cl.loi },
+      });
     }
 
     if (p.startsWith('/api/')) return loi(res, 404, `Không có đường dẫn ${p}.`);

@@ -41,7 +41,12 @@ const dsLop = taoDanhSach($('ds-lop'), {
 
 let clips = [], clipDangMo = null, chon = null, dangKeoThanh = false;
 
-const bangXuat = taoBangXuat($('bang-xuat'), { laySlug: () => kho.slug(), bao: (c, h) => bao(c, h) });
+const bangXuat = taoBangXuat($('bang-xuat'), {
+  laySlug: () => kho.slug(),
+  bao: (c, h) => bao(c, h),
+  layDoc: () => kho.doc(),
+  chonMon: (c) => { doiThe('tt'); datChon(c); },
+});
 const bangKhung = taoKhung({
   bocGiua: $('san-khung'), bocBang: $('bang-khung'), bao: (c, h) => bao(c, h),
 });
@@ -135,8 +140,23 @@ const keo = ganKeo({
 bang.khiChonKhac(datChon);
 
 /* ---------- kho báo có thay đổi ---------- */
+/* Soát chất lượng chạy lại sau mỗi lần sửa, nhưng HOÃN một nhịp: gõ từng chữ
+   vào ô tiêu đề mà soát lại cả kịch bản theo từng phím thì phí, và con số trên
+   thẻ nhấp nháy liên tục nhìn rất loạn. */
+let henSoat = null;
+function soatLai() {
+  clearTimeout(henSoat);
+  henSoat = setTimeout(() => {
+    const kq = bangXuat.veSoat();
+    const n = kq?.soNang || 0;
+    $('the-xuat').textContent = n ? `Xuất video · ${n}` : 'Xuất video';
+    $('the-xuat').classList.toggle('co-loi', n > 0);
+  }, 400);
+}
+
 kho.khiDoi((viec) => {
   if (viec === 'sua') apDung();
+  soatLai();
   nutLui.disabled = !kho.nhanLui();
   nutToi.disabled = !kho.nhanToi();
   nutLui.title = kho.nhanLui() ? `Hoàn tác: ${kho.nhanLui()}` : 'Không có gì để hoàn tác';
@@ -346,6 +366,7 @@ async function moClip(slug) {
   bang.dat(null);
   capNhat();
   bangXuat.napKho();
+  soatLai();
   doiThe('tt');
   bao(`Đã mở "${c.ten}". Bấm vào một thành phần trên khung hình để sửa.`);
   trangThai('san-sang');
