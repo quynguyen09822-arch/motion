@@ -19,6 +19,7 @@ import math
 W = H = 0
 canhs, els = [], None
 hop, trong, dong_bang, loi = {}, {}, [], []
+tran = set()      # id được phép nằm ngoài mép clip (nền do camera cắt)
 
 HE_SO_RONG = 0.62
 BU_RONG = 6
@@ -48,7 +49,12 @@ def mo_canh(id, giay, camera=None, camera_muot=None):
     canhs.append(c)
 
 
-def E(id, kind, x, y, w, h, *, chua=None, **kw):
+def E(id, kind, x, y, w, h, *, chua=None, ra_ngoai=False, **kw):
+    """`ra_ngoai=True`: phần tử được phép vượt mép clip. Dùng cho lớp nền mà
+    CAMERA mới là thứ quyết định thấy phần nào — chặn nó thì không dựng được
+    giao diện to hơn khung để zoom vào."""
+    if ra_ngoai:
+        tran.add(id)
     d = {'id': id, 'kind': kind, 'x': round(x), 'y': round(y)}
     if w is not None:
         d['w'] = round(w)
@@ -131,7 +137,8 @@ def the(id, x, y, w, h, at, *, nen='#ffffff', vien='#e7e9ee', r=12, vao='rise',
     khoi(id, x, y, w, h, nen, r=r, at=at, vao=vao, dai=dai, chua=chua, song=song)
 
 
-def dau_tick(id, cx, cy, R, mau, at, *, chua=None, day=None, vao='fade', song=None):
+def dau_tick(id, cx, cy, R, mau, at, *, chua=None, day=None, vao='fade',
+             song=None, ra_ngoai=False):
     """Dấu tick vẽ bằng HAI THANH XOAY, không dùng ký tự — ký tự ✓ phụ thuộc
     phông máy đang chạy (máy này đã ra ô vuông với `＋` và `⧉`)."""
     T = day or max(2.4, R * 0.2)
@@ -140,12 +147,16 @@ def dau_tick(id, cx, cy, R, mau, at, *, chua=None, day=None, vao='fade', song=No
         d = math.hypot(x2 - x1, y2 - y1) + T * .3
         khoi(f'{id}-t{i}', cx + (x1 + x2) / 2 - d / 2, cy + (y1 + y2) / 2 - T / 2,
              d, T, mau, r=T / 2, at=at, vao=vao, dai=.25, song=song,
-             xoay=math.degrees(math.atan2(y2 - y1, x2 - x1)), chua=chua)
+             xoay=math.degrees(math.atan2(y2 - y1, x2 - x1)), chua=chua,
+             ra_ngoai=ra_ngoai)
 
 
 def vien_dut(id, x, y, w, h, mau, at, *, day=2, net=13, khe=9, chua=None):
     """Viền nét đứt rải bằng vòng lặp — đổi kích thước vùng là viền tự chạy lại."""
-    buoc = net + khe
+    # Làm tròn về số nguyên: `range` không nhận bước thập phân, mà `net`/`khe`
+    # có thể là số lẻ sau khi nhân hệ số thu/phóng.
+    net, khe, day = round(net), round(khe), max(1, round(day))
+    buoc = max(2, net + khe)
     for i, cx in enumerate(range(0, int(w - net) + 1, buoc)):
         for cy, t in ((y, 'tr'), (y + h - day, 'du')):
             khoi(f'{id}-{t}{i}', x + cx, cy, net, day, mau, r=day / 2, at=at,
@@ -190,7 +201,7 @@ def man_hinh(x, y, cam):
 # ══ KIỂM ═══════════════════════════════════════════════════════════════════
 def kiem_trong():
     for (canh, id_), (x, y, w, h) in hop.items():
-        if x < 0 or y < 0 or x + w > W or y + h > H:
+        if id_ not in tran and (x < 0 or y < 0 or x + w > W or y + h > H):
             loi.append(f'[{canh}] `{id_}` thò ra ngoài khung hình: '
                        f'({x},{y}) {w}×{h} — khung {W}×{H}.')
         cha = trong.get(id_)
