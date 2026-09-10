@@ -290,9 +290,12 @@ def cua_so_trang(cx, cy, rong, at):
     khoi('br-bong', x - 5 * k, y - 5 * k, rong + 10 * k, cao + 10 * k, '#0f172a24',
          r=15 * k, at=at, vao='pop', dai=.55)
     khoi('br', x, y, rong, cao, '#0b0f24', r=10 * k, at=at, vao='pop', dai=.55)
-    v.E('tr', 'image', x, y + thanh, rong, cao - thanh - 1,
-        src='public/image/ttindex-xem-truoc.png', radius=0, fit='cover', chua='br',
-        **{'at': round(at + .28, 2), 'in': {'kind': 'fade', 'ease': 'out', 'dur': .5}})
+    # Dùng `v.anh` chứ không gọi thẳng `E`: `.k-image{position:relative}` đè lên
+    # `.el{position:absolute}` nên ảnh nằm trong DÒNG CHẢY và xếp chồng dồn
+    # xuống. Clip này giờ có hai ảnh (trang máy tính + trang điện thoại) nên
+    # phải bù trừ, không thì ảnh thứ hai rơi xuống dưới đáy khung.
+    v.anh('tr', x, y + thanh, rong, cao - thanh - 1,
+          'public/image/ttindex-xem-truoc.png', radius=0, chua='br', at=at + .28)
     khoi('br-thanh', x, y, rong, thanh, '#171c34', r=10 * k, at=at + .04,
          vao='fade', chua='br')
     for i, mau in enumerate(['#ff5f57', '#febc2e', '#28c840']):
@@ -320,18 +323,26 @@ danh_sach_nguon(None)
 loi_thoai('l1', 'Vibe Host nhận năm kiểu nguồn', .9)
 
 # ── C2: ĐẨY VÀO — kéo thả tệp lên "Tải file" ──────────────────────────────
-cam2 = v.cam_ngam(NX + NW / 2, 400, 1.9)
+# Cú máy này cũng bám quá sát: mép trái thẻ nguồn bị cắt, "Tải file" và
+# "Dán HTML" mất đầu dòng. Nới ra 20% và nhích khung ngắm sang trái 15% bề
+# ngang khung. Tâm ngắm phải hạ xuống 430 chứ không giữ 400: ở mức ×1,52 thì
+# nửa chiều cao khung ngắm là 421px, ngắm ở 400 là mép trên lọt ra ngoài clip.
+C2_PHONG = 1.9 * 0.8                  # ×1,52
+C2_TRAI = W * 0.15                    # 108px
+cam2 = v.cam_ngam(NX + NW / 2 - C2_TRAI, 430, C2_PHONG)
 mo_canh('c2-keo-tha', 3.6, camera=cam2, camera_muot=.85)
 khung(dong=True)
 dau_trang('Đưa website lên mạng', 'Chọn mã nguồn, còn lại để VAYS lo phần kỹ thuật',
           'Trang chủ  ›  Triển khai website', dong=True)
 danh_sach_nguon(T_CHON, dong=True)
-the_tep('tep-a', NX + NW - 268, 108, .3, song=1.35,
+# Khung ngắm mới hẹp về bên phải, thẻ tệp phải dịch vào cho khỏi lọt ra ngoài.
+TEP_X, TEP_Y = NX + 190, 112
+the_tep('tep-a', TEP_X, TEP_Y, .3, song=1.35,
         ra={'kind': 'fade', 'dur': .2})
 loi_thoai('l2', 'Kéo thẳng file .html vào', .25, song=1.5)
 loi_thoai('l2b', 'Xong. Không cấu hình gì.', T_CHON + .3)
 
-tro_a = v.man_hinh(NX + NW - 134, 144, cam2)
+tro_a = v.man_hinh(TEP_X + 134, TEP_Y + 36, cam2)
 tro_b = v.man_hinh(NX + NW / 2, DS_Y + DS_H / 2, cam2)
 v.els.append({
     'id': 'tro', 'kind': 'pointer', 'x': 0, 'y': 0,
@@ -376,6 +387,29 @@ dau_trang('Nhật ký triển khai', 'Theo dõi chi tiết quá trình đưa web
 nhat_ky([0, 0, 0, T_DB])
 loi_thoai('l5', 'Database nối xong — 4/4 bước', T_DB + .5)
 
+def dien_thoai(cx, cy, rong, at, *, song=None):
+    """Khung điện thoại hiện bản DI ĐỘNG THẬT của trang, chụp ở khổ 420×910.
+
+    Vỏ máy vẽ bằng khối; màn hình là ảnh. Tỉ lệ vỏ theo đúng tỉ lệ ảnh chụp nên
+    `cover` không cắt mất gì.
+    """
+    vien = rong * .036                       # bề dày viền máy
+    mh_w = rong - vien * 2
+    mh_h = mh_w * 910 / 420
+    cao = mh_h + vien * 2
+    x, y = cx - rong / 2, cy - cao / 2
+    khoi(f'dt-bong', x - 6, y - 4, rong + 12, cao + 12, 'rgba(15,23,42,.16)',
+         r=rong * .17, at=at, vao='pop', dai=.5, song=song)
+    khoi('dt-vo', x, y, rong, cao, '#0f172a', r=rong * .155, at=at, vao='pop',
+         dai=.5, song=song)
+    v.anh('dt-man', x + vien, y + vien, mh_w, mh_h,
+          'public/image/ttindex-dien-thoai.png', radius=rong * .12, chua='dt-vo',
+          at=at + .16)
+    # tai thỏ
+    khoi('dt-tai', cx - rong * .17, y + vien * .9, rong * .34, vien * 2.2,
+         '#0f172a', r=vien * 1.1, at=at + .2, vao='fade', chua='dt-vo')
+
+
 # ── C6: LÙI RA — trang bật ra giữa khung ──────────────────────────────────
 mo_canh('c6-bat-ra', 2.8, camera_muot=.8)
 khung(dong=True)
@@ -384,6 +418,19 @@ dau_trang('Nhật ký triển khai', 'Theo dõi chi tiết quá trình đưa web
 nhat_ky([0, 0, 0, 0])
 cua_so_trang(W / 2, 620, 660, .35)
 loi_thoai('l6', 'airtex-trungthu.vibehost.vn đã chạy', 1.1)
+
+# ── C7: CÙNG MỘT LINK — MỞ TRÊN ĐIỆN THOẠI ────────────────────────────────
+# Cảnh trước đóng lại bằng cửa sổ máy tính; cảnh này tắt nó đi và mở khung
+# điện thoại — cùng đường link, khổ màn hình khác, trang tự xếp lại một cột.
+mo_canh('c7-dien-thoai', 2.4, camera_muot=.7)
+khung(dong=True)
+dau_trang('Nhật ký triển khai', 'Theo dõi chi tiết quá trình đưa website lên server',
+          'Triển khai website  ›  Deployment #1247', dong=True)
+nhat_ky([0, 0, 0, 0])
+# Chỉ điện thoại. Để cả cửa sổ máy tính chồng lên thì hai khung che nhau, mà
+# ý của cảnh này chỉ là: cùng đường link đó, mở trên điện thoại cũng chạy.
+dien_thoai(W / 2, 620, 340, .3)
+loi_thoai('l7', 'Cùng một link — điện thoại mở cũng chạy', .9)
 
 v.chot(OUT, KIEM, {
     'name': 'Kéo thả HTML → Vibe Hosting (dọc 9:16)',

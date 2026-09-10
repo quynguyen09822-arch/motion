@@ -26,6 +26,10 @@
     {
       "id": "c6-bat-ra",
       "moc": 15.85
+    },
+    {
+      "id": "c7-dien-thoai",
+      "moc": 18.25
     }
   ],
   "trong": {
@@ -163,6 +167,9 @@
     "br-url": "br-thanh",
     "br-khoa": "br-url",
     "br-diachi": "br-url",
-    "l6-c": "l6-n"
+    "l6-c": "l6-n",
+    "dt-man": "dt-vo",
+    "dt-tai": "dt-vo",
+    "l7-c": "l7-n"
   }
 }

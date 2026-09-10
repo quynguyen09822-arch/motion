@@ -18,6 +18,7 @@ import { chromium } from '/home/coder/workspace/projects/clipVibehost/hosting-an
 const PROJ = '/home/coder/workspace/projects/clipVibehost/hosting-animatic-production';
 const NGUON = path.join(PROJ, 'public/html-foot/ttindex.html');
 const RA = path.join(PROJ, 'public/image/ttindex-xem-truoc.png');
+const RA_DT = path.join(PROJ, 'public/image/ttindex-dien-thoai.png');
 
 const b = await chromium.launch();
 const p = await b.newPage({ viewport: { width: 1520, height: 784 }, deviceScaleFactor: 1 });
@@ -29,5 +30,20 @@ await p.evaluate(() => document.querySelectorAll('.rv')
   .forEach((n) => n.classList.add('in', 'vis', 'show')));
 await p.waitForTimeout(600);
 await p.screenshot({ path: RA });
+await p.close();
+
+/*
+ * Bản điện thoại: 420×910 ≈ khổ màn hình một chiếc điện thoại thường. Trang có
+ * bố cục co theo bề ngang nên ở khổ này nó tự xếp lại thành một cột — đó chính
+ * là thứ cần cho cảnh "cùng một link, mở trên điện thoại cũng chạy".
+ */
+const dt = await b.newPage({ viewport: { width: 420, height: 910 }, deviceScaleFactor: 1 });
+await dt.goto(`file://${NGUON}`, { waitUntil: 'load' });
+await dt.waitForTimeout(2000);
+await dt.evaluate(() => document.querySelectorAll('.rv')
+  .forEach((n) => n.classList.add('in', 'vis', 'show')));
+await dt.waitForTimeout(600);
+await dt.screenshot({ path: RA_DT });
 await b.close();
 console.log(`✓ ${RA}`);
+console.log(`✓ ${RA_DT}`);
