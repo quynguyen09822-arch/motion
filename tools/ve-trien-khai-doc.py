@@ -32,7 +32,12 @@ OUT = GOC / 'scenes' / 'thu-trien-khai-doc.json'
 KIEM = pathlib.Path(__file__).parent / f'kiem-{OUT.stem}.json'
 
 # ══ MÀU ════════════════════════════════════════════════════════════════════
-NEN      = '#ffffff'      # nền khung hình — SÁNG, theo clip dọc của đội
+# Nền khung hình là MÀU KHOÁ, không phải màu thật. `tools/ghep-bg.mjs` cắt màu
+# này ra rồi lồng `public/video/BG.mp4` (đã làm mờ) vào chỗ đó — định dạng kịch
+# bản cảnh không có kiểu `video` nên nền động chỉ ghép được ở khâu ffmpeg.
+# Hồng cánh sen vì nó không có trong bảng màu của clip lẫn của trang AIRTEX,
+# nên cắt không ăn nhầm thứ gì.
+NEN      = '#ff00ff'
 GIAY     = '#ffffff'
 RAIL     = '#1d2839'      # dải biểu tượng bên trái
 RAIL_SANG = '#2b3a50'
