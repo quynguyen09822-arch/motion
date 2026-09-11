@@ -27,10 +27,11 @@ import { taoAnhNho } from './anhnho.js';
 const $ = (id) => document.getElementById(id);
 const chonClip = $('chon-clip'), dangClip = $('dang-clip'), dsCanhEl = $('ds-canh');
 const bangDoiCu = $('bang-doi-cu'), bocKhung = $('boc-khung'), lopBat = $('lop-bat');
+const khungEl = $('khung');
 const nutChay = $('nut-chay'), thanhTua = $('thanh-tua'), dongHo = $('dong-ho'), baoEl = $('bao');
 const nutLui = $('nut-lui'), nutToi = $('nut-toi'), nutLuu = $('nut-luu'), dauBan = $('dau-ban');
 
-const player = taoPlayer($('khung'));
+const player = taoPlayer(khungEl);
 const kho = taoKho();
 const doMon = taoDo(player);
 const lopPhu = taoLopPhu($('lop-phu'), player);
@@ -345,21 +346,40 @@ async function moClip(slug) {
   anhNho.napLai();      // mỗi clip một bảng màu và một bộ CSS riêng
 
   if (c.doi !== 2) {
-    khoaDieuKhien(true);
+    /*
+     * CLIP ĐỜI CŨ = CHỈ XEM, nhưng XEM CHO RA XEM.
+     *
+     * Trước đây chỗ này ép mở thẻ "Khung nhấn", mà thẻ đó thay luôn sân khấu ở
+     * giữa — nên chọn một clip đời cũ là rơi vào một ô đen ghi "clip này chưa
+     * chỉnh khung được", còn chính cái clip thì không thấy đâu. Người dùng muốn
+     * liếc qua một clip cũ thì phải đi mở file nguồn, nhanh hơn ở đây.
+     *
+     * Nay: đứng nguyên ở khung xem, và nếu trang phơi `__clip` (cả 12 clip đời
+     * cũ đều phơi) thì MỞ HẲN nút Chạy với thanh tua. Thẻ Khung nhấn vẫn hiện
+     * ra để bấm, chỉ không tự nhảy vào nữa.
+     */
     lopBat.style.display = 'none';
     dsCanhEl.innerHTML = '<li class="khong-the">Clip đời cũ không tách được ra từng cảnh.</li>';
-    $('bang-thuoc-tinh').innerHTML =
-      '<div class="trong">Clip đời cũ chưa sửa trực tiếp được.</div>';
-    // Nhưng khung nhấn thì SỬA ĐƯỢC: toạ độ của chúng là số viết thẳng trong
-    // mảng, tính theo pixel ảnh mockup — không phải do code tính lúc chạy.
-    // Luôn mở thẻ Khung nhấn cho clip đời cũ: chỉnh được thì cho chỉnh, không
-    // chỉnh được thì bày lý do ra. Ẩn thẻ đi là bắt người dùng đi hỏi.
-    const kq = await bangKhung.mo(slug).catch(() => ({ ok: false, thieu: [] }));
+    const laiDuoc = player.san();
+    $('bang-thuoc-tinh').innerHTML = laiDuoc
+      ? '<div class="trong">Clip đời cũ — <b>chỉ xem</b>. Chạy và tua được, nhưng '
+        + 'không sửa trực tiếp được: vị trí mọi thứ do code tính lúc chạy.</div>'
+      : '<div class="trong">Clip đời cũ chưa sửa trực tiếp được, và trang này cũng '
+        + 'không cho tua — nó tự chạy lấy.</div>';
+    khoaDieuKhien(!laiDuoc);
+    // `khoaDieuKhien` vừa ghi đè đồng hồ thành "0,0 / 0,0 giây". Clip đời cũ
+    // đứng yên nên không có nhịp nào chạy tới để sửa lại — phải gọi thẳng.
+    if (laiDuoc) capNhat();
+    vuaKhoTho();
+    // Khung nhấn thì SỬA ĐƯỢC: toạ độ của chúng là số viết thẳng trong mảng,
+    // tính theo pixel ảnh mockup — không phải do code tính lúc chạy. Nên vẫn
+    // bày thẻ ra, chỉ không cướp chỗ của khung xem nữa.
+    await bangKhung.mo(slug).catch(() => ({ ok: false, thieu: [] }));
     $('the-khung').classList.remove('an');
-    doiThe('khung');
-    bao(kq.ok
-      ? `Đã mở "${c.ten}". Chỉ xem được, nhưng khung nhấn thì chỉnh được.`
-      : `Đã mở "${c.ten}" — clip này chưa chỉnh khung được, lý do ở cột bên phải.`);
+    doiThe('tt');
+    bao(laiDuoc
+      ? `Đã mở "${c.ten}" — chỉ xem, nhưng chạy và tua được.`
+      : `Đã mở "${c.ten}" — chỉ xem, trang này tự chạy lấy.`);
     trangThai('san-sang');
     return;
   }
@@ -367,6 +387,7 @@ async function moClip(slug) {
 
   lopBat.style.display = '';
   khoaDieuKhien(false);
+  thoiKhoTho();
 
   const kq = await (await fetch(`/api/clip/${slug}`)).json();
   if (!kq.ok) { bao(kq.loi, true); trangThai('hong'); return; }
@@ -409,6 +430,34 @@ function datNhanChay(dangChay) {
   if (nhan) nhan.textContent = dangChay ? 'Dừng' : 'Chạy';
   nutChay.setAttribute('aria-label', dangChay ? 'Dừng' : 'Chạy');
 }
+
+/* ---------- khổ gốc của clip đời cũ ---------- */
+/*
+ * Clip đời cũ chạy `export=1` nên trang KHÔNG tự co nữa: sân khấu ra đúng cỡ
+ * gốc rồi tràn khỏi iframe. Trang cha lo phần thu: đặt iframe đúng cỡ gốc rồi
+ * `scale` cả cái iframe cho vừa khung. Thu bằng `transform` nên chữ vẫn nét,
+ * và không phải đụng một dòng nào bên trong iframe.
+ */
+function vuaKhoTho() {
+  const kho = player.khoTho();
+  if (!kho) { thoiKhoTho(); return; }
+  bocKhung.style.setProperty('--ti-le', `${kho.w} / ${kho.h}`);
+  const k = Math.min(bocKhung.clientWidth / kho.w, bocKhung.clientHeight / kho.h) || 1;
+  khungEl.style.width = `${kho.w}px`;
+  khungEl.style.height = `${kho.h}px`;
+  khungEl.style.transformOrigin = 'top left';
+  khungEl.style.transform = `scale(${k})`;
+}
+
+/* Trả iframe về nếp thường. Clip đời mới tự co lấy, đụng vào là hỏng phép đo. */
+function thoiKhoTho() {
+  khungEl.style.width = '';
+  khungEl.style.height = '';
+  khungEl.style.transform = '';
+  khungEl.style.transformOrigin = '';
+}
+
+addEventListener('resize', () => { if (clipDangMo && clipDangMo.doi !== 2) vuaKhoTho(); });
 
 function khoaDieuKhien(khoa) {
   nutChay.disabled = khoa; thanhTua.disabled = khoa;

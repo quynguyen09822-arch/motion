@@ -860,3 +860,12 @@ body {
   width: 17px; height: 17px; fill: none; stroke: var(--chu-mo-2);
   stroke-width: 1.3; stroke-linejoin: round;
 }
+
+/* ---------- thanh trên không được đẩy tràn ngang ---------- */
+/* Ô chọn clip có `min-width` cố định, mà tên clip đời cũ thì dài
+   ("VH-03 · CEO / Sales Leader — số liệu không phải đợi ai"). Không cho co thì
+   cả thanh đội rộng ra, đẩy nút Lưu khỏi mép phải và sinh cuộn ngang. */
+.thanh-tren > * { min-width: 0; }
+.chon { flex: 0 1 auto; min-width: 140px; max-width: 46vw; }
+.hieu { flex: none; }
+.o-hieu { flex: none; }

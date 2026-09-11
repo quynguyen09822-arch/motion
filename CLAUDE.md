@@ -244,6 +244,7 @@ node tools/kiem-nen-video.mjs       # món video: chạy trong khung xem VÀ l�
 node tools/kiem-phong.mjs           # Ctrl+lăn phóng khung: bấm và kéo có còn trúng không
 node tools/kiem-anh-nho.mjs         # ảnh nhỏ thành phần: ĐÚNG CHỖ ĐẶT, đúng nền, ảnh không vỡ, dựng lười
 node tools/kiem-huong-dan.mjs       # hướng dẫn tại chỗ: đủ núm, đúng khuôn viết, bàn phím dùng được
+node tools/kiem-doi-cu.mjs          # clip đời cũ: thấy được, chạy/tua được, vẫn KHÔNG sửa được
 ```
 
 Riêng **`node tools/kiem-lichsu.mjs`** chạy bằng Node trần — không cần server,
@@ -288,6 +289,11 @@ từ khối hình học và chạy bốn phép kiểm bố cục (`kiem_trong`, 
   chung hàm `banDoNen()` của `soat.js` với phép soát chất lượng: hai nơi không
   được nói khác nhau. Sửa cách vẽ ô ảnh thì chạy `tools/kiem-anh-nho.mjs` mục 5 —
   nó đo **chỗ đặt**, vì lỗi cũ (156 ô trắng) qua được mọi phép kiểm "có nội dung".
+- **Clip đời cũ nạp kèm `?export=1`, clip đời mới TUYỆT ĐỐI KHÔNG.** Tham số đó
+  tắt `fit()` nên mọi phép đo lệch — clip đời mới sửa được nên phép đo phải đúng;
+  clip đời cũ không sửa được nên không có gì để lệch, mà đổi lại thì có `__clip`
+  (cả 12 clip đều phơi `duration/ready/play/at/seek`) nên chạy và tua được.
+  `__clip` của clip đời cũ **không có `scenes()`** — hỏi trước rồi hãy gọi.
 - **Giao diện theo bản dựng Stitch** (`stitch_d_n_kh_i_nghi_p/`) — bảng màu và
   nhịp nằm gọn trong `:root` của `web/app.css`, đừng viết màu thẳng vào rule.
   Nhấn là **xanh lá**, chữ trên nhấn là `var(--tren-nhan)`. Không dựng nút cho

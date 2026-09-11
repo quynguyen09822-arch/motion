@@ -74,3 +74,62 @@ lỗi "máy này chữ vừa, máy kia chữ tràn".
 **Timeline một track cho cảnh** — dữ liệu có thật (`scenes[].start/duration`, và
 `at`/`for` của món đang chọn), nên dựng được mà không phải bịa. Đây là mảnh lớn
 nhất của bản Stitch chưa làm.
+
+---
+
+# Clip đời cũ — chỉ xem, nhưng xem cho ra xem
+
+12 trong 23 mục của ô chọn clip là file `.html` rời, không phải kịch bản JSON.
+Chúng **không sửa được** — vị trí mọi thứ do code tính lúc chạy — nhưng phải
+**xem được cho đàng hoàng**, để liếc qua một clip cũ nhanh hơn đi mở file nguồn.
+
+## Ba lỗi đã sửa
+
+**1. Chọn clip đời cũ thì không thấy clip đâu.**
+Trình sửa tự nhảy sang thẻ "Khung nhấn", mà thẻ đó **thay luôn sân khấu ở giữa**
+— người dùng rơi vào một ô đen ghi "clip này chưa chỉnh khung được". Nay clip
+đứng nguyên ở khung xem; thẻ Khung nhấn vẫn hiện ra để bấm, chỉ không cướp chỗ.
+
+**2. Nút Chạy và thanh tua chết cứng.**
+Đồng hồ ghi "trang tự chạy" — xem một clip 90 giây phải ngồi đợi đủ 90 giây.
+
+Lý do: những trang ấy phơi `window.__clip` **chỉ khi có `?export=1`**, mà trước
+đây có một luật cấm bật tham số đó. Đo thật cả 12 clip: **cả 12 đều phơi đủ**
+`duration / ready / play / at / seek / step`. Cái transport cần dùng vốn đã nằm
+sẵn ở đó, chỉ là không ai gọi.
+
+Luật cấm cũ vẫn đúng — **với clip đời mới**: `export=1` tắt `fit()` nên mọi phép
+đo lệch, mà clip đời mới thì sửa được nên phép đo phải đúng. Với clip đời cũ thì
+không có phép đo nào để mà lệch, vì không sửa được. Nay luật ghi rõ hai vế.
+
+Đánh đổi còn lại: `export=1` khiến sân khấu ra đúng cỡ gốc (1280×720 hoặc
+720×1280) và tràn khỏi iframe. Trang cha lo phần thu — đặt iframe đúng cỡ gốc
+rồi `scale` cả cái iframe (`vuaKhoTho()` trong `web/app.js`). Thu bằng
+`transform` nên chữ vẫn nét, và không phải đụng một dòng nào bên trong iframe.
+Khổ gốc phải **ĐO**, không được đoán 16:9: đo 12 clip ra 1280×720, 720×1280 và
+vài trang lấy chiều cao theo cửa sổ.
+
+**3. Tên clip hiện ra `&amp;`.**
+`<title>VH-V2 · Tạo &amp; quản lý Database</title>` là HTML **đúng**. Nhưng
+`server/clips.js` lấy nó ra làm chữ thường rồi nhét vào `textContent`, nên người
+dùng đọc nguyên chữ "&amp;" ở ô chọn clip, thanh phát và mọi lời nhắc. Nay giải
+mã năm thực thể bắt buộc của XML, `&amp;` **luôn giải cuối cùng** — không thì
+`&amp;lt;` ra `<`.
+
+## Kiểm
+
+```bash
+node tools/kiem-doi-cu.mjs
+```
+
+Chạy trên **cả 12 clip đời cũ**: tên không còn thực thể HTML · luôn đứng ở thẻ
+Thuộc tính · khung xem luôn hiện · clip thu vừa khung không tràn · nút Chạy mở ·
+đồng hồ biết thời lượng thật · bấm Chạy đồng hồ nhích · kéo thanh tua nhảy đúng
+chỗ · thẻ Khung nhấn vẫn bấm được.
+
+**Một mục của `kiem-khung.mjs` đã đổi có chủ ý**: trước đòi trình sửa *tự nhảy*
+vào thẻ Khung nhấn, nay đòi **không** tự nhảy và khung xem phải còn thấy.
+
+Bẫy đã vấp khi viết bài kiểm này: so thời lượng bằng **chuỗi** thì
+`"0,0 / 50,0 giây"` kết thúc bằng đúng chữ `"0,0 giây"` → báo oan. Phải đọc số ra
+mà so.
