@@ -86,9 +86,10 @@ export function taoNum(num, giaTri, doi, cuChi) {
       break;
     }
     case 'bac': {
-      // BẬC 0..7, không phải px. Bộ soát báo lỗi nếu lọt ra ngoài khoảng này.
+      // BẬC, không phải px. Mặc định là thang 0..7 của khoảng cách; núm nào có
+      // thang riêng (nhoè, bóng đổ, đẩy máy) thì khai `bac` trong schema.
       dieuKhien = el('div', 'nac');
-      TEN_BAC.forEach((ten, i) => {
+      (num.bac || TEN_BAC).forEach((ten, i) => {
         const b = el('button', 'nac-o', ten);
         b.type = 'button';
         b.setAttribute('aria-pressed', String((giaTri ?? 0) === i));

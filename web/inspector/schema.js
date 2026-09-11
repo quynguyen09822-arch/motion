@@ -30,6 +30,7 @@ export const KHO_VAO = [
   { id: 'no-ra-em',    ten: 'Nở ra êm',         m: { kind: 'pop',  ease: 'out',  dur: 0.70 }, goi: 'ảnh, khối lớn' },
   { id: 'hien-dan',    ten: 'Hiện dần',         m: { kind: 'fade', ease: 'out',  dur: 0.70 }, goi: 'nền, thứ không muốn hút mắt' },
   { id: 'hien-cham',   ten: 'Hiện thật chậm',   m: { kind: 'fade', ease: 'linear', dur: 1.2 }, goi: 'cảnh mở màn' },
+  { id: 'thu-tu-lon',  ten: 'Thu lại từ lớn',   m: { kind: 'nen',  ease: 'out',  dur: 1.0 }, goi: 'ảnh, khối lớn — cú đẩy máy của phim' },
   { id: 'dung-im',     ten: 'Đứng im',          m: { kind: 'none', dur: 0.001 },              goi: 'nền giữ nguyên khi sang cảnh' },
 ];
 
@@ -134,6 +135,32 @@ export const NHAN_KHE_HO = {
   text: 'Khoảng cách giữa các dòng',
   hangnhan: 'Khoảng cách giữa các nhãn',
 };
+
+/**
+ * HIỆU ỨNG HÌNH — nhoè, bóng đổ, đẩy máy chậm.
+ *
+ * Ba thứ làm một clip trông "điện ảnh" hơn mà không phải vẽ lại gì: chiều sâu
+ * (nhoè hậu cảnh), khối (bóng đổ), và máy quay không bao giờ đứng chết (đẩy máy
+ * rất chậm suốt cảnh).
+ *
+ * Tất cả đều là BẬC, không phải điểm ảnh — đổi khổ clip thì hiệu ứng giãn theo.
+ * Và tất cả đều lái bằng `t` của clip, KHÔNG bằng animation của CSS: bộ xuất
+ * video nhảy thẳng tới từng mốc giây, dùng CSS là mỗi lần xuất ra một khung
+ * khác nhau. Xem `docs/HIEU-UNG-HINH.md`.
+ *
+ * Áp được cho MỌI loại phần tử — `filter` của trình duyệt không kén loại.
+ */
+export const BAC_NHOE  = ['Không', 'Rất nhẹ', 'Nhẹ', 'Vừa', 'Đậm', 'Rất đậm'];
+export const BAC_BONG  = ['Không', 'Rất nhẹ', 'Nhẹ', 'Vừa', 'Đậm', 'Rất đậm'];
+export const BAC_DAY   = ['Không', 'Rất chậm', 'Chậm', 'Vừa', 'Rõ'];
+
+export const NUM_HIEU_UNG = [
+  { id: 'soft',   nhan: 'Làm nhoè',        kieu: 'bac', bac: BAC_NHOE },
+  { id: 'softIn', nhan: 'Nét dần khi vào', kieu: 'bac', bac: BAC_NHOE },
+  { id: 'shadow', nhan: 'Bóng đổ',         kieu: 'bac', bac: BAC_BONG },
+  { id: 'push',   nhan: 'Đẩy máy chậm',    kieu: 'bac', bac: BAC_DAY },
+  { id: 'pushOut', nhan: 'Đẩy ra thay vì đẩy vào', kieu: 'bat' },
+];
 
 export const NUM_RIENG = {
   text: [
@@ -516,6 +543,16 @@ export const HUONG_DAN_CHUNG = {
     mota: 'Số giây của riêng cảnh. Nhớ để đủ dài cho mọi món kịp bay vào xong — bảng soát sẽ báo nếu thiếu.' },
   stagger: { tieuDe: 'Các món vào so le nhau',
     mota: 'Món sau vào chậm hơn món trước chừng này giây. Đây là thứ làm chuyển động bớt máy móc — bỏ đi là cả cảnh ùa ra một lượt.' },
+  soft: { tieuDe: 'Làm nhoè món này',
+    mota: 'Đẩy món ra sau bằng cách làm nó nhoè đi. Dùng cho hậu cảnh, để mắt người xem dính vào thứ còn sắc nét ở trước.' },
+  softIn: { tieuDe: 'Nét dần khi vào',
+    mota: 'Món vào khung còn nhoè rồi rõ dần, như ống kính vừa lấy nét xong. Hợp với ảnh và khối lớn mở đầu một cảnh.' },
+  shadow: { tieuDe: 'Bóng đổ dưới món',
+    mota: 'Nâng món lên khỏi nền, cho nó dày và có khối. Bóng bám theo đúng hình món nên logo hay ảnh khoét nền vẫn đúng viền.' },
+  push: { tieuDe: 'Đẩy máy chậm suốt cảnh',
+    mota: 'Phóng rất chậm suốt cảnh nên mắt không bắt được, chỉ thấy hình như đang thở. Đây là thứ tách một đoạn phim khỏi một tấm ảnh đứng yên.' },
+  pushOut: { tieuDe: 'Đẩy ra thay vì đẩy vào',
+    mota: 'Đổi chiều: bắt đầu ở mức lớn rồi lùi dần về. Hợp lúc kết cảnh, khi muốn mở rộng ra cho thấy toàn cảnh.' },
   density: { tieuDe: 'Độ thoáng của cả clip',
     mota: 'Một núm làm mọi khoảng cách trong clip giãn ra hoặc chặt lại cùng lúc, mà tương quan giữa các món không đổi.' },
 };

@@ -4,7 +4,7 @@
  * Chia mục theo câu hỏi trong đầu người dùng, không theo cấu trúc dữ liệu:
  * "nó viết gì" → "nó bay vào thế nào" → "lúc nào nó hiện" → "nó nằm đâu".
  */
-import { DEM_TRONG, HUONG_DAN_CHUNG, HUONG_DAN_MAU, KHE_HO, KHO_CHO, KHO_DA, KHO_RA, KHO_VAO, MAU_MAT_BAO, NHAN_KHE_HO, NUM_MAU, NUM_RIENG, TEN_LOAI } from './schema.js';
+import { DEM_TRONG, HUONG_DAN_CHUNG, HUONG_DAN_MAU, KHE_HO, KHO_CHO, KHO_DA, KHO_RA, KHO_VAO, MAU_MAT_BAO, NHAN_KHE_HO, NUM_HIEU_UNG, NUM_MAU, NUM_RIENG, TEN_LOAI } from './schema.js';
 import { taoNum } from './fields.js';
 import { huongDanChung } from '../huongdan.js';
 import { duongDanMon, timCanh, timMon } from '../store.js';
@@ -393,6 +393,21 @@ export function taoBang(boc, kho, player) {
       e.rotate ?? 0, (v) => datMon('đổi độ nghiêng', 'rotate', v), cuChi));
     mK.appendChild(sauK);
     boc.appendChild(mK);
+
+    /*
+     * HIỆU ỨNG HÌNH — nhoè, bóng đổ, đẩy máy chậm.
+     *
+     * Áp cho MỌI loại: `filter` của trình duyệt không kén loại, và phép nhân vào
+     * `scale` cũng vậy. Nên ở đây KHÔNG có bảng "loại nào nghe" như `pad`/`gap`
+     * — chỗ nào cũng nghe. `tools/kiem-hieu-ung.mjs` đo lại điều đó trên cả 24
+     * loại, để hôm nào bộ dựng đổi ý thì biết ngay.
+     */
+    const mH = muc('Hiệu ứng hình');
+    for (const num of NUM_HIEU_UNG) {
+      mH.appendChild(taoNum(num, e[num.id] ?? (num.kieu === 'bat' ? false : 0),
+        (v) => datMon(`đổi ${num.nhan.toLowerCase()}`, num.id, v), cuChi));
+    }
+    boc.appendChild(mH);
   }
 
   return {

@@ -246,6 +246,7 @@ node tools/kiem-anh-nho.mjs         # ảnh nhỏ thành phần: ĐÚNG CHỖ Đ
 node tools/kiem-huong-dan.mjs       # hướng dẫn tại chỗ: đủ núm, đúng khuôn viết, bàn phím dùng được
 node tools/kiem-doi-cu.mjs          # clip đời cũ: thấy được, chạy/tua được, vẫn KHÔNG sửa được
 node tools/kiem-dem-khe.mjs         # đệm trong / khe hở: không núm chết, không năng lực bị giấu
+node tools/kiem-hieu-ung.mjs        # nhoè / bóng đổ / đẩy máy chậm: bộ dựng còn phần vá không
 ```
 
 Riêng **`node tools/kiem-lichsu.mjs`** chạy bằng Node trần — không cần server,
@@ -290,6 +291,10 @@ từ khối hình học và chạy bốn phép kiểm bố cục (`kiem_trong`, 
   chung hàm `banDoNen()` của `soat.js` với phép soát chất lượng: hai nơi không
   được nói khác nhau. Sửa cách vẽ ô ảnh thì chạy `tools/kiem-anh-nho.mjs` mục 5 —
   nó đo **chỗ đặt**, vì lỗi cũ (156 ô trắng) qua được mọi phép kiểm "có nội dung".
+- **Hiệu ứng hình (`soft`/`softIn`/`shadow`/`push`) cần phần vá trong
+  `scene-player.html`** — file của dự án chung, KHÔNG có git. Ai khôi phục file
+  đó từ bản sao lưu cũ là núm vẫn còn mà hiệu ứng biến mất, không báo gì.
+  `tools/kiem-hieu-ung.mjs` đọc thẳng file ấy để bắt ca đó. Xem `docs/HIEU-UNG-HINH.md`.
 - **Chỉ bày núm mà bộ dựng THẬT SỰ đọc.** `DEM_TRONG`/`KHE_HO` trong `schema.js`
   là bảng sự thật cho `pad`/`gap`, kèm bậc mặc định thật. Bày núm chết còn tệ hơn
   không bày — bấm vào thì kịch bản đổi mà khung hình đứng im. `tools/kiem-dem-khe.mjs`
@@ -359,6 +364,7 @@ sao cho sửa được bằng chuột), `STITCH.md` (MCP Stitch dựng màn hìn
 nay có núm "Màu chữ riêng" trong bảng thuộc tính, không phải sửa tay JSON nữa),
 `QUY-TAC-ANH-NHO.md` (quy tắc ảnh nhỏ bảng lớp, áp cho mọi clip),
 `GIAO-DIEN.md` (dựng lại giao diện theo bản Stitch, và những gì cố ý không dựng),
+`HIEU-UNG-HINH.md` (nhoè, bóng đổ, đẩy máy chậm — có sửa `scene-player.html`),
 `DUNG-CHAY.md` (thêm `pause()`/`paused` vào `scene-player.html`, kèm đường lùi và
 cách khôi phục), `VIDEO-TRONG-CLIP.md` (thành phần `video`, bẫy HEVC, cách đổi
 định dạng).
