@@ -66,6 +66,10 @@ export function taoDanhSach(boc, { onChon, onRe, onThoiRe, anhNho }) {
     canhDang = canhId;
     doiNgo.disconnect();
     anLon();
+    // Quy tắc ảnh nhỏ cần biết thứ tự vẽ của cảnh để dò nền dưới mỗi món. Đặt ở
+    // đây là mọi clip đều đi qua, không clip nào lọt: đây là đường DUY NHẤT vẽ
+    // lại danh sách, cả lúc mở clip lẫn lúc đổi cảnh.
+    anhNho?.datKichBan(doc);
     const canh = (doc?.scenes || []).find((s) => s.id === canhId);
     if (!canh) return;
 

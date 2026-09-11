@@ -117,7 +117,76 @@ try {
   dat('KHÔNG dựng hết một lượt', nang.daVe < nang.tong / 2,
     `mới dựng ${nang.daVe}/${nang.tong}`);
 
-  console.log('\n5. Lỗi trên trang');
+  /* ---------- 5. QUY TẮC ẢNH NHỎ — áp cho MỌI clip ---------- */
+  /*
+   * Đây là chốt chặn cho lỗi đã làm hỏng cả bảng lớp mà không ai thấy: bản sao
+   * giữ nguyên `left/top` NỘI TUYẾN của bộ dựng, nên nó nằm ở đúng chỗ của nó
+   * trong khung 1280×720 — tức là ngoài hẳn cái ô 34px. Mọi phép kiểm cũ vẫn
+   * qua (ô CÓ nội dung, ảnh CÓ tải được, tỉ lệ ĐÚNG là thu nhỏ) trong khi người
+   * dùng nhìn thấy 156 ô trắng như nhau.
+   *
+   * Nên phép kiểm ở đây đo CHỖ ĐẶT, không đo sự tồn tại: phần bản sao lọt vào
+   * trong ô phải gần bằng phần LẼ RA lọt được. Lệch chỗ là rớt ngay.
+   */
+  console.log('\n5. Quy tắc ảnh nhỏ áp cho mọi clip');
+  const { banDoNen } = await import(new URL('../web/soat.js', import.meta.url));
+
+  for (const slug of ['cta', 'thu-ve-lai-s02', 'thu-trien-khai-html']) {
+    await trang.selectOption('#chon-clip', slug);
+    await trang.waitForSelector('#app[data-trang-thai="san-sang"]', { timeout: 40000 });
+    await trang.waitForTimeout(1200);
+
+    const doc = await (await fetch(`${GOC}/api/clip/${slug}`)).json();
+    const canh = doc.doc?.scenes?.[0] || doc.scenes?.[0];
+    const meta = doc.doc?.meta || doc.meta || {};
+    const nen = banDoNen(canh, meta);
+
+    const kq = await trang.evaluate(() => {
+      const ra = [];
+      for (const o of document.querySelectorAll('.lop-anh')) {
+        const b = o.shadowRoot?.querySelector('.khung > .el');
+        if (!b) continue;
+        const r = b.getBoundingClientRect(), ro = o.getBoundingClientRect();
+        const gx = Math.max(0, Math.min(r.right, ro.right) - Math.max(r.left, ro.left));
+        const gy = Math.max(0, Math.min(r.bottom, ro.bottom) - Math.max(r.top, ro.top));
+        // Phần LẼ RA lọt được vào ô, nếu đặt đúng chỗ.
+        const can = Math.min(r.width, ro.width) * Math.min(r.height, ro.height);
+        const m = /scale\(([\d.]+)\)/.exec(b.style.transform || '');
+        ra.push({
+          mon: o.dataset.mon,
+          lot: can > 0 ? (gx * gy) / can : 0,
+          ti: m ? Number(m[1]) : null,
+          nen: getComputedStyle(o.shadowRoot.querySelector('.khung')).backgroundColor,
+        });
+      }
+      return ra;
+    });
+
+    const lech = kq.filter((x) => x.lot < 0.8);
+    dat(`${slug}: bản sao nằm ĐÚNG trong ô`, lech.length === 0,
+      lech.length ? `${lech.length}/${kq.length} lệch — ${lech.slice(0, 3).map((x) => `${x.mon} ${(x.lot * 100).toFixed(0)}%`).join(', ')}`
+        : `${kq.length} ô đều lọt trọn`);
+
+    const qua = kq.filter((x) => x.ti != null && x.ti > 4.001);
+    dat(`${slug}: không ô nào phóng quá trần`, qua.length === 0,
+      qua.slice(0, 2).map((x) => `${x.mon}=${x.ti}`).join(', ') || 'trần 4×');
+
+    // Nền phải là nền THẬT dưới món, không phải màu nền của trang sửa.
+    const sai = kq.filter((x) => {
+      const mong = nen.get(x.mon)?.mau;
+      if (!mong || !/^#[0-9a-f]{6}$/i.test(mong)) return false;
+      const p = /^rgba?\(([^)]+)\)/.exec(x.nen);
+      if (!p) return true;
+      const [r, g, b] = p[1].split(',').map((v) => parseInt(v, 10));
+      const t = [1, 3, 5].map((i) => parseInt(mong.slice(i, i + 2), 16));
+      return Math.abs(r - t[0]) + Math.abs(g - t[1]) + Math.abs(b - t[2]) > 6;
+    });
+    dat(`${slug}: ô lấy đúng nền nằm dưới món`, sai.length === 0,
+      sai.slice(0, 3).map((x) => `${x.mon}: ${x.nen} ≠ ${nen.get(x.mon)?.mau}`).join(' · ')
+        || `${kq.length} ô đúng nền`);
+  }
+
+  console.log('\n6. Lỗi trên trang');
   dat('không có lỗi JS', loiJS.length === 0, loiJS.slice(0, 2).join(' | ') || 'sạch');
   await trang.screenshot({ path: path.join(M, '.kiem', 'anh-nho.png'), scale: 'css' });
 } finally {

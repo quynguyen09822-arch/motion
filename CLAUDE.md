@@ -78,7 +78,7 @@ clip. Node 22 tự lột kiểu file `.ts` nên `types.ts` nạp thẳng đượ
 | `exportpanel.js` `videos.js` `khung.js` | ba thẻ còn lại của cột phải |
 | `soat.js` | **soát chất lượng** — JS thuần, cả trình duyệt lẫn Node dùng chung |
 | `zoom.js` | phóng khung làm việc bằng Ctrl+lăn, phóng quanh con trỏ |
-| `anhnho.js` | ảnh nhỏ từng thành phần — nhân bản nút DOM ra shadow root ở trang cha |
+| `anhnho.js` | ảnh nhỏ từng thành phần — **quy tắc 7 điều áp cho mọi clip**, xem `docs/QUY-TAC-ANH-NHO.md` |
 | `huongdan.js` | bong bóng hướng dẫn tại chỗ; nội dung nằm ở `inspector/schema.js` |
 
 **Luồng dữ liệu một chiều, không ngoại lệ:**
@@ -242,7 +242,7 @@ node tools/kiem-soat.mjs            # bảng soát chất lượng: bắt đúng
 node tools/kiem-chay-dung.mjs       # nút Chạy/Dừng, kể cả đường lùi khi bộ dựng thiếu pause()
 node tools/kiem-nen-video.mjs       # món video: chạy trong khung xem VÀ lọt vào video xuất ra
 node tools/kiem-phong.mjs           # Ctrl+lăn phóng khung: bấm và kéo có còn trúng không
-node tools/kiem-anh-nho.mjs         # ảnh nhỏ thành phần: đúng món, ảnh không vỡ, dựng lười
+node tools/kiem-anh-nho.mjs         # ảnh nhỏ thành phần: ĐÚNG CHỖ ĐẶT, đúng nền, ảnh không vỡ, dựng lười
 node tools/kiem-huong-dan.mjs       # hướng dẫn tại chỗ: đủ núm, đúng khuôn viết, bàn phím dùng được
 ```
 
@@ -283,6 +283,11 @@ từ khối hình học và chạy bốn phép kiểm bố cục (`kiem_trong`, 
   lẫn **hướng dẫn tại chỗ** (`HUONG_DAN`, `HUONG_DAN_CHUNG`, `HUONG_DAN_MAU`).
   Khuôn: tiêu đề dưới 6 từ, mô tả dưới 35 từ, không từ kỹ thuật — có
   `tools/kiem-huong-dan.mjs` canh, không phải tự nhớ. Xem `docs/HUONG-DAN-TAI-CHO.md`.
+- **Ảnh nhỏ trong bảng lớp có quy tắc riêng, áp cho mọi clip** — 7 điều trong
+  `web/anhnho.js`, tài liệu ở `docs/QUY-TAC-ANH-NHO.md`. Nền dưới mỗi món dùng
+  chung hàm `banDoNen()` của `soat.js` với phép soát chất lượng: hai nơi không
+  được nói khác nhau. Sửa cách vẽ ô ảnh thì chạy `tools/kiem-anh-nho.mjs` mục 5 —
+  nó đo **chỗ đặt**, vì lỗi cũ (156 ô trắng) qua được mọi phép kiểm "có nội dung".
 - Commit message tiếng Việt, mô tả việc thật.
 
 ## 9. Cạm bẫy đã biết
@@ -336,6 +341,7 @@ Tài liệu áp thẳng vào repo này nằm trong `docs/`: `QUY-UOC-CLIP.md` (d
 sao cho sửa được bằng chuột), `STITCH.md` (MCP Stitch dựng màn hình UI),
 `MAU-CHU-RIENG.md` (sửa đổi đã làm trong `scene-player.html` của dự án chung —
 nay có núm "Màu chữ riêng" trong bảng thuộc tính, không phải sửa tay JSON nữa),
+`QUY-TAC-ANH-NHO.md` (quy tắc ảnh nhỏ bảng lớp, áp cho mọi clip),
 `DUNG-CHAY.md` (thêm `pause()`/`paused` vào `scene-player.html`, kèm đường lùi và
 cách khôi phục), `VIDEO-TRONG-CLIP.md` (thành phần `video`, bẫy HEVC, cách đổi
 định dạng).
