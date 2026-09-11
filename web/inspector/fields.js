@@ -5,7 +5,8 @@
  * dựng nếu con số đó không có nghĩa với họ. `pad`/`gap` là BẬC 0..7 nên hiện
  * thành thanh 8 nấc có chữ; `ease` là tên hàm toán nên hiện thành cảm giác.
  */
-import { TEN_BAC } from './schema.js';
+import { HUONG_DAN_CHUNG, TEN_BAC } from './schema.js';
+import { huongDanChung } from '../huongdan.js';
 
 const el = (the, lop, chu) => {
   const n = document.createElement(the);
@@ -24,6 +25,16 @@ const el = (the, lop, chu) => {
 export function taoNum(num, giaTri, doi, cuChi) {
   const boc = el('div', 'num');
   const nhan = el('label', 'num-nhan', num.nhan);
+  // Nút hỏi dựng TỰ ĐỘNG từ schema — thêm hướng dẫn cho một núm là khai thêm
+  // `huongDan` trong `schema.js`, không phải sửa file này (§6.1 ARCHITECTURE.md).
+  /*
+   * Núm chung (`at`, `dur`, `pad`…) do bảng thuộc tính tự thêm cho MỌI loại phần
+   * tử, nên không khai được trong `NUM_RIENG`. Tra theo `id` ở đây thay vì đi sửa
+   * mười bốn chỗ gọi — thêm một núm chung mới vẫn chỉ là viết thêm ở schema.
+   */
+  const hd = num.huongDan ?? HUONG_DAN_CHUNG[num.id];
+  // Kiểu bật/tắt tự gắn lấy ở dưới, vào cái nhãn nhìn thấy được.
+  if (hd && num.kieu !== 'bat') huongDanChung().gan(nhan, hd);
   boc.appendChild(nhan);
 
   const dat = (v) => doi(v);
@@ -151,8 +162,15 @@ export function taoNum(num, giaTri, doi, cuChi) {
       h.type = 'checkbox';
       h.checked = Boolean(giaTri);
       h.onchange = () => dat(h.checked);
-      dieuKhien.append(h, el('span', null, num.nhan));
+      const chuBat = el('span', null, num.nhan);
+      dieuKhien.append(h, chuBat);
       nhan.classList.add('an-nhan');
+      /*
+       * Nhãn trên bị ẩn (chữ đã nằm cạnh ô đánh dấu rồi), nên nút hỏi gắn ở đó
+       * cũng ẩn theo — chuột không thấy mà bàn phím cũng không tới được. Dời
+       * sang cái nhãn đang nhìn thấy.
+       */
+      if (hd) huongDanChung().gan(chuBat, hd);
       break;
     }
     case 'anh': {
@@ -294,6 +312,13 @@ export function taoNum(num, giaTri, doi, cuChi) {
   }
 
   boc.appendChild(dieuKhien);
-  if (num.goi) boc.appendChild(el('p', 'num-goi', num.goi));
+  /*
+   * Núm đã có hướng dẫn đầy đủ thì KHÔNG in dòng gợi ý ra nữa — nó đã nằm trong
+   * bong bóng. Đây chính là chỗ bảng thuộc tính gọn lại: trước đây gần trăm núm
+   * mỗi núm kèm một dòng chữ xám, cuộn mãi không hết.
+   * Vẫn giữ `goi` cho những chỗ nó là GIÁ TRỊ ĐANG DÙNG ("0,6 giây") — thứ phải
+   * nhìn thấy ngay chứ không phải đi hỏi.
+   */
+  if (num.goi && (num.goiSong || !hd)) boc.appendChild(el('p', 'num-goi', num.goi));
   return boc;
 }

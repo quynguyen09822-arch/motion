@@ -79,6 +79,7 @@ clip. Node 22 tự lột kiểu file `.ts` nên `types.ts` nạp thẳng đượ
 | `soat.js` | **soát chất lượng** — JS thuần, cả trình duyệt lẫn Node dùng chung |
 | `zoom.js` | phóng khung làm việc bằng Ctrl+lăn, phóng quanh con trỏ |
 | `anhnho.js` | ảnh nhỏ từng thành phần — nhân bản nút DOM ra shadow root ở trang cha |
+| `huongdan.js` | bong bóng hướng dẫn tại chỗ; nội dung nằm ở `inspector/schema.js` |
 
 **Luồng dữ liệu một chiều, không ngoại lệ:**
 
@@ -242,6 +243,7 @@ node tools/kiem-chay-dung.mjs       # nút Chạy/Dừng, kể cả đường l�
 node tools/kiem-nen-video.mjs       # món video: chạy trong khung xem VÀ lọt vào video xuất ra
 node tools/kiem-phong.mjs           # Ctrl+lăn phóng khung: bấm và kéo có còn trúng không
 node tools/kiem-anh-nho.mjs         # ảnh nhỏ thành phần: đúng món, ảnh không vỡ, dựng lười
+node tools/kiem-huong-dan.mjs       # hướng dẫn tại chỗ: đủ núm, đúng khuôn viết, bàn phím dùng được
 ```
 
 Riêng **`node tools/kiem-lichsu.mjs`** chạy bằng Node trần — không cần server,
@@ -277,7 +279,10 @@ từ khối hình học và chạy bốn phép kiểm bố cục (`kiem_trong`, 
   comment nếu lý do đổi.
 - Câu chữ hiện ra cho người dùng: tiếng Việt đời thường, nói rõ **thiếu cái gì**,
   không để lọt từ kỹ thuật (không "opacity", không "stagger", không "ease").
-  `web/inspector/schema.js` là việc viết câu chữ, không phải viết code.
+  `web/inspector/schema.js` là việc viết câu chữ, không phải viết code — cả núm
+  lẫn **hướng dẫn tại chỗ** (`HUONG_DAN`, `HUONG_DAN_CHUNG`, `HUONG_DAN_MAU`).
+  Khuôn: tiêu đề dưới 6 từ, mô tả dưới 35 từ, không từ kỹ thuật — có
+  `tools/kiem-huong-dan.mjs` canh, không phải tự nhớ. Xem `docs/HUONG-DAN-TAI-CHO.md`.
 - Commit message tiếng Việt, mô tả việc thật.
 
 ## 9. Cạm bẫy đã biết

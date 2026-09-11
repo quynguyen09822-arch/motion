@@ -600,3 +600,34 @@ body {
   overflow: hidden; pointer-events: none;
   animation: bao-hien var(--nhip-nhanh) var(--da-vao);
 }
+
+/* ---------- bong bóng hướng dẫn tại chỗ ---------- */
+/* Nút hỏi nằm im lìm cho tới khi cần: hiện mờ, rõ hẳn khi rê vào hàng núm. Bày
+   chín mươi dấu hỏi sáng rực ra cùng lúc thì chính nó lại thành thứ gây rối. */
+.hd-nut {
+  width: 15px; height: 15px; margin-left: 6px; padding: 0;
+  border: 0; border-radius: 50%;
+  background: var(--nen-3); color: var(--chu-mo);
+  font: 600 10px/15px system-ui; text-align: center;
+  cursor: help; opacity: .45; vertical-align: middle;
+  transition: opacity var(--nhip-nhanh) var(--da-ra),
+              background var(--nhip-nhanh) var(--da-ra),
+              color var(--nhip-nhanh) var(--da-ra);
+}
+.num:hover .hd-nut { opacity: .85; }
+.hd-nut:hover, .hd-nut[aria-describedby] { opacity: 1; background: var(--nhan); color: #061018; }
+.hd-nut:focus-visible { outline: 2px solid var(--nhan); outline-offset: 2px; opacity: 1; }
+
+.hd {
+  position: fixed; z-index: 300; width: 300px;
+  padding: 12px 14px; border-radius: 12px;
+  background: color-mix(in srgb, var(--nen-2) 88%, transparent);
+  backdrop-filter: blur(18px);
+  border: 1px solid var(--vach);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, .62);
+  animation: hd-hien var(--nhip) var(--da-vao);
+}
+@keyframes hd-hien { from { opacity: 0; transform: translateY(6px) scale(.98); } }
+.hd-de { margin: 0 0 6px; font-size: 13px; font-weight: 600; color: var(--chu); }
+.hd-mo { margin: 0; font-size: 12.5px; line-height: 1.55; color: var(--chu-mo); }
+.hd-demo { margin-top: 10px; border-radius: 8px; overflow: hidden; background: #000; }
