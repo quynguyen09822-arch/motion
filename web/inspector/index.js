@@ -4,7 +4,7 @@
  * Chia mục theo câu hỏi trong đầu người dùng, không theo cấu trúc dữ liệu:
  * "nó viết gì" → "nó bay vào thế nào" → "lúc nào nó hiện" → "nó nằm đâu".
  */
-import { HUONG_DAN_CHUNG, HUONG_DAN_MAU, KHO_CHO, KHO_DA, KHO_RA, KHO_VAO, MAU_MAT_BAO, NUM_MAU, NUM_RIENG, TEN_LOAI } from './schema.js';
+import { DEM_TRONG, HUONG_DAN_CHUNG, HUONG_DAN_MAU, KHE_HO, KHO_CHO, KHO_DA, KHO_RA, KHO_VAO, MAU_MAT_BAO, NHAN_KHE_HO, NUM_MAU, NUM_RIENG, TEN_LOAI } from './schema.js';
 import { taoNum } from './fields.js';
 import { huongDanChung } from '../huongdan.js';
 import { duongDanMon, timCanh, timMon } from '../store.js';
@@ -368,13 +368,23 @@ export function taoBang(boc, kho, player) {
 
     boc.appendChild(veChoDat(doc, t));
 
+    /*
+     * Chỉ bày núm nào bộ dựng THẬT SỰ nghe — xem `DEM_TRONG`/`KHE_HO` trong
+     * `schema.js`. Bày núm chết còn tệ hơn không bày: bấm vào thì số trong kịch
+     * bản đổi mà khung hình đứng im, và người dùng mất lòng tin vào cả những núm
+     * thật. Và bày bậc mặc định THẬT, không bày 0 rồi để tấm thẻ co lại khi
+     * người dùng bấm đúng cái bậc họ tưởng là "giữ nguyên".
+     */
     const mK = muc('Khoảng cách');
-    if (e.kind === 'group') {
-      mK.appendChild(taoNum({ id: 'gap', nhan: 'Khoảng cách giữa các phần', kieu: 'bac' },
-        e.gap ?? 0, (v) => datMon('đổi khoảng cách trong cụm', 'gap', v), cuChi));
+    if (KHE_HO[e.kind] != null) {
+      mK.appendChild(taoNum(
+        { id: 'gap', nhan: NHAN_KHE_HO[e.kind] || 'Khe hở bên trong', kieu: 'bac' },
+        e.gap ?? KHE_HO[e.kind], (v) => datMon('đổi khe hở bên trong', 'gap', v), cuChi));
     }
-    mK.appendChild(taoNum({ id: 'pad', nhan: 'Đệm trong', kieu: 'bac' },
-      e.pad ?? 0, (v) => datMon('đổi đệm trong', 'pad', v), cuChi));
+    if (DEM_TRONG[e.kind] != null) {
+      mK.appendChild(taoNum({ id: 'pad', nhan: 'Đệm trong', kieu: 'bac' },
+        e.pad ?? DEM_TRONG[e.kind], (v) => datMon('đổi đệm trong', 'pad', v), cuChi));
+    }
     mK.appendChild(taoNum({ id: 'opacity', nhan: 'Độ mờ', kieu: 'so', min: 0, max: 1, buoc: 0.05 },
       e.opacity ?? 1, (v) => datMon('đổi độ mờ', 'opacity', v), cuChi));
     const sauK = nangCao('khoangcach');

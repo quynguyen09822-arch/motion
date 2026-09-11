@@ -98,6 +98,43 @@ const DAU = [
  * Núm riêng của từng loại. Núm chung (chỗ đặt, cỡ, thời gian, chuyển động) do
  * bảng thuộc tính tự thêm, không khai lại ở đây.
  */
+/**
+ * ĐỆM TRONG và KHE HỞ — loại nào THẬT SỰ nghe, và bộ dựng lấy bậc mấy làm mặc định.
+ *
+ * Hai bảng này sinh ra từ một lỗi lặng lẽ: bảng thuộc tính bày núm "Đệm trong"
+ * cho CẢ 24 loại, trong khi bộ dựng chỉ đọc `pad` ở 8 loại. Mười sáu núm còn lại
+ * bấm vào thì số trong kịch bản có đổi, mà khung hình không nhúc nhích — đúng
+ * kiểu hỏng tệ nhất, vì nó trông như đang chạy. Chiều ngược lại cũng sai: `gap`
+ * chạy được ở 11 loại nhưng chỉ `group` được bày núm, nên khe hở giữa các dòng
+ * trong một tấm thẻ là thứ có thật mà không ai chỉnh tới được.
+ *
+ * Con số là BẬC 0..7 (xem `TEN_BAC`), không phải điểm ảnh — đổi "Độ thoáng cả
+ * clip" là mọi bậc giãn theo.
+ *
+ * SỐ MẶC ĐỊNH PHẢI ĐÚNG. Trước đây núm luôn hiện bậc 0 khi kịch bản chưa khai,
+ * trong khi tấm thẻ thật đang đệm bậc 5 — núm nói dối, và người dùng bấm vào
+ * bậc 0 tưởng "giữ nguyên" thì thẻ co lại.
+ *
+ * Đo thật bằng Chromium, không đọc code mà đoán: dựng một cảnh có đủ 24 loại,
+ * vặn bậc 0 → 7 rồi đo lại `padding`/`gap` của từng nút. `tools/kiem-dem-khe.mjs`
+ * chạy đúng phép đo đó, nên bộ dựng đổi là bài kiểm biết ngay.
+ */
+export const DEM_TRONG = {
+  group: 0, card: 5, form: 5, calendar: 5, chip: 4, timeline: 2, chat: 4, upload: 5,
+};
+
+export const KHE_HO = {
+  group: 4, text: 3, card: 3, form: 4, calendar: 3, chip: 1,
+  logo: 3, chat: 3, shield: 4, upload: 3, hangnhan: 4,
+};
+
+/** Núm khe hở gọi tên khác nhau tuỳ loại — "các phần" chỉ đúng với cụm. */
+export const NHAN_KHE_HO = {
+  group: 'Khoảng cách giữa các phần',
+  text: 'Khoảng cách giữa các dòng',
+  hangnhan: 'Khoảng cách giữa các nhãn',
+};
+
 export const NUM_RIENG = {
   text: [
     { id: 'text', nhan: 'Dòng chính', kieu: 'vanban',

@@ -245,6 +245,7 @@ node tools/kiem-phong.mjs           # Ctrl+lăn phóng khung: bấm và kéo có
 node tools/kiem-anh-nho.mjs         # ảnh nhỏ thành phần: ĐÚNG CHỖ ĐẶT, đúng nền, ảnh không vỡ, dựng lười
 node tools/kiem-huong-dan.mjs       # hướng dẫn tại chỗ: đủ núm, đúng khuôn viết, bàn phím dùng được
 node tools/kiem-doi-cu.mjs          # clip đời cũ: thấy được, chạy/tua được, vẫn KHÔNG sửa được
+node tools/kiem-dem-khe.mjs         # đệm trong / khe hở: không núm chết, không năng lực bị giấu
 ```
 
 Riêng **`node tools/kiem-lichsu.mjs`** chạy bằng Node trần — không cần server,
@@ -289,6 +290,10 @@ từ khối hình học và chạy bốn phép kiểm bố cục (`kiem_trong`, 
   chung hàm `banDoNen()` của `soat.js` với phép soát chất lượng: hai nơi không
   được nói khác nhau. Sửa cách vẽ ô ảnh thì chạy `tools/kiem-anh-nho.mjs` mục 5 —
   nó đo **chỗ đặt**, vì lỗi cũ (156 ô trắng) qua được mọi phép kiểm "có nội dung".
+- **Chỉ bày núm mà bộ dựng THẬT SỰ đọc.** `DEM_TRONG`/`KHE_HO` trong `schema.js`
+  là bảng sự thật cho `pad`/`gap`, kèm bậc mặc định thật. Bày núm chết còn tệ hơn
+  không bày — bấm vào thì kịch bản đổi mà khung hình đứng im. `tools/kiem-dem-khe.mjs`
+  ĐO THẬT bằng Chromium rồi đối chiếu hai chiều. Xem `docs/DEM-KHE.md`.
 - **Clip đời cũ nạp kèm `?export=1`, clip đời mới TUYỆT ĐỐI KHÔNG.** Tham số đó
   tắt `fit()` nên mọi phép đo lệch — clip đời mới sửa được nên phép đo phải đúng;
   clip đời cũ không sửa được nên không có gì để lệch, mà đổi lại thì có `__clip`
