@@ -22,6 +22,7 @@ import { taoBangXuat } from './exportpanel.js';
 import { taoKhung } from './khung.js';
 import { taoBangVideo } from './videos.js';
 import { taoZoom } from './zoom.js';
+import { taoAnhNho } from './anhnho.js';
 
 const $ = (id) => document.getElementById(id);
 const chonClip = $('chon-clip'), dangClip = $('dang-clip'), dsCanhEl = $('ds-canh');
@@ -34,7 +35,9 @@ const kho = taoKho();
 const doMon = taoDo(player);
 const lopPhu = taoLopPhu($('lop-phu'), player);
 const bang = taoBang($('bang-thuoc-tinh'), kho, player);
+const anhNho = taoAnhNho(player);
 const dsLop = taoDanhSach($('ds-lop'), {
+  anhNho,
   onChon: (c) => datChon(c),
   onRe: (c) => lopPhu.veRe(c.canhId, c.monId),
   onThoiRe: () => lopPhu.xoaRe(),
@@ -160,6 +163,7 @@ bang.khiChonKhac(datChon);
 let henSoat = null;
 function soatLai() {
   clearTimeout(henSoat);
+  dsLop.veLaiAnh();
   henSoat = setTimeout(() => {
     const kq = bangXuat.veSoat();
     const n = kq?.soNang || 0;
@@ -337,6 +341,7 @@ async function moClip(slug) {
   // Lăn chuột NGAY TRÊN khung hình chỉ tới được nếu nghe từ bên trong iframe —
   // sự kiện chuột không vượt qua ranh giới iframe. Gắn lại sau mỗi lần mở.
   zoom.noiVaoKhung();
+  anhNho.napLai();      // mỗi clip một bảng màu và một bộ CSS riêng
 
   if (c.doi !== 2) {
     khoaDieuKhien(true);

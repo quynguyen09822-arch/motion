@@ -78,6 +78,7 @@ clip. Node 22 tự lột kiểu file `.ts` nên `types.ts` nạp thẳng đượ
 | `exportpanel.js` `videos.js` `khung.js` | ba thẻ còn lại của cột phải |
 | `soat.js` | **soát chất lượng** — JS thuần, cả trình duyệt lẫn Node dùng chung |
 | `zoom.js` | phóng khung làm việc bằng Ctrl+lăn, phóng quanh con trỏ |
+| `anhnho.js` | ảnh nhỏ từng thành phần — nhân bản nút DOM ra shadow root ở trang cha |
 
 **Luồng dữ liệu một chiều, không ngoại lệ:**
 
@@ -108,7 +109,12 @@ nó (`getBoundingClientRect`, hệ số phóng).
    `#stage` (co cho vừa khung) × `#cam` (máy quay) × phóng của trang cha
    (Ctrl+lăn, `web/zoom.js`). `player.quyDoi` chia cho tầng thứ ba,
    `player.hesoPhong` nhân nó vào. Quên tầng nào là bấm một đằng trúng một nẻo.
-4. **Không ghi vào DOM của iframe.** Lớp phủ vẽ ở trang cha. Ngoại lệ duy nhất là
+4. **Không ghi vào DOM của iframe.** Chỉ ĐỌC thì thoải mái — `anhnho.js` nhân bản
+   nút DOM và chép `<style>` của bộ dựng ra trang cha để vẽ ảnh nhỏ, không đụng
+   gì vào bên trong. Khi chép ra nhớ ba việc: đổi đường dẫn ảnh sang tuyệt đối
+   (gốc của iframe là `/clip/`, của trang cha là `/`), chép cả biến CSS và màu
+   nền của clip, và gỡ `opacity`/`transform` của khoảnh khắc hiện tại — món chưa
+   bay vào thì `opacity` bằng 0, chép ra được ô trống trơn. Lớp phủ vẽ ở trang cha. Ngoại lệ duy nhất là
    `drag.js` đặt tạm `left`/`top` trong lúc kéo, và xoá ngay khi thả. Chèn bậy là
    làm bẩn đúng cái trang mà `export-video.mjs` sẽ đem đi quay thành phim.
 5. **Cùng origin là điều kiện sống còn.** Server này tự phục vụ file dự án clip
@@ -235,6 +241,7 @@ node tools/kiem-soat.mjs            # bảng soát chất lượng: bắt đúng
 node tools/kiem-chay-dung.mjs       # nút Chạy/Dừng, kể cả đường lùi khi bộ dựng thiếu pause()
 node tools/kiem-nen-video.mjs       # món video: chạy trong khung xem VÀ lọt vào video xuất ra
 node tools/kiem-phong.mjs           # Ctrl+lăn phóng khung: bấm và kéo có còn trúng không
+node tools/kiem-anh-nho.mjs         # ảnh nhỏ thành phần: đúng món, ảnh không vỡ, dựng lười
 ```
 
 Riêng **`node tools/kiem-lichsu.mjs`** chạy bằng Node trần — không cần server,

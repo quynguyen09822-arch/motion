@@ -577,3 +577,26 @@ body {
    dày cộp và bóng loang lổ ở mức 400%. */
 .boc-khung.dang-phong { border-radius: 0; box-shadow: none; }
 #san-clip.dang-doi { cursor: grabbing; }
+
+/* ---------- ảnh nhỏ của thành phần (kiểu bảng lớp Photoshop) ---------- */
+.lop-anh {
+  width: 34px; height: 34px; flex: none;
+  border-radius: 5px; border: 1px solid var(--vach);
+  background:
+    /* ô cờ vua nhạt để thấy phần trong suốt, như mọi phần mềm đồ hoạ */
+    linear-gradient(45deg, #1a2334 25%, transparent 25%, transparent 75%, #1a2334 75%) 0 0/10px 10px,
+    linear-gradient(45deg, #1a2334 25%, transparent 25%, transparent 75%, #1a2334 75%) 5px 5px/10px 10px,
+    #141b28;
+  overflow: hidden; position: relative;
+}
+.lop-hang.dang .lop-anh { border-color: rgba(6, 16, 24, .45); }
+.lop-hang { gap: 9px; padding: 5px 10px; align-items: center; }
+
+.lop-xem-lon {
+  position: fixed; z-index: 200;
+  width: 168px; height: 168px;
+  border-radius: 10px; border: 1px solid var(--vach);
+  box-shadow: 0 16px 44px rgba(0, 0, 0, .6);
+  overflow: hidden; pointer-events: none;
+  animation: bao-hien var(--nhip-nhanh) var(--da-vao);
+}
