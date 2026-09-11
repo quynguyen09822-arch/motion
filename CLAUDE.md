@@ -288,6 +288,11 @@ từ khối hình học và chạy bốn phép kiểm bố cục (`kiem_trong`, 
   chung hàm `banDoNen()` của `soat.js` với phép soát chất lượng: hai nơi không
   được nói khác nhau. Sửa cách vẽ ô ảnh thì chạy `tools/kiem-anh-nho.mjs` mục 5 —
   nó đo **chỗ đặt**, vì lỗi cũ (156 ô trắng) qua được mọi phép kiểm "có nội dung".
+- **Giao diện theo bản dựng Stitch** (`stitch_d_n_kh_i_nghi_p/`) — bảng màu và
+  nhịp nằm gọn trong `:root` của `web/app.css`, đừng viết màu thẳng vào rule.
+  Nhấn là **xanh lá**, chữ trên nhấn là `var(--tren-nhan)`. Không dựng nút cho
+  tính năng không có thật (vòng màu, LUT, track âm thanh, đồng bộ cloud) — xem
+  bảng "KHÔNG được dựng" trong `docs/GIAO-DIEN.md`.
 - Commit message tiếng Việt, mô tả việc thật.
 
 ## 9. Cạm bẫy đã biết
@@ -342,6 +347,7 @@ sao cho sửa được bằng chuột), `STITCH.md` (MCP Stitch dựng màn hìn
 `MAU-CHU-RIENG.md` (sửa đổi đã làm trong `scene-player.html` của dự án chung —
 nay có núm "Màu chữ riêng" trong bảng thuộc tính, không phải sửa tay JSON nữa),
 `QUY-TAC-ANH-NHO.md` (quy tắc ảnh nhỏ bảng lớp, áp cho mọi clip),
+`GIAO-DIEN.md` (dựng lại giao diện theo bản Stitch, và những gì cố ý không dựng),
 `DUNG-CHAY.md` (thêm `pause()`/`paused` vào `scene-player.html`, kèm đường lùi và
 cách khôi phục), `VIDEO-TRONG-CLIP.md` (thành phần `video`, bẫy HEVC, cách đổi
 định dạng).

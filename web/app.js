@@ -329,6 +329,7 @@ async function moClip(slug) {
   bangDoiCu.classList.toggle('an', c.doi !== 1);
   bocKhung.style.setProperty('--ti-le', c.doi === 2 && c.rong ? `${c.rong} / ${c.cao}` : '16 / 9');
   dangClip.textContent = c.doi === 2 ? `${c.rong}×${c.cao}` : 'đời cũ';
+  datDangPhat(c.ten || c.slug, c.doi === 2 ? `${c.soCanh} cảnh · ${giay1(c.giay)}s` : 'clip đời cũ');
   dsCanhEl.innerHTML = '';
   $('ds-lop').innerHTML = '';
   $('bang-thuoc-tinh').innerHTML = '';
@@ -395,11 +396,32 @@ async function moClip(slug) {
   trangThai('san-sang');
 }
 
+/* NHÃN NÚT CHẠY/DỪNG.
+ *
+ * Nút là hình tam giác/hai vạch vẽ bằng SVG, nhưng chữ "Chạy"/"Dừng" vẫn phải
+ * có thật trong cây DOM: trình đọc màn hình cần nó, và `kiem-chay-dung.mjs`
+ * cũng đọc đúng chữ đó để biết nút có kẹt nhãn không. Ghi vào SPAN con chứ
+ * không ghi vào chính cái nút — ghi vào nút là xoá mất cả hai hình SVG.
+ */
+function datNhanChay(dangChay) {
+  nutChay.dataset.chay = dangChay ? '1' : '0';
+  const nhan = nutChay.querySelector('.chay-nhan');
+  if (nhan) nhan.textContent = dangChay ? 'Dừng' : 'Chạy';
+  nutChay.setAttribute('aria-label', dangChay ? 'Dừng' : 'Chạy');
+}
+
 function khoaDieuKhien(khoa) {
   nutChay.disabled = khoa; thanhTua.disabled = khoa;
   nutLuu.disabled = khoa; nutLui.disabled = khoa; nutToi.disabled = khoa;
   dongHo.textContent = khoa ? 'trang tự chạy' : '0,0 / 0,0 giây';
-  if (khoa) nutChay.textContent = '▶ Chạy';
+  if (khoa) datNhanChay(false);
+}
+
+/* Thanh phát dưới cùng: đang đứng ở cảnh nào. Lấy từ dữ liệu thật, không bịa. */
+function datDangPhat(ten, phu) {
+  const a = document.getElementById('ten-canh'), b = document.getElementById('phu-canh');
+  if (a) a.textContent = ten || 'Chưa mở clip';
+  if (b) b.textContent = phu || '';
 }
 
 function veDanhSachCanh(ds) {
@@ -415,8 +437,16 @@ function veDanhSachCanh(ds) {
 
 function danhDauCanh() {
   const canh = chon?.canhId || player.canhHienTai()?.id;
+  let so = 0;
   for (const li of dsCanhEl.children) {
-    if (li.dataset) li.setAttribute('aria-current', String(li.dataset.canh === canh));
+    if (!li.dataset) continue;
+    so++;
+    const dang = li.dataset.canh === canh;
+    li.setAttribute('aria-current', String(dang));
+    if (dang && clipDangMo) {
+      datDangPhat(`Cảnh ${so} · ${clipDangMo.ten || clipDangMo.slug}`,
+        `${clipDangMo.soCanh} cảnh · ${giay1(clipDangMo.giay)}s`);
+    }
   }
 }
 
@@ -426,7 +456,7 @@ function capNhat() {
   const t = player.giay(), dai = player.thoiLuong();
   if (!dangKeoThanh) thanhTua.value = String(dai ? Math.round((t / dai) * 1000) : 0);
   dongHo.textContent = `${giay1(t)} / ${giay1(dai)} giây`;
-  nutChay.textContent = player.dangChay() ? '❚❚ Dừng' : '▶ Chạy';
+  datNhanChay(player.dangChay());
   veLopPhu();
 }
 player.khiDoi(capNhat);
@@ -442,6 +472,20 @@ async function luu() {
 }
 
 /* ---------- điều khiển ---------- */
+/* ---------- lọc danh sách thành phần ---------- */
+/* Một cảnh có tới 156 thành phần, cuộn tay là hết ngày. Lọc ngay khi gõ, hoãn
+   một nhịp ngắn để gõ nhanh không phải dựng lại danh sách theo từng phím. */
+{
+  const oTim = $('tim-lop'), oDem = $('tim-dem');
+  const baoDem = (n, chu) => { oDem.textContent = chu ? `${n}` : ''; };
+  let hen = null;
+  oTim.oninput = () => {
+    clearTimeout(hen);
+    hen = setTimeout(() => dsLop.loc(oTim.value, baoDem), 120);
+  };
+  oTim.onkeydown = (e) => { if (e.key === 'Escape') { oTim.value = ''; dsLop.loc('', baoDem); } };
+}
+
 nutChay.onclick = () => (player.dangChay() ? player.dung() : player.chay());
 nutLuu.onclick = luu;
 nutLui.onclick = () => { const n = kho.hoanTac(); if (n) { bang.ve(); bao(`Đã hoàn tác: ${n}`); } };

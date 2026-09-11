@@ -18,6 +18,9 @@ const el = (the, lop, chu) => {
 export function taoDanhSach(boc, { onChon, onRe, onThoiRe, anhNho }) {
   let chon = null;
   let canhDang = null;
+  let docDang = null;      // giữ lại để lọc xong vẽ lại được
+  let locChu = '';         // chữ đang lọc, đã hạ chữ thường
+  let onDem = () => {};    // báo số hàng còn lại cho thanh tìm
 
   /*
    * Vẽ ảnh nhỏ LƯỜI: chỉ vẽ ô nào thật sự cuộn tới. Một cảnh của
@@ -61,9 +64,23 @@ export function taoDanhSach(boc, { onChon, onRe, onThoiRe, anhNho }) {
     oLon.classList.add('an');
   }
 
+  /* Bỏ dấu tiếng Việt để gõ "chu" cũng ra "Chữ". Người dùng gõ không dấu là
+     chuyện thường, mà danh sách thì toàn chữ có dấu. */
+  const phang = (t) => String(t).normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase();
+
+  /* Một món được giữ lại nếu CHÍNH NÓ khớp, hoặc có con khớp — không thì lọc
+     trong một cụm là mất luôn cả cụm lẫn thứ đang tìm nằm bên trong. */
+  function khop(e) {
+    if (!locChu) return true;
+    if (phang(tenMon(e)).includes(locChu) || phang(e.id || '').includes(locChu)) return true;
+    return (e.children || []).some(khop);
+  }
+
   function ve(doc, canhId) {
     boc.innerHTML = '';
     canhDang = canhId;
+    docDang = doc;
     doiNgo.disconnect();
     anLon();
     // Quy tắc ảnh nhỏ cần biết thứ tự vẽ của cảnh để dò nền dưới mỗi món. Đặt ở
@@ -73,8 +90,11 @@ export function taoDanhSach(boc, { onChon, onRe, onThoiRe, anhNho }) {
     const canh = (doc?.scenes || []).find((s) => s.id === canhId);
     if (!canh) return;
 
+    let dem = 0;
     const dao = (els, sau) => {
       for (const e of els || []) {
+        if (!khop(e)) continue;
+        dem++;
         const hang = el('div', 'lop-hang');
         hang.style.paddingLeft = `${10 + sau * 14}px`;
         hang.dataset.mon = e.id;
@@ -103,11 +123,18 @@ export function taoDanhSach(boc, { onChon, onRe, onThoiRe, anhNho }) {
       }
     };
     dao(canh.elements, 0);
+    onDem(dem, locChu);
   }
 
   return {
     ve,
     dat(c) { chon = c; },
+    /** Lọc danh sách theo tên. Chuỗi rỗng = bỏ lọc. */
+    loc(chu, baoDem) {
+      if (baoDem) onDem = baoDem;
+      locChu = phang(chu || '').trim();
+      if (docDang && canhDang) ve(docDang, canhDang);
+    },
     /** Kịch bản vừa đổi → vẽ lại những ô đang nhìn thấy. */
     veLaiAnh() {
       for (const o of boc.querySelectorAll('.lop-anh')) {
