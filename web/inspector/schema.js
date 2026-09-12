@@ -207,7 +207,10 @@ export const NUM_RIENG = {
              { id: 'dots', nhan: 'Số chấm bước', kieu: 'so', min: 0, max: 8 }],
   table:    [{ id: 'columns', nhan: 'Tên các cột', kieu: 'danhsach' },
              { id: 'rows', nhan: 'Số dòng', kieu: 'so', min: 0, max: 20 }, ...MAU_CHU],
-  browser:  [{ id: 'url', nhan: 'Địa chỉ trên thanh', kieu: 'chu' }],
+  browser:  [{ id: 'url', nhan: 'Địa chỉ trên thanh', kieu: 'chu' },
+             { id: 'src', nhan: 'Ảnh hoặc video trong cửa sổ', kieu: 'hinh',
+               goi: 'bỏ trống thì hiện mấy vạch giả như trang đang tải' },
+             { id: 'loop', nhan: 'Phát lặp lại', kieu: 'bat' }],
   /*
    * VIDEO. Đặt kín khung thì thành nền động; thu nhỏ lại thì lồng được vào màn
    * hình điện thoại hay khung trình duyệt. Muốn làm nền thì chọn "Chỗ đặt" →
@@ -252,7 +255,8 @@ export const NUM_RIENG = {
   sweep:    [{ id: 'angle', nhan: 'Góc nghiêng', kieu: 'so', min: -90, max: 90 },
              { id: 'width', nhan: 'Bề rộng vệt', kieu: 'so', min: 10, max: 600 },
              { id: 'color', nhan: 'Màu vệt', kieu: 'mau' }],
-  phone:    [{ id: 'src', nhan: 'Ảnh trong màn hình', kieu: 'anh' }],
+  phone:    [{ id: 'src', nhan: 'Ảnh hoặc video trong màn hình', kieu: 'hinh' },
+             { id: 'loop', nhan: 'Phát lặp lại', kieu: 'bat' }],
   quydao:   [{ id: 'core', nhan: 'Vật ở tâm', kieu: 'chon', chon: [
                { v: 'cau', nhan: 'Quả cầu' }, { v: 'web', nhan: 'Cửa sổ trình duyệt' },
                { v: 'sao', nhan: 'Ngôi sao' }, { v: 'tim', nhan: 'Ô tìm kiếm' }] },
@@ -387,8 +391,14 @@ const HUONG_DAN = {
   /* ---------- trình duyệt, điện thoại, dòng thời gian ---------- */
   'browser.url': { tieuDe: 'Địa chỉ trên thanh',
     mota: 'Chữ hiện trong thanh địa chỉ của khung trình duyệt giả.' },
-  'phone.src': { tieuDe: 'Ảnh trong màn hình điện thoại',
-    mota: 'Ảnh được cắt vừa khít màn hình, khung máy vẽ sẵn bao quanh.' },
+  'browser.src': { tieuDe: 'Hình trong cửa sổ',
+    mota: 'Thả ảnh hoặc đoạn phim lấp đầy thân cửa sổ. Bỏ trống thì hiện mấy vạch xám như trang đang tải dở.' },
+  'browser.loop': { tieuDe: 'Hết thì quay lại đầu',
+    mota: 'Phim ngắn hơn cảnh thì cứ chạy vòng. Tắt đi thì nó dừng ở khung cuối và đứng yên tới hết cảnh.' },
+  'phone.src': { tieuDe: 'Hình trong màn hình máy',
+    mota: 'Thả ảnh hoặc đoạn phim vào màn hình. Nó được cắt vừa khít, khung máy vẽ sẵn bao quanh.' },
+  'phone.loop': { tieuDe: 'Hết thì quay lại đầu',
+    mota: 'Phim ngắn hơn cảnh thì cứ chạy vòng. Tắt đi thì nó dừng ở khung cuối và đứng yên tới hết cảnh.' },
   'timeline.labels': { tieuDe: 'Các mốc trên dòng thời gian',
     mota: 'Mỗi dòng một mốc. Chúng được rải đều trên một đường ngang, có chấm đánh dấu từng mốc.' },
 
@@ -543,6 +553,10 @@ export const HUONG_DAN_CHUNG = {
     mota: 'Số giây của riêng cảnh. Nhớ để đủ dài cho mọi món kịp bay vào xong — bảng soát sẽ báo nếu thiếu.' },
   stagger: { tieuDe: 'Các món vào so le nhau',
     mota: 'Món sau vào chậm hơn món trước chừng này giây. Đây là thứ làm chuyển động bớt máy móc — bỏ đi là cả cảnh ùa ra một lượt.' },
+  src: { tieuDe: 'File đặt vào khe này',
+    mota: 'Nhận cả ảnh lẫn phim — máy tự nhận ra theo đuôi file. Phim đặt vào đây chạy theo đồng hồ của clip, tua tới đâu phim ở đó.' },
+  loop: { tieuDe: 'Hết thì quay lại từ đầu',
+    mota: 'Phim ngắn hơn cảnh thì cứ chạy vòng cho tới hết cảnh. Tắt đi thì phim dừng ở khung cuối và đứng yên tới hết.' },
   soft: { tieuDe: 'Làm nhoè món này',
     mota: 'Đẩy món ra sau bằng cách làm nó nhoè đi. Dùng cho hậu cảnh, để mắt người xem dính vào thứ còn sắc nét ở trước.' },
   softIn: { tieuDe: 'Nét dần khi vào',

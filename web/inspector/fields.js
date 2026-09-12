@@ -201,6 +201,70 @@ export function taoNum(num, giaTri, doi, cuChi) {
      * Thả nó vào clip thì ra một ô đen, không lỗi, không báo gì. Nên ở đây phải
      * nói thẳng file nào dùng được, và mời chuyển đổi ngay tại chỗ.
      */
+    /*
+     * KHE MEDIA — một chỗ nhận CẢ ảnh LẪN phim: màn hình điện thoại, cửa sổ
+     * trình duyệt. Đoán theo đuôi file, không bắt người dùng khai thêm một núm
+     * "đây là ảnh hay phim" — thêm một núm là thêm một chỗ khai sai.
+     *
+     * Có phim thì hỏi luôn máy chủ xem trình duyệt mở được không. Đây không phải
+     * cẩn thận thừa: `intro.mp4`, `outro.mp4` và `BG.mp4` của chính dự án đều là
+     * HEVC — Chromium không giải được, đặt vào clip ra đúng một ô ĐEN mà không
+     * báo lỗi gì. Xem `docs/VIDEO-TRONG-CLIP.md`.
+     */
+    case 'hinh': {
+      dieuKhien = el('div', 'num-anh');
+      const o = el('input', 'o-nhap');
+      o.type = 'text';
+      o.value = giaTri ?? '';
+      o.placeholder = 'public/ten-file.png · public/video/ten-file.mp4';
+      const xem = el('div', 'anh-xem');
+      const tinh = el('p', 'num-goi');
+      const LA_PHIM = /\.(mp4|webm|mov|m4v|ogv)(\?|#|$)/i;
+      let kho = null;
+
+      const veTinh = (v) => {
+        if (!LA_PHIM.test(v) || !kho) { tinh.textContent = ''; return; }
+        const f = kho.find((x) => x.duongDan === v);
+        if (!f) { tinh.textContent = 'File này không nằm trong thư mục video của dự án.'; return; }
+        tinh.textContent = f.chayDuoc
+          ? `${String(f.codec).toUpperCase()} · ${f.rong}×${f.cao}`
+            + (f.giay ? ` · ${f.giay.toFixed(1)} giây` : '')
+          : `Định dạng ${String(f.codec).toUpperCase()} — trình duyệt không mở được, `
+            + 'đặt vào clip sẽ ra một ô đen. Mở mục Video để chuyển định dạng.';
+      };
+
+      const veXem = (v) => {
+        xem.innerHTML = '';
+        if (!v) { tinh.textContent = ''; return; }
+        if (LA_PHIM.test(v)) {
+          const p2 = el('video');
+          p2.src = `/clip/${v}`;
+          p2.muted = true; p2.loop = true; p2.playsInline = true;
+          p2.style.maxWidth = '100%';
+          p2.style.maxHeight = '110px';
+          p2.onloadeddata = () => p2.play().catch(() => {});
+          p2.onerror = () => { xem.textContent = 'không mở được file'; };
+          xem.appendChild(p2);
+          if (kho === null) {
+            kho = [];
+            fetch('/api/nguon-video').then((r) => r.json())
+              .then((d) => { kho = d.ok ? d.video : []; veTinh(o.value); })
+              .catch(() => {});
+          }
+        } else {
+          const i = el('img');
+          i.src = `/clip/${v}`;
+          i.alt = '';
+          i.onerror = () => { xem.textContent = 'không thấy file'; };
+          xem.appendChild(i);
+        }
+        veTinh(v);
+      };
+      veXem(o.value);
+      o.oninput = () => { veXem(o.value); dat(o.value); };
+      dieuKhien.append(o, xem, tinh);
+      break;
+    }
     case 'video': {
       dieuKhien = el('div', 'num-video');
       const chon = el('select', 'o-nhap');

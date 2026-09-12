@@ -247,6 +247,7 @@ node tools/kiem-huong-dan.mjs       # hướng dẫn tại chỗ: đủ núm, đ
 node tools/kiem-doi-cu.mjs          # clip đời cũ: thấy được, chạy/tua được, vẫn KHÔNG sửa được
 node tools/kiem-dem-khe.mjs         # đệm trong / khe hở: không núm chết, không năng lực bị giấu
 node tools/kiem-hieu-ung.mjs        # nhoè / bóng đổ / đẩy máy chậm: bộ dựng còn phần vá không
+node tools/kiem-khe-media.mjs       # ảnh/phim trong màn hình điện thoại & trình duyệt, và ĐỒNG HỒ
 ```
 
 Riêng **`node tools/kiem-lichsu.mjs`** chạy bằng Node trần — không cần server,
@@ -291,6 +292,10 @@ từ khối hình học và chạy bốn phép kiểm bố cục (`kiem_trong`, 
   chung hàm `banDoNen()` của `soat.js` với phép soát chất lượng: hai nơi không
   được nói khác nhau. Sửa cách vẽ ô ảnh thì chạy `tools/kiem-anh-nho.mjs` mục 5 —
   nó đo **chỗ đặt**, vì lỗi cũ (156 ô trắng) qua được mọi phép kiểm "có nội dung".
+- **Phim nằm TRONG món khác phải được ghim theo đồng hồ clip.** Thẻ `<video>` tự
+  phát theo đồng hồ thật: xem trong trình sửa tưởng đúng, mà tua tới giây nào nền
+  cũng đứng ở giây 0 và mỗi lần xuất ra một khung khác. `applyEl` gọi `TICK.video`
+  cho mọi món có chứa thẻ video. Xem `docs/VIDEO-TRONG-CLIP.md`.
 - **Hiệu ứng hình (`soft`/`softIn`/`shadow`/`push`) cần phần vá trong
   `scene-player.html`** — file của dự án chung, KHÔNG có git. Ai khôi phục file
   đó từ bản sao lưu cũ là núm vẫn còn mà hiệu ứng biến mất, không báo gì.
