@@ -182,6 +182,14 @@ kho.khiDoi((viec) => {
   nutLui.title = kho.nhanLui() ? `Hoàn tác: ${kho.nhanLui()}` : 'Không có gì để hoàn tác';
   nutToi.title = kho.nhanToi() ? `Làm lại: ${kho.nhanToi()}` : 'Không có gì để làm lại';
   dauBan.classList.toggle('an', !kho.ban());
+
+  /* Viên khổ hình trên thanh trên đọc từ danh sách clip lúc mở, nên sau khi đổi
+     khổ nó nói sai. Lấy lại từ kịch bản đang sửa — đó mới là sự thật. */
+  const m = kho.doc()?.meta;
+  if (m?.width && m?.height && clipDangMo?.doi === 2) {
+    dangClip.textContent = `${m.width}×${m.height}`;
+    bocKhung.style.setProperty('--ti-le', `${m.width} / ${m.height}`);
+  }
 });
 
 /* ---------- thêm · xoá · nhân bản ---------- */

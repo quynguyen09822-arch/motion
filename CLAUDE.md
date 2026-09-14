@@ -249,6 +249,8 @@ node tools/kiem-dem-khe.mjs         # đệm trong / khe hở: không núm chế
 node tools/kiem-hieu-ung.mjs        # nhoè / bóng đổ / đẩy máy chậm: bộ dựng còn phần vá không
 node tools/kiem-khe-media.mjs       # ảnh/phim trong màn hình điện thoại & trình duyệt, và ĐỒNG HỒ
 node tools/kiem-keo-cot.mjs         # kéo đổi bề rộng cột: nhớ, chặn, và khung chọn không lệch
+node tools/kiem-kho-hinh.mjs        # đổi khổ hình: nhân đúng khoá px, từ chối khác tỉ lệ
+node tools/soi-doi-kho.mjs          # (đo, không phải kiểm) đổi sang khổ nào thì hỏng bao nhiêu
 ```
 
 Riêng **`node tools/kiem-lichsu.mjs`** chạy bằng Node trần — không cần server,
@@ -371,6 +373,7 @@ nay có núm "Màu chữ riêng" trong bảng thuộc tính, không phải sửa
 `QUY-TAC-ANH-NHO.md` (quy tắc ảnh nhỏ bảng lớp, áp cho mọi clip),
 `GIAO-DIEN.md` (dựng lại giao diện theo bản Stitch, và những gì cố ý không dựng),
 `KEO-COT.md` (kéo đổi bề rộng hai cột, và bẫy khung chọn lệch),
+`DOI-KHO-HINH.md` (đổi khổ cùng tỉ lệ, và vì sao khác tỉ lệ phải xếp lại chứ không nhân được),
 `HIEU-UNG-HINH.md` (nhoè, bóng đổ, đẩy máy chậm — có sửa `scene-player.html`),
 `DUNG-CHAY.md` (thêm `pause()`/`paused` vào `scene-player.html`, kèm đường lùi và
 cách khôi phục), `VIDEO-TRONG-CLIP.md` (thành phần `video`, bẫy HEVC, cách đổi
