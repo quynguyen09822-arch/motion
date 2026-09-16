@@ -254,6 +254,7 @@ node tools/soi-doi-kho.mjs          # (đo, không phải kiểm) đổi sang kh
 ```
 
 Riêng **`npm run kiem:schema                 # CHẶN LỆCH SCHEMA giữa types.ts ↔ schema.js ↔ bộ dựng
+node tools/kiem-kho-mon.mjs         # menu thêm: bày đủ 24 loại, thả vào là thấy được ngay
 node tools/kiem-lichsu.mjs`** chạy bằng Node trần — không cần server,
 không cần Chromium, vài trăm mili giây. Nó giữ luật "mọi thay đổi đi qua
 `kho.sua()`": làm 20 việc rồi hoàn tác 20 lần thì kịch bản phải về đúng từng
@@ -379,6 +380,7 @@ nay có núm "Màu chữ riêng" trong bảng thuộc tính, không phải sửa
 `KEO-COT.md` (kéo đổi bề rộng hai cột, và bẫy khung chọn lệch),
 `DOI-KHO-HINH.md` (đổi khổ cùng tỉ lệ, và vì sao khác tỉ lệ phải xếp lại chứ không nhân được),
 `CHAN-LECH-SCHEMA.md` (đối soát ba nơi khai trường, và ba cái bẫy trong chính phép kiểm),
+`KHO-THANH-PHAN.md` (menu thêm chia theo bộ, và một nửa kho từng bị giấu),
 `HIEU-UNG-HINH.md` (nhoè, bóng đổ, đẩy máy chậm — có sửa `scene-player.html`),
 `DUNG-CHAY.md` (thêm `pause()`/`paused` vào `scene-player.html`, kèm đường lùi và
 cách khôi phục), `VIDEO-TRONG-CLIP.md` (thành phần `video`, bẫy HEVC, cách đổi

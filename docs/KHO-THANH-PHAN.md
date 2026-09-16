@@ -1,0 +1,64 @@
+# Kho thành phần — menu "Thêm thành phần"
+
+## Lỗi: một nửa kho bị giấu
+
+Bộ dựng vẽ được **25 loại**. Menu thêm chỉ bày **13**. Mười hai loại còn lại có
+thật, chạy được, mà **không có đường nào thêm vào** — muốn dùng phải mở file
+JSON ra gõ tay:
+
+`form` · `calendar` · `timeline` · `logo` · `wheel` · `chat` · `shield` ·
+`upload` · `sweep` · `nen` · `quydao` · `pointer`
+
+Đây đúng kiểu **"năng lực bị giấu"** mà `tools/kiem-schema.mjs` sinh ra để chặn
+ở bảng thuộc tính — chỉ khác là lần này nó nằm ở menu thêm.
+
+## Nay: bảng chọn chia theo bộ
+
+| Bộ | Món |
+|---|---|
+| **Chữ & nhãn** | Chữ · Nút bấm · Nhãn số · Hàng nhãn · Huy hiệu · Logo |
+| **Khối & bố cục** | Khối màu · Thẻ · Bảng · Cụm · Dòng thời gian |
+| **Hình & phim** | Ảnh · Video · Điện thoại · Trình duyệt |
+| **Giao diện sản phẩm** | Biểu mẫu · Lịch · Ô kéo thả · Cửa sổ AI |
+| **Trang trí** | Nền thương hiệu · Quỹ đạo · Vòng quay · Khiên bảo mật · Vệt sáng |
+
+**24 món.** Mỗi món có một dòng tả ngắn, và có ô tìm — gõ không dấu cũng ra
+(`bieu mau` → Biểu mẫu). Chỉ còn một món khớp thì Enter là thêm luôn.
+
+Đổ 24 món ra một cột phẳng thì phải cuộn, mà cuộn một danh sách toàn chữ thì
+không ai nhớ được món nào nằm đâu — nên chia bộ.
+
+## `pointer` cố ý không bày
+
+Cả clip chỉ có **một** con trỏ, và nó cần một **đường đi nhiều mốc thời gian**.
+Thêm bằng một cú bấm sẽ ra con trỏ đứng im giữa khung — vô nghĩa. Muốn dùng thì
+khai trong kịch bản.
+
+## Giá trị mặc định lấy từ clip thật
+
+Một món mới thả vào mà ra khung hình **trống trơn** thì người dùng tưởng bấm
+hỏng. Nên `mau` của mỗi món lấy từ chính các clip đang chạy, không phải bịa.
+
+Ba món **được phép rỗng**, mỗi món một lý do thật:
+
+- `image` — chưa chọn file thì đúng là khoảng trống; bảng thuộc tính bắt chọn
+  ngay ở núm đầu tiên.
+- `group` — cụm rỗng đúng là rỗng; thêm cụm rồi mới bỏ món vào.
+- `sweep` — vệt sáng là một cú loé; đứng ở một giây bất kỳ không thấy gì là
+  đúng bản chất.
+
+## Kiểm
+
+```bash
+node tools/kiem-kho-mon.mjs
+```
+
+Mục 3 **dựng thật từng món** bằng đúng giá trị mặc định rồi đo xem có vẽ ra gì
+không. Ba lần phép đo này tự bắt lỗi của chính nó khi làm:
+
+1. **Khung điện thoại vẽ bằng VIỀN**, không có nền — bỏ sót viền là kêu oan nó.
+2. **`<img>` chưa chọn file vẫn là một thẻ con**, nhưng hiện ra đúng khoảng
+   trống. Đếm nó là tự lừa mình.
+3. Sửa xong hai điều trên thì phép kiểm **bắt bỏ `video` khỏi danh sách được
+   phép rỗng** — vì mặc định của nó có lớp tối `dim`, chưa chọn file vẫn hiện ra
+   một mảng tối. Danh sách được phép rỗng cũng có chốt chống mục rữa.
