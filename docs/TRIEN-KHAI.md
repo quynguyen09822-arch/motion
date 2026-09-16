@@ -64,7 +64,55 @@ phải tắt phần sao lưu đi cho tiện.
 - **Không thêm được nền video mới** — thư mục video nguồn không gói kèm.
 - **Hai bản độc lập**: sửa trên mạng không về máy, sửa ở máy không lên mạng.
 
+## Lần thứ hai: tải zip lên, chết ở `[11]` đúng như dự đoán
+
+Vibe Host **có nhận tải file zip** — kiểu nguồn này không phơi ra ở cổng MCP nên
+lúc đầu tưởng chỉ có Git và HTML tĩnh. Nhưng bản zip đầu là bản **chưa có
+`clip/`**, nên:
+
+```
+[Health Check] ✗ Ngắt mạch: candidate restart ≥ 3 (crash-loop)
+cause=restart=5 — App khởi động rồi chết lặp lại
+    at .../server/proj.js:38:26
+```
+
+Dòng 38 chính là `if (!existsSync(SCENES)) chetSom('thư mục scenes/')`. Trợ lý
+của Vibe Host chẩn đoán đúng: *"app khởi động đòi thư mục dự án ngoài repo
+(`/home/coder/...`) — cần làm cho app tự chứa được"*. Nhưng nó **không tự sửa
+được**, và phải thôi: thiếu **dữ liệu**, không phải sai **mã**.
+
+## Sửa gốc: ứng dụng TỰ TÌM lấy dữ liệu
+
+Không chỉ đặt biến môi trường trong `Dockerfile` — nơi triển khai có thể **tự
+sinh lấy cách chạy**, không dùng `Dockerfile` mình viết, lúc đó biến môi trường
+mình khai không tới được. Nên `server/proj.js` tự dò theo ba bậc:
+
+| Bậc | Chỗ tìm | Khi nào trúng |
+|---|---|---|
+| 1 | `PROJ_ROOT` | người dùng nói rõ |
+| 2 | dự án thật ở máy làm việc | đang phát triển |
+| 3 | **`clip/` ngay trong ứng dụng** | đã đem lên máy chủ |
+
+**Thứ tự 2 trước 3 là cố ý.** Ở máy có cả hai, mà dự án thật mới là bản đầy đủ
+(23 clip kể cả clip đời cũ, toàn bộ video nguồn); bản gói kèm chỉ có 11 clip.
+Đảo thứ tự là mở máy lên thấy mất quá nửa số clip.
+
+Đã kiểm cả hai chiều: ở máy vẫn trỏ về dự án thật; trong container không có
+`/home/coder/...` thì **tự tìm ra `/app/clip` và chạy được, không cần
+`PROJ_ROOT`, không cần cả `Dockerfile` của mình**.
+
+## Một bẫy nữa: cổng
+
+Không khai `PORT` thì ứng dụng nghe **7803** (quy ước của skill `/port` ở máy),
+trong khi máy chủ chờ **3000** → kiểm tra sức khoẻ trượt dù ứng dụng vẫn sống.
+`Dockerfile` đã đặt `ENV PORT=3000`, và đã đặt thêm biến `PORT=3000` trên chính
+dự án Vibe Host cho chắc — phòng khi nền tảng tự sinh cách chạy riêng.
+
 ## Việc còn lại
 
-Đẩy lên GitHub. Workspace **không có khoá GitHub** nên bước này cần người dùng —
-xem lệnh trong phần bàn giao.
+Hai đường, chọn một:
+
+- **Tải zip lên** (không cần Git): `matbao-hub-video-deploy.zip` — **1,8 MB**,
+  gồm `server/ web/ clip/ package.json Dockerfile`. Đã thử: giải nén ra chỗ
+  trống, chạy bằng `node:22-alpine` trần → **200, đọc đủ 11 clip**.
+- **Đẩy lên GitHub**: `bash tools/day-len-github.sh` — khoá không đi qua khung chat.
