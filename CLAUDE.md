@@ -252,6 +252,7 @@ node tools/kiem-keo-cot.mjs         # kéo đổi bề rộng cột: nhớ, ch�
 node tools/kiem-kho-hinh.mjs        # đổi khổ hình: nhân đúng khoá px, từ chối khác tỉ lệ
 node tools/soi-doi-kho.mjs          # (đo, không phải kiểm) đổi sang khổ nào thì hỏng bao nhiêu
 node tools/tu-xep-lai.mjs           # (đo) clip nào đã đổi khổ được, món nào phải xếp tay
+node tools/ve-wireframe.mjs         # sinh clip mẫu wireframe-thu (--ghi mới ghi thật)
 
 node tools/kiem-kho-mon.mjs         # menu thêm: bày đủ 24 loại + 10 bộ dựng sẵn, thả vào là thấy ngay
 npm run kiem:schema                 # CHẶN LỆCH SCHEMA giữa types.ts ↔ schema.js ↔ bộ dựng
@@ -386,6 +387,7 @@ nay có núm "Màu chữ riêng" trong bảng thuộc tính, không phải sửa
 `DOI-KHO-HINH.md` (đổi khổ cùng tỉ lệ, và vì sao khác tỉ lệ phải xếp lại chứ không nhân được),
 `CHAN-LECH-SCHEMA.md` (đối soát ba nơi khai trường, và ba cái bẫy trong chính phép kiểm),
 `KHO-THANH-PHAN.md` (menu thêm chia theo bộ, 10 bộ dựng sẵn, và một nửa kho từng bị giấu),
+`CLIP-WIREFRAME.md` (clip mẫu dựng toàn bằng `place`, đổi khổ nào cũng chạy),
 `HIEU-UNG-HINH.md` (nhoè, bóng đổ, đẩy máy chậm — có sửa `scene-player.html`),
 `DUNG-CHAY.md` (thêm `pause()`/`paused` vào `scene-player.html`, kèm đường lùi và
 cách khôi phục), `VIDEO-TRONG-CLIP.md` (thành phần `video`, bẫy HEVC, cách đổi
