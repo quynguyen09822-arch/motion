@@ -148,7 +148,22 @@ export const BO_KIT = [
   { id: 'moi',  ten: 'Mở đầu & kết',   mo: 'cảnh đầu, cảnh cuối' },
   { id: 'khoe', ten: 'Khoe sản phẩm',  mo: 'màn hình, trang web, biểu mẫu' },
   { id: 'so',   ten: 'Số liệu & cam kết', mo: 'con số, bảng, bảo mật' },
+  { id: 'nen',  ten: 'Nền',             mo: 'lớp phủ cả khung, nằm dưới mọi thứ' },
 ];
+
+/*
+ * NỀN — bộ dựng có SÁU mảnh trang trí (`cham` `net` `khoi` `tien` `song`
+ * `duong`) và chúng bật tắt độc lập. Trước đây chỉ có đúng một cách dùng: bật
+ * hết. Sáu cái công tắc ấy là sáu cách phối, mà không ai biết để mà phối.
+ *
+ * Nên thay vì bắt người dùng tự mò tổ hợp, gói sẵn mấy kiểu hay dùng — như kho
+ * nền của app dựng phim: chọn một cái, thấy ngay, muốn chỉnh thì mở bảng thuộc
+ * tính bật tắt từng mảnh.
+ */
+const nenTH = (parts, them = {}) => ({
+  kind: 'nen', id: 'nen', x: 0, y: 0, place: 'day', parts,
+  in: { kind: 'fade', ease: 'out', dur: 0.5 }, ...them,
+});
 
 /* Chữ dẫn dùng chung một dáng — đổi ở đây là mọi kit đổi theo. */
 const chuDan = (text, size = 96) => ({
@@ -174,11 +189,7 @@ export const KIT = [
       chuDan('Bắt đầu *ngay hôm nay*'),
       vao({ kind: 'nut', id: 'nut', label: 'Dùng thử miễn phí', size: 32 }),
     ])] },
-  { id: 'nen-th', bo: 'moi', ten: 'Nền thương hiệu',
-    mo: 'lớp hoạ tiết phủ cả khung, nằm dưới mọi thứ',
-    dung: () => [{ kind: 'nen', id: 'nen', x: 0, y: 0, place: 'day',
-      parts: ['cham', 'net', 'khoi', 'song', 'duong'], draw: 1.3, waveLow: true,
-      in: { kind: 'fade', ease: 'out', dur: 0.5 } }] },
+
 
   { id: 'khoe-web', bo: 'khoe', ten: 'Khoe trang web',
     mo: 'câu dẫn + cửa sổ trình duyệt',
@@ -224,6 +235,32 @@ export const KIT = [
       chuDan('Mọi thứ *trong một bảng*'),
       vao({ kind: 'table', id: 'bang', w: 520, columns: ['Tên', 'Trạng thái'], rows: 4 }),
     ])] },
+  /* ---------- nền ---------- */
+  { id: 'nen-day-du', bo: 'nen', ten: 'Nền thương hiệu đầy đủ',
+    mo: 'chấm, nét, khối mềm, sóng đáy, đường tăng',
+    dung: () => [nenTH(['cham', 'net', 'khoi', 'song', 'duong'], { draw: 1.3, waveLow: true })] },
+  { id: 'nen-toi-gian', bo: 'nen', ten: 'Tối giản — chỉ lưới chấm',
+    mo: 'nhẹ nhất, không hút mắt khỏi nội dung',
+    dung: () => [nenTH(['cham'])] },
+  { id: 'nen-song', bo: 'nen', ten: 'Sóng đáy',
+    mo: 'dải sóng dưới đáy + một khối mềm',
+    dung: () => [nenTH(['khoi', 'song'], { waveLow: true })] },
+  { id: 'nen-luoi', bo: 'nen', ten: 'Lưới chấm và nét',
+    mo: 'chấm thưa kèm vài nét bo mảnh',
+    dung: () => [nenTH(['cham', 'net'])] },
+  { id: 'nen-tang-truong', bo: 'nen', ten: 'Tăng trưởng',
+    mo: 'đường tăng vẽ dần + chồng tiền',
+    dung: () => [nenTH(['khoi', 'duong', 'tien'], { draw: 1.3 })] },
+  { id: 'nen-mau', bo: 'nen', ten: 'Màu trơn',
+    mo: 'một mảng màu kín khung, không hoạ tiết',
+    dung: () => [{ kind: 'panel', id: 'nen-mau', x: 0, y: 0, place: 'day',
+      fill: '#0e1420', radius: 0, in: { kind: 'fade', ease: 'out', dur: 0.4 } }] },
+  { id: 'nen-phim', bo: 'nen', ten: 'Phim làm nền',
+    mo: 'video kín khung, mờ và tối sẵn — chọn file ở bảng bên phải',
+    dung: () => [{ kind: 'video', id: 'nen-phim', x: 0, y: 0, place: 'day',
+      src: '', fit: 'cover', blur: 8, dim: 0.25, loop: true,
+      in: { kind: 'fade', ease: 'out', dur: 0.5 } }] },
+
   { id: 'bao-mat', bo: 'so', ten: 'Cam kết bảo mật',
     mo: 'câu dẫn + khiên và mấy nhãn chứng nhận',
     dung: () => [cum([

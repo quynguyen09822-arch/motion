@@ -251,6 +251,7 @@ node tools/kiem-khe-media.mjs       # ảnh/phim trong màn hình điện thoạ
 node tools/kiem-keo-cot.mjs         # kéo đổi bề rộng cột: nhớ, chặn, và khung chọn không lệch
 node tools/kiem-kho-hinh.mjs        # đổi khổ hình: nhân đúng khoá px, từ chối khác tỉ lệ
 node tools/soi-doi-kho.mjs          # (đo, không phải kiểm) đổi sang khổ nào thì hỏng bao nhiêu
+node tools/tu-xep-lai.mjs           # (đo) clip nào đã đổi khổ được, món nào phải xếp tay
 
 node tools/kiem-kho-mon.mjs         # menu thêm: bày đủ 24 loại + 10 bộ dựng sẵn, thả vào là thấy ngay
 npm run kiem:schema                 # CHẶN LỆCH SCHEMA giữa types.ts ↔ schema.js ↔ bộ dựng
