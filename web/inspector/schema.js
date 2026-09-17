@@ -581,6 +581,8 @@ for (const [khoa, hd] of Object.entries(HUONG_DAN)) {
  * nên không khai được trong `NUM_RIENG`. Khoá theo `id` của núm.
  */
 export const HUONG_DAN_CHUNG = {
+  mocChuyenDong: { tieuDe: 'Tự đặt mốc chuyển động',
+    mota: 'Thay vì chọn một hiệu ứng bay có sẵn, bạn đặt mốc cho từng lúc: giây này món ở đâu, giây kia thế nào. Bật lên thì hiệu ứng vào và ra nghỉ hẳn.' },
   in: { tieuDe: 'Cách món xuất hiện',
     mota: 'Chọn kiểu món bay vào khi tới lượt nó. "Nở ra êm" phóng món to dần từ tâm ra, "Trượt lên nhẹ" đẩy món từ dưới lên — kiểu mặc định của nhà.' },
   out: { tieuDe: 'Cách món biến đi',

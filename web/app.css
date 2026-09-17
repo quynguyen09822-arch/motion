@@ -975,3 +975,22 @@ body:has(.keo-cot.dang-keo) iframe { pointer-events: none; }
 .num-nhan-ti { font-size: 10px; color: var(--chu-mo); }
 .o-nhap.ti { padding: 3px 5px; font-size: 11px; }
 .canh-bao { color: #c4632a; }
+
+/* ------------------------------------------------------------ mốc chuyển động */
+.muc-moc .moc-dai { position: relative; height: 16px; margin: 2px 0 8px;
+                    background: var(--nen-3); border-radius: 4px; }
+.moc-vach { position: absolute; top: 2px; bottom: 2px; width: 3px; margin-left: -1px;
+            background: var(--nhan); border-radius: 2px; }
+.moc-kim { position: absolute; top: -2px; bottom: -2px; width: 1px;
+           background: var(--chu); opacity: .55; }
+.moc { border: 1px solid var(--vach); border-radius: 8px; padding: 6px 7px; margin-bottom: 7px; }
+.moc-dinh { display: flex; align-items: center; gap: 5px; }
+.moc-so { font-size: 11px; font-weight: 700; margin-right: auto; }
+.moc-nhan-ti { font-size: 10px; color: var(--chu-mo); }
+.moc-dinh .o-nhap.ti { width: auto; max-width: 74px; flex: 0 0 auto; }
+.moc-num { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 7px; margin-top: 6px; }
+/* Núm chưa bật thì mờ đi — nhìn một cái là biết mốc này ghim những gì. */
+.moc-o { display: flex; align-items: center; gap: 4px; opacity: .45; }
+.moc-o.bat { opacity: 1; }
+.moc-o .o-nhap.ti { width: auto; min-width: 0; flex: 1 1 auto; }
+.moc-o input[type="checkbox"] { flex: 0 0 auto; margin: 0; }

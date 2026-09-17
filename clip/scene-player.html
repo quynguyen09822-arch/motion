@@ -554,6 +554,63 @@ function matNa(el, pIn) {
   return `linear-gradient(${goc}deg, #000 ${pc(q - n)}, transparent ${pc(q)})`;
 }
 
+/* ============================================================== KEYFRAME
+ * `keys[]` — tự đặt mốc cho từng lúc thay vì chọn một hiệu ứng vào có sẵn.
+ *
+ *   keys: [
+ *     { t: 0,   y: 40, opacity: 0, scale: .9 },
+ *     { t: .8,  y: 0,  opacity: 1, scale: 1, ease: 'manh' },
+ *     { t: 3,   x: 120, ease: 'mem' }
+ *   ]
+ *
+ * BỐN ĐIỀU PHẢI NHỚ:
+ *
+ * 1. `t` tính theo giây CỦA CẢNH, cùng đồng hồ với `at` — không phải giây của
+ *    cả clip. Cảnh nào cũng đếm lại từ 0, nên chép một món sang cảnh khác là
+ *    chạy y nguyên.
+ *
+ * 2. `x`/`y` là ĐỘ DỜI so với chỗ món đang đứng, không phải toạ độ tuyệt đối.
+ *    Toạ độ tuyệt đối nằm ở `el.x`/`el.y` và do phần dàn trang lo. Trộn hai thứ
+ *    là món nhảy về góc trên trái ngay khung đầu.
+ *
+ * 3. TỪNG THUỘC TÍNH MỘT ĐƯỜNG RIÊNG. Mốc chỉ khai `x` thì `opacity` vẫn chạy
+ *    theo hai mốc gần nhất CÓ khai `opacity`. Nếu bắt mỗi mốc phải khai đủ mọi
+ *    thứ thì người dùng khai thiếu một cái là món nhấp nháy, mà không hiểu vì sao.
+ *
+ * 4. Có `keys` thì hiệu ứng vào/ra BỊ BỎ QUA hẳn. Cho cả hai cùng ghi
+ *    `transform` thì không ai đoán nổi kết quả — đúng cái bẫy `charStagger`
+ *    chồng `lineStagger` đã gặp.
+ */
+const NUM_KEY = ['x', 'y', 'scale', 'rotate', 'opacity'];
+const KEY_MAC_DINH = { x: 0, y: 0, scale: 1, rotate: 0, opacity: 1 };
+
+/** Giá trị của một thuộc tính tại giây `cuc`, nội suy giữa hai mốc gần nhất. */
+function docKey(keys, ten, cuc) {
+  let truoc = null, sau = null;
+  for (const k of keys) {
+    if (k == null || k[ten] == null) continue;
+    if (k.t <= cuc) { if (!truoc || k.t >= truoc.t) truoc = k; }
+    else if (!sau || k.t < sau.t) sau = k;
+  }
+  if (!truoc && !sau) return null;               // không mốc nào khai — để mặc định
+  if (!truoc) return sau[ten];                   // trước mốc đầu: giữ nguyên giá trị đầu
+  if (!sau) return truoc[ten];                   // sau mốc cuối: giữ nguyên giá trị cuối
+  // `ease` nằm trên mốc ĐÍCH: nó tả đường đi TỚI mốc đó, giống cách
+  // After Effects và CSS đều hiểu.
+  return truoc[ten] + (sau[ten] - truoc[ten]) * seg(cuc, truoc.t, sau.t, sau.ease || 'mem');
+}
+
+function tinhKey(el, cuc) {
+  const keys = el.keys;
+  if (!Array.isArray(keys) || !keys.length) return null;
+  const ra = { ...KEY_MAC_DINH };
+  for (const ten of NUM_KEY) {
+    const v = docKey(keys, ten, cuc);
+    if (v != null) ra[ten] = v;
+  }
+  return ra;
+}
+
 /* --------------------------------------------------------- dựng phần tử */
 
 /**
@@ -1709,14 +1766,19 @@ function applyEl(rec, t) {
   const dOut = mOut.dur != null ? mOut.dur : .4;
   const pOut = el.out || el.for != null ? seg(local, outAt, outAt + dOut, mOut.ease || 'inOut') : 0;
 
+  /* CÓ `keys` thì keyframe cầm lái, hiệu ứng vào/ra nghỉ hẳn. Xem chú thích ở
+     `tinhKey` cho lý do — hai hệ cùng ghi `transform` là không đoán nổi. */
+  const kf = tinhKey(el, local - stagger);
+
   const gIn = (MOTION[mIn.kind] || MOTION.rise)(mIn.dist != null ? mIn.dist : Math.round(U * 2.2));
   const gOut = (MOTION[mOut.kind] || MOTION.fade)(mOut.dist != null ? mOut.dist : Math.round(U * 1.6));
 
-  const dx = gIn.dx * (1 - pIn) - gOut.dx * pOut;
-  const dy = gIn.dy * (1 - pIn) - gOut.dy * pOut;
-  const sc = (gIn.s + (1 - gIn.s) * pIn) * (1 - (1 - gOut.s) * pOut);
+  const dx = kf ? kf.x : gIn.dx * (1 - pIn) - gOut.dx * pOut;
+  const dy = kf ? kf.y : gIn.dy * (1 - pIn) - gOut.dy * pOut;
+  const sc = kf ? kf.scale : (gIn.s + (1 - gIn.s) * pIn) * (1 - (1 - gOut.s) * pOut);
 
-  node.style.opacity = String(cl(pIn * (1 - pOut) * (el.opacity != null ? el.opacity : 1), 0, 1));
+  node.style.opacity = String(cl(
+    (kf ? kf.opacity : pIn * (1 - pOut)) * (el.opacity != null ? el.opacity : 1), 0, 1));
   const fit = rec.fit != null ? rec.fit : 1;
   const tick = TICK[el.kind];
   if (tick) tick(el, node, local, at);
@@ -1743,9 +1805,13 @@ function applyEl(rec, t) {
     day = 1 + bien * (el.pushOut ? (1 - q) : q);
   }
 
+  /* Góc xoay: `el.rotate` là góc ĐỨNG YÊN của món, `kf.rotate` là góc đang
+     chạy theo mốc. Cộng lại chứ không thay nhau — món vốn nghiêng 8 độ mà
+     keyframe xoay thêm thì phải nghiêng từ 8 độ, không phải từ 0. */
+  const xoay = (el.rotate || 0) + (kf ? kf.rotate : 0);
   node.style.transform =
     `translate(${dx.toFixed(2)}px,${dy.toFixed(2)}px) scale(${(sc * fit * dap * day).toFixed(4)})` +
-    (el.rotate ? ` rotate(${el.rotate}deg)` : '');
+    (xoay ? ` rotate(${xoay.toFixed(2)}deg)` : '');
 
   /* Chỉ đụng `filter` khi phần tử CÓ khai hiệu ứng. Cảnh nặng nhất có 229 phần
      tử; ghi một chuỗi rỗng vào cả 229 nút mỗi khung hình là phí không cần. */
