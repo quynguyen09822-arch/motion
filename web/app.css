@@ -915,3 +915,13 @@ body:has(.keo-cot.dang-keo) iframe { pointer-events: none; }
 .kho-mo { font-size: 11px; color: var(--chu-mo); line-height: 1.35; }
 .menu-them .kho-mon:hover .kho-mo { color: var(--tren-nhan); opacity: .75; }
 .kho-trong { padding: 14px 10px; font-size: 12px; color: var(--chu-mo); }
+
+/* ---------- hai thẻ trong bảng chọn: bộ dựng sẵn · một món ---------- */
+.kho-the { display: flex; gap: 2px; padding: 0 12px 8px; flex: none; }
+.kho-the-nut {
+  flex: 1; padding: 6px 0; border: 0; border-radius: var(--bo-nho);
+  background: var(--nen-2); color: var(--chu-mo);
+  font: 600 11.5px/1 var(--font); cursor: pointer;
+}
+.kho-the-nut[aria-selected="true"] { background: var(--nen-4); color: var(--nhan); }
+.kho-the-nut:hover { color: var(--chu); }

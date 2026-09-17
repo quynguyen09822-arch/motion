@@ -19,7 +19,7 @@ import path from 'node:path';
 const PROJ = process.env.PROJ_ROOT
   || '/home/coder/workspace/projects/clipVibehost/hosting-animatic-production';
 const { chromium } = createRequire(path.join(PROJ, 'tools/'))('playwright');
-const { BO_MON, MAU_MON } = await import(new URL('../web/them.js', import.meta.url));
+const { BO_KIT, BO_MON, KIT, MAU_MON, themKit } = await import(new URL('../web/them.js', import.meta.url));
 const { TEN_LOAI } = await import(new URL('../web/inspector/schema.js', import.meta.url));
 
 const GOC = process.argv[2] || 'http://127.0.0.1:7803';
@@ -154,6 +154,38 @@ try {
   dat('không có lỗi JS khi dựng', loiJS.length === 0, loiJS.slice(0, 2).join(' | ') || 'sạch');
 } finally {
   await trinh.close();
+}
+
+/* ---------- 4. bộ dựng sẵn ---------- */
+console.log('\n4. Bộ dựng sẵn — bấm một cái ra nguyên một cụm đã bày');
+const boId2 = new Set(BO_KIT.map((b) => b.id));
+dat('bộ nào cũng thuộc một nhóm có thật', KIT.every((k) => boId2.has(k.bo)),
+  KIT.filter((k) => !boId2.has(k.bo)).map((k) => k.id).join(', ') || `${KIT.length} bộ`);
+dat('bộ nào cũng có tên và dòng tả', KIT.every((k) => k.ten && k.mo));
+
+/*
+ * ID KHÔNG ĐƯỢC TRÙNG, kể cả khi thêm cùng một bộ HAI LẦN — chuyện rất thường.
+ * Trùng id thì `validateScene` chặn không cho lưu, mà lỗi chỉ hiện ra tận lúc
+ * bấm Lưu nên rất khó lần ngược.
+ */
+{
+  const doc = { meta: { width: 1280, height: 720 }, scenes: [{ id: 'c1', duration: 6, elements: [] }] };
+  for (let v = 0; v < 2; v++) for (const k of KIT) themKit(doc, 'c1', k.id);
+  const ids = [];
+  const di = (ds) => { for (const e of ds || []) { ids.push(e.id); di(e.children); } };
+  di(doc.scenes[0].elements);
+  dat('thêm cả kho hai lượt vẫn không trùng id', new Set(ids).size === ids.length,
+    `${ids.length} món · trùng ${ids.length - new Set(ids).size}`);
+  dat('món ngoài cùng của bộ đều khai `place`',
+    doc.scenes[0].elements.every((e) => e.place),
+    'nhờ vậy bộ tự xếp lại khi đổi khổ clip');
+  const thieuXY = ids.length && (() => {
+    let sai = 0;
+    const d2 = (ds) => { for (const e of ds || []) { if (typeof e.x !== 'number' || typeof e.y !== 'number') sai++; d2(e.children); } };
+    d2(doc.scenes[0].elements); return sai;
+  })();
+  dat('mọi món trong bộ đều có x/y là SỐ', thieuXY === 0,
+    thieuXY ? `${thieuXY} món thiếu` : 'validateScene sẽ nhận');
 }
 
 console.log(hong === 0 ? '\n✅ Kho thành phần: qua.\n' : `\n❌ ${hong} mục không đạt.\n`);

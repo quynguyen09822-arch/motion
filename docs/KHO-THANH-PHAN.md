@@ -47,6 +47,43 @@ Ba món **được phép rỗng**, mỗi món một lý do thật:
 - `sweep` — vệt sáng là một cú loé; đứng ở một giây bất kỳ không thấy gì là
   đúng bản chất.
 
+## Bộ dựng sẵn — bấm một cái ra nguyên một cụm
+
+Thêm từng món thì ai cũng làm được. Bày cho **đẹp** mới là phần khó: câu dẫn đặt
+đâu, cách món khoe bao xa, món nào vào trước món nào vào sau. Bộ gói sẵn những
+quyết định đó — nên thẻ **"Bộ dựng sẵn"** đứng trước thẻ "Một món".
+
+| Nhóm | Bộ |
+|---|---|
+| **Mở đầu & kết** | Mở đầu — logo · Kết — kêu gọi hành động · Nền thương hiệu |
+| **Khoe sản phẩm** | Khoe trang web · Khoe trên điện thoại · Điền biểu mẫu · Hỏi trợ lý AI |
+| **Số liệu & cam kết** | Ba con số · Bảng danh sách · Cam kết bảo mật |
+
+### Khuôn lấy từ clip thật, không bịa
+
+`vibe-host`, `nguon-toi`, `kich-ban-thu` đều dùng đúng **một** khuôn:
+
+```
+cụm (place 'giua', xếp dọc, căn giữa, khe 5)
+  ├─ chữ dẫn      bay lên, 0,55s
+  └─ món khoe     bay lên, 0,6s
+```
+
+Đổi dáng chữ dẫn ở một chỗ (`chuDan`) là mọi bộ đổi theo.
+
+### Bộ tự xếp lại khi đổi khổ clip
+
+Cụm ngoài cùng khai **`place`** chứ không khai toạ độ — nên đổi 16:9 sang 9:16 nó
+tự bày lại đúng. Khác hẳn **96,8% số món trong các clip hiện nay đang khai toạ độ
+cứng** (xem `docs/DOI-KHO-HINH.md`). Càng dựng bằng bộ thì clip càng dễ đổi khổ
+về sau.
+
+### Thêm hai lần cùng một bộ vẫn không trùng id
+
+Mọi id trong bộ được đặt lại khi thêm. Trùng id thì `validateScene` **chặn không
+cho lưu**, mà lỗi chỉ hiện ra tận lúc bấm Lưu nên rất khó lần ngược — nên bài
+kiểm thêm cả kho **hai lượt** rồi đếm.
+
 ## Kiểm
 
 ```bash

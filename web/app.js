@@ -17,7 +17,7 @@ import { taoLopPhu } from './overlay.js';
 import { taoDanhSach } from './layers.js';
 import { taoBang, tenMon } from './inspector/index.js';
 import { ganKeo } from './drag.js';
-import { BO_MON, MAU_MON, nhanBanCanh, nhanBanMon, themCanh, themMon, xoaCanh, xoaMon } from './them.js';
+import { BO_KIT, BO_MON, KIT, MAU_MON, nhanBanCanh, nhanBanMon, themCanh, themKit, themMon, xoaCanh, xoaMon } from './them.js';
 import { taoBangXuat } from './exportpanel.js';
 import { taoKhung } from './khung.js';
 import { taoBangVideo } from './videos.js';
@@ -220,16 +220,53 @@ $('mon-them').onclick = (ev) => {
     bao(`Đã thêm ${m.ten.toLowerCase()}.`);
   };
 
+  const themBo = (k) => {
+    menuThem.classList.add('an');
+    let idMoi = null;
+    kho.sua(`thêm bộ ${k.ten.toLowerCase()}`, (doc) => {
+      idMoi = themKit(doc, chon.canhId, k.id, trongCum);
+    });
+    if (idMoi) datChon({ canhId: chon.canhId, monId: idMoi });
+    bao(`Đã thêm bộ "${k.ten}" — sửa lại chữ cho hợp clip của bạn.`);
+  };
+
   const dau = document.createElement('div');
   dau.className = 'kho-dau';
-  dau.textContent = trongCum ? 'Thêm vào trong cụm đang chọn' : 'Thêm thành phần';
+  dau.textContent = trongCum ? 'Thêm vào trong cụm đang chọn' : 'Thêm vào cảnh';
   menuThem.appendChild(dau);
+
+  /*
+   * HAI THẺ: cả một bộ đã bày sẵn, hay một món lẻ.
+   *
+   * Bộ đứng TRƯỚC vì nó là thứ người dùng cần hơn: thêm từng món ai cũng làm
+   * được, nhưng bày cho ĐẸP mới là phần khó — câu dẫn đặt đâu, cách món khoe
+   * bao xa, món nào vào trước. Bộ gói sẵn những quyết định đó.
+   */
+  const the = document.createElement('div');
+  the.className = 'kho-the';
+  the.setAttribute('role', 'tablist');
+  let dangXem = 'bo';
+  for (const [id, ten] of [['bo', 'Bộ dựng sẵn'], ['mon', 'Một món']]) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'kho-the-nut';
+    b.textContent = ten;
+    b.setAttribute('role', 'tab');
+    b.setAttribute('aria-selected', String(id === dangXem));
+    b.onclick = () => {
+      dangXem = id;
+      for (const x of the.children) x.setAttribute('aria-selected', String(x === b));
+      veKho(oTim.value);
+    };
+    the.appendChild(b);
+  }
+  menuThem.appendChild(the);
 
   const oTim = document.createElement('input');
   oTim.className = 'nhap-tim kho-tim';
   oTim.type = 'search';
-  oTim.placeholder = 'Tìm thành phần…';
-  oTim.setAttribute('aria-label', 'Tìm thành phần');
+  oTim.placeholder = 'Tìm…';
+  oTim.setAttribute('aria-label', 'Tìm bộ hoặc thành phần');
   menuThem.appendChild(oTim);
 
   const than = document.createElement('div');
@@ -245,8 +282,10 @@ $('mon-them').onclick = (ev) => {
     than.innerHTML = '';
     const q = phang(loc).trim();
     let co = 0;
-    for (const bo of BO_MON) {
-      const ds = MAU_MON.filter((m) => m.bo === bo.id
+    const nhomBo = dangXem === 'bo' ? BO_KIT : BO_MON;
+    const dsTatCa = dangXem === 'bo' ? KIT : MAU_MON;
+    for (const bo of nhomBo) {
+      const ds = dsTatCa.filter((m) => m.bo === bo.id
         && (!q || phang(m.ten).includes(q) || phang(m.mo).includes(q)));
       if (!ds.length) continue;
       co += ds.length;
@@ -261,14 +300,14 @@ $('mon-them').onclick = (ev) => {
         b.innerHTML = `<span class="kho-ten"></span><span class="kho-mo"></span>`;
         b.querySelector('.kho-ten').textContent = m.ten;
         b.querySelector('.kho-mo').textContent = m.mo;
-        b.onclick = () => them(m);
+        b.onclick = () => (dangXem === 'bo' ? themBo(m) : them(m));
         than.appendChild(b);
       }
     }
     if (!co) {
       const t2 = document.createElement('div');
       t2.className = 'kho-trong';
-      t2.textContent = `Không có thành phần nào khớp "${loc}".`;
+      t2.textContent = `Không có ${dangXem === 'bo' ? 'bộ' : 'thành phần'} nào khớp "${loc}".`;
       than.appendChild(t2);
     }
   }

@@ -126,6 +126,144 @@ export function themMon(doc, canhId, kind, chaId = null) {
   return el.id;
 }
 
+/**
+ * BỘ DỰNG SẴN (kit) — bấm một cái ra nguyên một cụm đã bày sẵn.
+ *
+ * Thêm từng món một thì ai cũng làm được, nhưng bày cho ĐẸP mới là phần khó:
+ * câu dẫn đặt đâu, cách món khoe bao xa, món nào vào trước món nào vào sau.
+ * Kit gói sẵn những quyết định đó.
+ *
+ * KHUÔN LẤY TỪ CLIP THẬT, không bịa. Cả `vibe-host`, `nguon-toi`,
+ * `kich-ban-thu` đều dùng đúng một khuôn:
+ *
+ *     cụm (place 'giua', xếp dọc, căn giữa, khe 5)
+ *       ├─ chữ dẫn      (bay lên, 0,55s)
+ *       └─ món khoe     (bay lên, 0,6s)
+ *
+ * Và vì cụm khai `place` chứ không khai toạ độ, kit **tự xếp lại khi đổi khổ
+ * clip** — khác hẳn 96,8% số món trong kho hiện nay đang khai toạ độ cứng.
+ * Xem `docs/DOI-KHO-HINH.md`.
+ */
+export const BO_KIT = [
+  { id: 'moi',  ten: 'Mở đầu & kết',   mo: 'cảnh đầu, cảnh cuối' },
+  { id: 'khoe', ten: 'Khoe sản phẩm',  mo: 'màn hình, trang web, biểu mẫu' },
+  { id: 'so',   ten: 'Số liệu & cam kết', mo: 'con số, bảng, bảo mật' },
+];
+
+/* Chữ dẫn dùng chung một dáng — đổi ở đây là mọi kit đổi theo. */
+const chuDan = (text, size = 96) => ({
+  kind: 'text', id: 'chu', x: 0, y: 0, w: 374, text, size, align: 'left', gap: 3,
+  in: { kind: 'rise', ease: 'out', dur: 0.55 },
+});
+const cum = (con) => ({
+  kind: 'group', id: 'nhom', x: 0, y: 0, place: 'giua',
+  dir: 'doc', align: 'giua', justify: 'giua', gap: 5, children: con,
+});
+const vao = (el) => ({ ...el, x: 0, y: 0, at: 0, in: { kind: 'rise', ease: 'out', dur: 0.6 } });
+
+export const KIT = [
+  { id: 'mo-dau', bo: 'moi', ten: 'Mở đầu — logo',
+    mo: 'câu dẫn + logo thương hiệu',
+    dung: () => [cum([
+      chuDan('Giới thiệu *sản phẩm mới*'),
+      vao({ kind: 'logo', id: 'logo', name: 'Tên thương hiệu', mark: '◆', w: 260, size: 46 }),
+    ])] },
+  { id: 'ket-cta', bo: 'moi', ten: 'Kết — kêu gọi hành động',
+    mo: 'câu chốt + nút bấm',
+    dung: () => [cum([
+      chuDan('Bắt đầu *ngay hôm nay*'),
+      vao({ kind: 'nut', id: 'nut', label: 'Dùng thử miễn phí', size: 32 }),
+    ])] },
+  { id: 'nen-th', bo: 'moi', ten: 'Nền thương hiệu',
+    mo: 'lớp hoạ tiết phủ cả khung, nằm dưới mọi thứ',
+    dung: () => [{ kind: 'nen', id: 'nen', x: 0, y: 0, place: 'day',
+      parts: ['cham', 'net', 'khoi', 'song', 'duong'], draw: 1.3, waveLow: true,
+      in: { kind: 'fade', ease: 'out', dur: 0.5 } }] },
+
+  { id: 'khoe-web', bo: 'khoe', ten: 'Khoe trang web',
+    mo: 'câu dẫn + cửa sổ trình duyệt',
+    dung: () => [cum([
+      chuDan('Trang của bạn *đã lên mạng*'),
+      vao({ kind: 'browser', id: 'trinh-duyet', w: 446, h: 321, url: 'trang-cua-ban.vn' }),
+    ])] },
+  { id: 'khoe-dt', bo: 'khoe', ten: 'Khoe trên điện thoại',
+    mo: 'câu dẫn + khung máy, thả ảnh/phim vào màn',
+    dung: () => [cum([
+      chuDan('Xem tốt trên *mọi màn hình*'),
+      vao({ kind: 'phone', id: 'dien-thoai', w: 260, h: 540, src: '' }),
+    ])] },
+  { id: 'khoe-form', bo: 'khoe', ten: 'Điền biểu mẫu',
+    mo: 'câu dẫn + biểu mẫu có sẵn vài ô',
+    dung: () => [cum([
+      chuDan('Khai vài dòng là *xong*'),
+      vao({ kind: 'form', id: 'bieu-mau', w: 380, title: 'Tạo mới',
+        fields: [{ label: 'Tên', value: 'du-an-moi' }, { label: 'Nguồn', value: 'Git URL' }] }),
+    ])] },
+  { id: 'khoe-ai', bo: 'khoe', ten: 'Hỏi trợ lý AI',
+    mo: 'câu dẫn + cửa sổ trò chuyện',
+    dung: () => [cum([
+      chuDan('Nói một câu, *AI dựng hộ*'),
+      vao({ kind: 'chat', id: 'tro-ly', w: 446, h: 384, title: 'Trợ lý AI',
+        lines: ['Xin chào! Bạn muốn dựng gì?'], typing: 'Làm giúp tôi một trang bán hàng…' }),
+    ])] },
+
+  { id: 'ba-so', bo: 'so', ten: 'Ba con số',
+    mo: 'câu dẫn + ba nhãn số xếp ngang',
+    dung: () => [cum([
+      chuDan('Con số *nói thay lời*'),
+      { kind: 'group', id: 'hang-so', x: 0, y: 0, dir: 'ngang', align: 'giua',
+        justify: 'giua', gap: 4, children: [
+          vao({ kind: 'chip', id: 'so-1', value: '99,9%', label: 'Thời gian sống' }),
+          vao({ kind: 'chip', id: 'so-2', value: '< 1s', label: 'Tải trang' }),
+          vao({ kind: 'chip', id: 'so-3', value: '24/7', label: 'Hỗ trợ' }),
+        ] },
+    ])] },
+  { id: 'bang-so', bo: 'so', ten: 'Bảng danh sách',
+    mo: 'câu dẫn + bảng nhiều dòng',
+    dung: () => [cum([
+      chuDan('Mọi thứ *trong một bảng*'),
+      vao({ kind: 'table', id: 'bang', w: 520, columns: ['Tên', 'Trạng thái'], rows: 4 }),
+    ])] },
+  { id: 'bao-mat', bo: 'so', ten: 'Cam kết bảo mật',
+    mo: 'câu dẫn + khiên và mấy nhãn chứng nhận',
+    dung: () => [cum([
+      chuDan('Dữ liệu của bạn *được giữ kỹ*'),
+      vao({ kind: 'shield', id: 'khien', w: 563, mark: '🔒',
+        badges: ['Chuẩn ngân hàng', 'Dữ liệu tại Việt Nam', 'SSL'] }),
+    ])] },
+];
+
+/**
+ * Thêm cả một bộ vào cảnh. Trả về id của món ngoài cùng đầu tiên.
+ *
+ * Mọi id trong bộ đều được đặt LẠI cho khỏi trùng — thêm hai lần cùng một bộ là
+ * chuyện thường, mà trùng id thì `validateScene` chặn không cho lưu, và lỗi chỉ
+ * hiện ra tận lúc bấm Lưu nên rất khó lần.
+ */
+export function themKit(doc, canhId, kitId, chaId = null) {
+  const canh = timCanh(doc, canhId);
+  const kit = KIT.find((k) => k.id === kitId);
+  if (!canh || !kit) return null;
+
+  const datLaiId = (el) => {
+    el.id = idMoi(canh, `${kitId}-${el.id}`);
+    for (const c of el.children || []) datLaiId(c);
+    return el;
+  };
+  const cha = chaId ? timMon(doc, canhId, chaId)?.el : null;
+  const dich = cha && cha.kind === 'group' ? (cha.children ||= []) : canh.elements;
+
+  let dau = null;
+  for (const el of kit.dung()) {
+    const e = datLaiId(structuredClone(el));
+    // Nằm trong cụm thì để flex lo chỗ, `place` vào là thừa và làm hỏng bố cục.
+    if (cha) delete e.place;
+    dich.push(e);
+    dau ||= e.id;
+  }
+  return dau;
+}
+
 export function xoaMon(doc, canhId, monId) {
   const canh = timCanh(doc, canhId);
   if (!canh) return false;
