@@ -22,6 +22,7 @@ import { danhSachClip, docClip, duongDanXem, locSlug } from './clips.js';
 import { chupBanGoc, lichSu } from './backup.js';
 import { khoiPhuc, luuClip } from './save.js';
 import { docNhap, ghiNhap, xoaNhap } from './drafts.js';
+import { duongDanTieng, khoTieng, songAm } from './tieng.js';
 import { chuyenVideo, huyViec, khoHopLe, kiemBoCuc, layViec, soDangCho, xuatDuocKhong, xuatNhanh, xuatVideo } from './jobs.js';
 import { THU_MUC, danhSachVideo as nguonVideo, duongDanThat, locTen, tenBanChuyen } from './nguonvideo.js';
 import { chanDoan, docKhung, suaKhung } from './khung.js';
@@ -168,6 +169,19 @@ const server = http.createServer(async (req, res) => {
     }
 
     /* ---------- video đã xuất ---------- */
+    /* ---------- rãnh tiếng ---------- */
+    if (p === '/api/tieng' && req.method === 'GET') {
+      return json(res, 200, { ok: true, kho: khoTieng() });
+    }
+
+    if (p === '/api/song-am' && req.method === 'GET') {
+      const f = duongDanTieng(url.searchParams.get('src') || '');
+      // Nói rõ vì sao từ chối. "400" trống không thì người dùng tưởng app hỏng.
+      if (!f) return loi(res, 400, 'Đường dẫn tiếng không hợp lệ hoặc file không có.');
+      const o = Math.max(40, Math.min(2000, Number(url.searchParams.get('o')) || 400));
+      return json(res, 200, { ok: true, ...(await songAm(f, o)) });
+    }
+
     if (p === '/api/videos' && req.method === 'GET') {
       return json(res, 200, { ok: true, bo: BO, videos: await danhSachVideo() });
     }

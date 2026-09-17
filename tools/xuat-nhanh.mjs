@@ -33,8 +33,8 @@
  *   --fps 30      --luong 4      --chat 18       --tu 0 --den 0
  */
 import { createRequire } from 'node:module';
-import { spawn } from 'node:child_process';
-import { mkdtempSync, rmSync, mkdirSync, statSync, writeFileSync, readdirSync } from 'node:fs';
+import { spawn, execFileSync } from 'node:child_process';
+import { mkdtempSync, rmSync, mkdirSync, statSync, writeFileSync, readdirSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
@@ -84,6 +84,9 @@ await pg0.goto(noi(URL_TRANG, 'export=1'), { waitUntil: 'load' });
 await pg0.waitForFunction(() => Boolean(window.__clip), null, { timeout: 30000 });
 await pg0.evaluate(() => window.__clip.ready());
 const DAI = await pg0.evaluate(() => window.__clip.duration);
+/* Rãnh tiếng lấy TỪ TRANG chứ không đọc lại file JSON: trang là nơi duy nhất
+   biết mình đang dựng kịch bản nào (có thể đã được studio nạp đè bằng `load`). */
+const RANH = await pg0.evaluate(() => (window.__clip.tieng || []));
 await br0.close();
 
 const DEN = Number(arg('den', 0)) || DAI;
@@ -126,6 +129,56 @@ console.log(`\nHứng xong ${SO_KHUNG} khung trong ${giayHung.toFixed(1)}s`
 const co = readdirSync(TAM).filter((f) => f.endsWith('.jpg')).length;
 if (co !== SO_KHUNG) { rmSync(TAM, { recursive: true, force: true }); throw new Error(`thiếu khung: ${co}/${SO_KHUNG}`); }
 
+/* ---------- tiếng ----------
+ * Tiếng KHÔNG quay theo khung hình được — bộ xuất nhảy từng khung, không có
+ * khái niệm "thời gian thật" để thu. Nên ffmpeg ghép tiếng vào sau, từ đúng
+ * danh sách rãnh mà trang đang dùng.
+ *
+ * Thứ tự bộ lọc có ý nghĩa: cắt → đặt lại mốc → chỉnh to nhỏ → mờ vào/ra →
+ * RỒI MỚI đẩy lùi (`adelay`). Đẩy lùi trước thì `afade` tính mốc theo thời
+ * gian đã lùi và vệt mờ rơi sai chỗ.
+ */
+function dungTieng() {
+  const vao = [], loc = [], nhan = [];
+  /* Đếm SỐ LUỒNG VÀO, không dùng `vao.length`: mỗi rãnh đẩy vào 6 phần tử
+     (`-ss`, giá trị, `-t`, giá trị, `-i`, đường dẫn), nên lấy độ dài mảng sẽ ra
+     số thứ tự 1, 7, 13, 19 thay vì 1, 2, 3, 4 — và ffmpeg báo "Invalid argument"
+     chứ không nói rõ là sai chỗ nào. */
+  let so = 0;
+  for (const [i, r] of RANH.entries()) {
+    if (!r || !r.src) continue;
+    const f = path.resolve(PROJ, r.src);
+    if (!existsSync(f)) { console.log(`  ⚠ bỏ qua rãnh "${r.id || i}" — không thấy file ${r.src}`); continue; }
+    let dai = 0;
+    try {
+      dai = Number(execFileSync('ffprobe', ['-v', 'error', '-show_entries', 'format=duration',
+        '-of', 'csv=p=0', f], { encoding: 'utf8' }).trim()) || 0;
+    } catch { /* đọc không được thì để 0, dưới sẽ bỏ qua */ }
+    if (!dai) { console.log(`  ⚠ bỏ qua rãnh "${r.id || i}" — không đọc được thời lượng`); continue; }
+    const tu = Math.max(0, r.from || 0);
+    const L = Math.max(0.01, r.for != null ? r.for : dai - tu);
+    const D = Math.round(Math.max(0, r.at || 0) * 1000);
+    const G = r.gain != null ? r.gain : 1;
+    const fi = r.fadeIn || 0, fo = r.fadeOut || 0;
+    const k = ++so;                                // luồng 0 là chuỗi khung hình
+    vao.push('-ss', String(tu), '-t', String(L), '-i', f);
+    const b = [`[${k}:a]`, 'aresample=48000', 'asetpts=PTS-STARTPTS', `volume=${G}`];
+    if (fi > 0) b.push(`afade=t=in:st=0:d=${fi}`);
+    if (fo > 0) b.push(`afade=t=out:st=${Math.max(0, L - fo)}:d=${fo}`);
+    if (D > 0) b.push(`adelay=${D}|${D}`);
+    const ten = `[at${k}]`;
+    loc.push(b.slice(0, 1).concat(b.slice(1).join(',')).join('') + ten);
+    nhan.push(ten);
+  }
+  if (!nhan.length) return null;
+  // `normalize=0`: amix mặc định chia đều độ to cho số rãnh, nên thêm một tiếng
+  // động nhỏ là cả lời đọc tụt xuống một nửa — nghe như hỏng máy.
+  loc.push(`${nhan.join('')}amix=inputs=${nhan.length}:normalize=0:dropout_transition=0,atrim=0:${(DEN - TU).toFixed(3)}[ara]`);
+  return { vao, loc: loc.join(';') };
+}
+const TIENG = dungTieng();
+if (TIENG) console.log(`Ghép ${TIENG.vao.filter((x) => x === '-i').length} rãnh tiếng`);
+
 /* ---------- ghép ---------- */
 mkdirSync(path.dirname(RA), { recursive: true });
 const VAO = ['-start_number', '0', '-framerate', String(FPS), '-i', path.join(TAM, 'k%06d.jpg')];
@@ -150,14 +203,24 @@ if (DINH_DANG === 'png') {
     + ` · ${(DEN - TU).toFixed(2)} giây`);
   process.exit(0);
 } else if (DINH_DANG === 'webm') {
-  args = [...VAO, '-vf', `${SCALE},format=yuv420p`, '-c:v', 'libvpx-vp9',
-    '-crf', String(Number(CRF) + 12), '-b:v', '0', '-row-mt', '1', RA];
+  args = TIENG
+    ? [...VAO, ...TIENG.vao, '-filter_complex', `${TIENG.loc}`, '-map', '0:v', '-map', '[ara]',
+       '-vf', `${SCALE},format=yuv420p`, '-c:v', 'libvpx-vp9', '-crf', String(Number(CRF) + 12),
+       '-b:v', '0', '-row-mt', '1', '-c:a', 'libopus', '-b:a', '128k', '-shortest', RA]
+    : [...VAO, '-vf', `${SCALE},format=yuv420p`, '-c:v', 'libvpx-vp9',
+       '-crf', String(Number(CRF) + 12), '-b:v', '0', '-row-mt', '1', RA];
 } else if (DINH_DANG === 'gif') {
   args = [...VAO, '-vf',
     `fps=${Math.min(FPS, 15)},scale=${Math.round(RA_W / 2)}:-1:flags=lanczos,split[a][b];[a]palettegen=stats_mode=diff[p];[b][p]paletteuse=dither=bayer`,
     '-loop', '0', RA];
+} else if (TIENG) {
+  args = [...VAO, ...TIENG.vao, '-filter_complex', `${TIENG.loc}`,
+    '-map', '0:v', '-map', '[ara]', '-vf', `${SCALE},format=yuv420p`,
+    '-c:v', 'libx264', '-crf', CRF, '-preset', 'medium', '-profile:v', 'high',
+    '-movflags', '+faststart', '-c:a', 'aac', '-b:a', '192k', '-shortest', RA];
 } else {
-  // MP4: luôn kèm một luồng tiếng im lặng — nhiều nền tảng từ chối video không tiếng.
+  // Không có rãnh nào thì vẫn kèm một luồng im lặng — nhiều nền tảng từ chối
+  // video không có tiếng, và lỗi đó chỉ lộ ra lúc đăng bài.
   args = [...VAO, '-f', 'lavfi', '-i', 'anullsrc=channel_layout=stereo:sample_rate=48000',
     '-map', '0:v', '-map', '1:a', '-vf', `${SCALE},format=yuv420p`,
     '-c:v', 'libx264', '-crf', CRF, '-preset', 'medium', '-profile:v', 'high',

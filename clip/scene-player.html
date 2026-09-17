@@ -1809,7 +1809,72 @@ function applyPointer(t) {
   if (!shown) { $cursor.style.opacity = '0'; $flash.style.opacity = '0'; }
 }
 
+/* ============================================================== RÃNH TIẾNG
+ * Tiếng chạy theo ĐỒNG HỒ CỦA CLIP, không phải đồng hồ của thẻ <audio>.
+ *
+ * Vì sao không thả cho thẻ tự phát: tua tới giây 12 thì hình nhảy tới ngay còn
+ * tiếng vẫn đọc từ đầu — sai khớp mà không báo gì. Nên mỗi lần đổi mốc thời
+ * gian là ép lại `currentTime` của từng rãnh.
+ *
+ * Vì sao chỉ ép khi lệch quá 0,12 giây: ghi `currentTime` là bắt trình duyệt
+ * tìm lại vị trí trong file nén, làm liên tục thì tiếng rè và giật. 0,12 giây
+ * là dưới ngưỡng tai người nghe ra lệch môi.
+ *
+ * LÚC XUẤT VIDEO thì TẮT HẲN. Bộ xuất nhảy từng khung, tiếng không quay theo
+ * kiểu đó được — ffmpeg ghép tiếng vào sau, từ chính danh sách rãnh này.
+ */
+const XUAT = P.get('export') === '1';
+let TIENG = [];              // [{ el, t: cấu hình rãnh }]
+
+function dungTieng() {
+  for (const r of TIENG) { try { r.el.pause(); r.el.remove(); } catch { /* kệ */ } }
+  TIENG = [];
+}
+
+function layTieng(doc) {
+  dungTieng();
+  if (XUAT) return;                       // bộ xuất tự lo phần tiếng
+  for (const t2 of (doc.audio && doc.audio.tracks) || []) {
+    if (!t2 || !t2.src) continue;
+    const el = document.createElement('audio');
+    el.src = t2.src;
+    el.preload = 'auto';
+    el.dataset.rank = t2.id || '';
+    document.body.appendChild(el);
+    TIENG.push({ el, t: t2 });
+  }
+}
+
+/** Độ to của một rãnh tại giây `cuc` tính từ lúc rãnh bắt đầu. */
+function toTieng(c, cuc, dai) {
+  let v = c.gain != null ? c.gain : 1;
+  const vao = c.fadeIn || 0, ra = c.fadeOut || 0;
+  if (vao > 0 && cuc < vao) v *= cl(cuc / vao, 0, 1);
+  if (ra > 0 && dai > 0 && cuc > dai - ra) v *= cl((dai - cuc) / ra, 0, 1);
+  return cl(v, 0, 1);
+}
+
+function dongBoTieng(moc, dangChay) {
+  for (const { el, t: c } of TIENG) {
+    const batDau = c.at || 0;
+    const tu = c.from || 0;
+    const daiNguon = isFinite(el.duration) ? el.duration - tu : Infinity;
+    const daiRanh = c.for != null ? c.for : daiNguon;
+    const cuc = moc - batDau;
+    if (cuc < -0.02 || cuc > daiRanh) {          // ngoài quãng của rãnh này
+      if (!el.paused) el.pause();
+      continue;
+    }
+    const dich = tu + Math.max(0, cuc);
+    if (Math.abs(el.currentTime - dich) > 0.12) { try { el.currentTime = dich; } catch { /* chưa nạp xong */ } }
+    el.volume = toTieng(c, Math.max(0, cuc), daiRanh);
+    if (dangChay && el.paused) el.play().catch(() => { /* trình duyệt chặn tự phát */ });
+    if (!dangChay && !el.paused) el.pause();
+  }
+}
+
 let t = 0, DUNG = true, last = 0;
+let mocTieng = 0;            // lần cuối soát lại tiếng, để khỏi soát mỗi khung
 
 function render(now) {
   t = cl(now, 0, DUR);
@@ -1819,7 +1884,14 @@ function render(now) {
 }
 
 function loop(now) {
-  if (!DUNG) { const dt = (now - last) / 1000; last = now; render(t + dt); if (t >= DUR) DUNG = true; }
+  if (!DUNG) {
+    const dt = (now - last) / 1000; last = now; render(t + dt);
+    if (t >= DUR) { DUNG = true; dongBoTieng(t, false); }
+    /* Soát lại tiếng 4 lần mỗi giây, không phải mỗi khung hình: thẻ <audio> tự
+       trôi theo đồng hồ riêng của nó nên chỉ cần kéo về khi đã lệch, còn ép mỗi
+       khung là tiếng rè. */
+    else if (now - mocTieng > 250) { mocTieng = now; dongBoTieng(t, true); }
+  }
   requestAnimationFrame(loop);
 }
 
@@ -1828,6 +1900,7 @@ function loop(now) {
 loadDoc().then(async (doc) => {
   DOC = doc;
   layout(doc);
+  layTieng(doc);
   document.title = 'ClipVibe · ' + ((doc.meta && doc.meta.name) || 'cảnh');
 
   // Đo sau khi phông chữ xong, không thì đo phải cỡ chữ dự phòng rồi thu sai.
@@ -1856,19 +1929,24 @@ loadDoc().then(async (doc) => {
         })));
       fit(); measureFit(); render(t);
     },
-    play: () => { DUNG = false; last = performance.now(); },
+    play: () => { DUNG = false; last = performance.now(); mocTieng = last; dongBoTieng(t, true); },
     /* Dừng tại chỗ. `seek` KHÔNG dừng — nó chỉ vẽ lại một khung hình, rồi vòng
        lặp chạy tiếp ngay nhịp sau. Thiếu hàm này thì nút Dừng của trình sửa bấm
        xong phim vẫn chạy. Thuần bổ sung: không công cụ nào đang gọi `pause`. */
-    pause: () => { DUNG = true; },
+    pause: () => { DUNG = true; dongBoTieng(t, false); },
     /* Đang chạy hay đang đứng — để trình sửa vẽ đúng nhãn nút, thay vì tự đoán
        bằng một lá cờ riêng rồi lệch khi phim tự hết. */
     get paused() { return DUNG; },
     at: () => t,
-    seek: (s) => render(s),
+    /* `seek` kéo tiếng theo, `step` thì KHÔNG. Lý do: `step` là đường của bộ
+       xuất video, nhảy hàng nghìn khung liên tiếp — ép `currentTime` từng lần
+       như vậy vừa vô ích (bộ xuất không thu tiếng) vừa làm chậm hẳn. */
+    seek: (s) => { render(s); dongBoTieng(t, !DUNG); },
     step: (s) => render(s),
+    /** Danh sách rãnh tiếng — để bộ xuất video biết phải ghép những gì. */
+    get tieng() { return ((DOC && DOC.audio && DOC.audio.tracks) || []).slice(); },
     /* Dành cho khung xem trước trong studio: nạp kịch bản khác mà không tải lại trang. */
-    load: (next) => { DOC = next; layout(next); measureFit(); render(0); return DUR; },
+    load: (next) => { DOC = next; layout(next); layTieng(next); measureFit(); render(0); return DUR; },
     /**
      * Ranh giới từng cảnh — để công cụ bên ngoài biết chụp ảnh ở đâu.
      * `giua` là lúc cảnh đã vào xong, chưa bắt đầu ra: chụp ở đó thì được khung
