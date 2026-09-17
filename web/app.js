@@ -66,6 +66,7 @@ const bangTieng = taoBangTieng($('bang-tieng'), {
 });
 const khungAI = taoKhungAI($('bang-ai'), {
   layDoc: () => kho.doc(),
+  laySlug: () => kho.slug(),
   bao: (c, h) => bao(c, h),
   /* Đọc xong là gắn thẳng thành rãnh tiếng của clip. Đi qua `kho.sua` nên hoàn
      tác được — lỡ đọc nhầm giọng thì Ctrl+Z là xong, file vẫn còn trên đĩa. */

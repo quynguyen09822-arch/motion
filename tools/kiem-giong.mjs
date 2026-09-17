@@ -124,8 +124,8 @@ try {
       giong: x.querySelectorAll('.ai-hang').length,
       nghe: x.querySelectorAll('.ai-nghe').length,
       ngan: Boolean(x.querySelector('.ai-ngan')),
-      nut: x.querySelector('.nut.chinh')?.textContent,
-      khoa: x.querySelector('.nut.chinh')?.disabled };
+      nut: x.querySelector('.nut-doc')?.textContent,
+      khoa: x.querySelector('.nut-doc')?.disabled };
   });
   dat('bảng mở được và bày đủ giọng', b.hien && b.giong === d.giong.length, `${b.giong} hàng`);
   dat('giọng nào cũng có nút nghe thử', b.nghe === b.giong, `${b.nghe}/${b.giong}`);
@@ -136,20 +136,59 @@ try {
   await trang.waitForTimeout(700);
   const sauLay = await trang.evaluate(() => ({
     loi: document.querySelector('.o-loi').value.length,
-    dem: document.querySelector('#bang-ai .num-goi').textContent }));
+    dem: document.querySelector('#bang-ai .dem-chu').textContent }));
   dat('lấy được lời từ chữ trong clip', sauLay.loi > 20, `${sauLay.loi} ký tự · "${sauLay.dem}"`);
   dat('đếm ký tự khớp với lời đang có', sauLay.dem.startsWith(String(sauLay.loi)), sauLay.dem);
 
   await trang.click('#bang-ai .ai-ten >> nth=0');
   await trang.waitForTimeout(400);
   const sauChon = await trang.evaluate(() => ({
-    nut: document.querySelector('#bang-ai .nut.chinh').textContent,
-    khoa: document.querySelector('#bang-ai .nut.chinh').disabled,
+    nut: document.querySelector('#bang-ai .nut-doc').textContent,
+    khoa: document.querySelector('#bang-ai .nut-doc').disabled,
     chon: document.querySelectorAll('#bang-ai .ai-hang.chon').length }));
   dat('chọn giọng xong thì nút mở và nói rõ giọng nào',
     sauChon.khoa === false && sauChon.chon === 1 && /giọng/.test(sauChon.nut), sauChon.nut);
   dat('không có lỗi JS', loiJS.length === 0, loiJS.slice(0, 2).join(' | ') || 'sạch');
   await trinh.close();
+
+  /* ---------- 5b. AI viết lời ---------- */
+  console.log('\n5b. AI viết lời từ brief');
+  const sai = await (await fetch(`${GOC}/api/viet-loi`, { method: 'POST',
+    headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ slug: 'khong-he-co' }) })).json();
+  dat('clip không có thì báo rõ, không gọi AI', sai.ok === false, sai.loi);
+
+  const t2v = Date.now();
+  const v = await (await fetch(`${GOC}/api/viet-loi`, { method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ slug: 'wireframe-thu', brief: 'Giới thiệu dịch vụ hosting, giọng thân thiện.' }) })).json();
+  const giay = ((Date.now() - t2v) / 1000).toFixed(1);
+
+  if (!v.ok && /đều không dùng được lúc này/.test(v.loi || '')) {
+    /* Nhà cung cấp sập KHÔNG PHẢI lỗi của mình. Tính là hỏng thì bài kiểm đỏ vu
+       vơ, mà một bài kiểm đỏ vu vơ thì người ta bắt đầu bỏ qua mọi màu đỏ. */
+    console.log(`  — bỏ qua: cả chuỗi model của Google đang bận (${giay}s). ${(v.loi || '').slice(0, 90)}`);
+  } else {
+    dat('AI viết được lời', v.ok === true, v.ok ? `${giay}s · ${v.model}` : v.loi?.slice(0, 90));
+    if (v.ok) {
+      dat('viết đúng một dòng cho mỗi cảnh', v.soDong === v.soCanh, `${v.soDong} dòng / ${v.soCanh} cảnh`);
+      dat('có ước thời gian đọc để đối chiếu với clip',
+        typeof v.giayDoc === 'number' && v.giayDoc > 0 && v.giayClip > 0,
+        `đọc ~${v.giayDoc}s trên clip ${v.giayClip}s`);
+      /* Lời viết ra phải XẤP XỈ thời lượng clip. Lệch quá 60% nghĩa là lời nhắc
+         không truyền được ràng buộc thời lượng — lúc đó tính năng vô dụng vì
+         lời nào cũng phải cắt lại bằng tay. */
+      dat('lời viết ra xấp xỉ vừa thời lượng clip',
+        v.giayDoc > v.giayClip * 0.4 && v.giayDoc < v.giayClip * 1.6,
+        `${v.giayDoc}s so với ${v.giayClip}s`);
+      dat('không lẫn số thứ tự hay lời dẫn của AI',
+        !/^\s*(\d+[.)]|cảnh\s*\d|đây là)/im.test(v.loi), v.loi.split('\n')[0].slice(0, 46));
+      /* Ngưỡng rộng, và cố ý: đây là cái chặn TREO, không phải phép đo tốc độ.
+         Mỗi lần tụt model tốn thêm tới 12 giây chờ, mà việc model nào bận là
+         chuyện của nhà cung cấp. Đặt ngưỡng sát quá thì bài kiểm đỏ vì Google
+         bận chứ không phải vì mình hỏng. */
+      dat('không bị treo (dưới 50 giây)', Number(giay) < 50, `${giay}s`);
+    }
+  }
 
   /* ---------- 6. đọc thật — chỉ khi được bảo ---------- */
   console.log('\n6. Đọc lời thật');

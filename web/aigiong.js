@@ -38,18 +38,24 @@ function loiTuClip(doc) {
   return ra.filter(Boolean).join('. ').replace(/\.\s*\./g, '.');
 }
 
-export function taoKhungAI(boc, { layDoc, bao, themRanh }) {
+export function taoKhungAI(boc, { layDoc, laySlug, bao, themRanh }) {
   const muc = el('div', 'muc-ai');
-  let giong = [], daChon = null, gioiHan = 5000, dangDoc = false;
-  let tiengMau = null;
+  let giong = [], daChon = null, gioiHan = 5000, dangDoc = false, dangViet = false;
+  let tiengMau = null, canhDai = null;
+
+  const oBrief = el('textarea', 'o-nhap o-brief');
+  oBrief.rows = 3;
+  oBrief.placeholder = 'Clip này nói về gì, nói với ai, giọng điệu thế nào? '
+    + 'Ví dụ: "Giới thiệu dịch vụ hosting cho chủ shop online, giọng thân thiện, nhấn vào giá rẻ và hỗ trợ 24/7."';
+  oBrief.setAttribute('aria-label', 'Brief cho AI');
 
   const oLoi = el('textarea', 'o-nhap o-loi');
   oLoi.rows = 5;
   oLoi.placeholder = 'Gõ lời cần đọc, hoặc bấm "Lấy lời từ clip" bên dưới.';
   oLoi.setAttribute('aria-label', 'Lời cần đọc');
 
-  const demChu = el('p', 'num-goi');
-  const nutDoc = el('button', 'nut chinh rong', 'Đọc thành file tiếng');
+  const demChu = el('p', 'num-goi dem-chu');
+  const nutDoc = el('button', 'nut chinh rong nut-doc', 'Đọc thành file tiếng');
   nutDoc.type = 'button';
 
   function demLai() {
@@ -57,13 +63,14 @@ export function taoKhungAI(boc, { layDoc, bao, themRanh }) {
     const qua = n > gioiHan;
     demChu.textContent = n
       ? `${n} ký tự${qua ? ` — quá mức ${gioiHan} cho một lần đọc, hãy cắt ngắn bớt` : ''}`
+        + (canhDai && !qua ? ` · ${canhDai}` : '')
       : 'Chưa có lời nào.';
-    demChu.classList.toggle('canh-bao', qua);
+    demChu.classList.toggle('canh-bao', qua || Boolean(canhDai));
     nutDoc.disabled = dangDoc || !n || qua || !daChon;
     nutDoc.textContent = dangDoc ? 'Đang đọc…'
       : daChon ? `Đọc bằng giọng ${daChon.ten}` : 'Chọn một giọng trước';
   }
-  oLoi.oninput = demLai;
+  oLoi.oninput = () => { canhDai = null; demLai(); };
 
   /* ---- nghe thử: mỗi lúc chỉ một đoạn ---- */
   function nghe(g, nut) {
@@ -110,8 +117,44 @@ export function taoKhungAI(boc, { layDoc, bao, themRanh }) {
     return boc2;
   }
 
+  async function aiViet() {
+    const slug = laySlug?.();
+    if (!slug || dangViet) return;
+    dangViet = true; nutViet.disabled = true; nutViet.textContent = 'AI đang viết…';
+    try {
+      const r = await fetch('/api/viet-loi', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slug, brief: oBrief.value.trim() }),
+      });
+      const d = await r.json();
+      if (!d.ok) { bao(d.loi || 'AI viết lời hỏng.', true); return; }
+      oLoi.value = d.loi;
+      /* So thời gian ĐỌC với thời lượng CLIP, và nói ra ngay. Không nói thì
+         người dùng bấm đọc, tiêu ký tự, rồi mới phát hiện lời tràn quá phim. */
+      canhDai = d.giayDoc > d.giayClip + 0.5
+        ? `Lời này đọc mất khoảng ${String(d.giayDoc).replace('.', ',')} giây, `
+          + `mà clip chỉ dài ${String(d.giayClip).replace('.', ',')} giây — cắt bớt trước khi đọc.`
+        : null;
+      demLai();
+      bao(d.tutModel
+        ? `AI đã viết ${d.soDong} dòng cho ${d.soCanh} cảnh. (${d.tutModel})`
+        : `AI đã viết ${d.soDong} dòng cho ${d.soCanh} cảnh — đọc lại và sửa cho thuận miệng.`);
+    } catch (e) {
+      bao(`AI viết lời hỏng — ${String(e.message || e).slice(0, 80)}`, true);
+    } finally { dangViet = false; nutViet.disabled = false; nutViet.textContent = 'AI viết lời'; }
+  }
+
+  const nutViet = el('button', 'nut chinh rong nut-viet', 'AI viết lời');
+  nutViet.type = 'button';
+  nutViet.onclick = aiViet;
+
   function ve() {
     muc.innerHTML = '';
+
+    muc.appendChild(el('h3', 'muc-ten', 'Nói cho AI biết clip này về gì'));
+    muc.append(oBrief, nutViet);
+    muc.appendChild(el('p', 'num-goi',
+      'AI đọc sẵn số cảnh, thời lượng từng cảnh và chữ đang hiện trên hình, rồi viết lời vừa với phim.'));
 
     const h1 = el('h3', 'muc-ten', 'Lời cần đọc');
     muc.append(h1, oLoi);

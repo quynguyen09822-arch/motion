@@ -1018,3 +1018,4 @@ body:has(.keo-cot.dang-keo) iframe { pointer-events: none; }
 /* Đang phát thì đổi hẳn màu — người dùng bấm 5 giọng liên tiếp phải biết cái nào
    đang kêu, không thì tưởng máy hỏng. */
 .ai-nghe.dang-nghe { background: var(--nhan); color: var(--tren-nhan); border-color: var(--nhan); }
+.o-brief { min-height: 62px; resize: vertical; font-family: inherit; line-height: 1.45; }
