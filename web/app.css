@@ -994,3 +994,27 @@ body:has(.keo-cot.dang-keo) iframe { pointer-events: none; }
 .moc-o.bat { opacity: 1; }
 .moc-o .o-nhap.ti { width: auto; min-width: 0; flex: 1 1 auto; }
 .moc-o input[type="checkbox"] { flex: 0 0 auto; margin: 0; }
+
+/* ------------------------------------------------------------------ khung AI */
+.muc-ai { display: flex; flex-direction: column; gap: 8px; }
+.o-loi { min-height: 96px; resize: vertical; font-family: inherit; line-height: 1.45; }
+.ai-giong { display: flex; flex-direction: column; gap: 3px;
+            max-height: 320px; overflow-y: auto; }
+.ai-ngan { font-size: 10px; color: var(--chu-mo); margin: 8px 0 2px;
+           border-top: 1px solid var(--vach); padding-top: 7px; }
+.ai-hang { display: flex; align-items: center; gap: 4px; border-radius: 8px;
+           border: 1px solid transparent; }
+.ai-hang.chon { border-color: var(--nhan); background: var(--nhan-nhe); }
+.ai-ten { flex: 1; display: flex; flex-direction: column; align-items: flex-start;
+          gap: 1px; padding: 5px 7px; background: none; border: 0; cursor: pointer;
+          text-align: left; color: inherit; font: inherit; min-width: 0; }
+.ai-ten-chinh { font-size: 12px; font-weight: 600; }
+.ai-ten-phu { font-size: 10px; color: var(--chu-mo); overflow: hidden;
+              text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+.ai-nghe { flex: 0 0 auto; width: 26px; height: 26px; margin-right: 5px;
+           border-radius: 50%; border: 1px solid var(--vach); background: var(--nen-2);
+           display: grid; place-items: center; cursor: pointer; padding: 0; }
+.ai-nghe svg { width: 11px; height: 11px; fill: currentColor; stroke: none; }
+/* Đang phát thì đổi hẳn màu — người dùng bấm 5 giọng liên tiếp phải biết cái nào
+   đang kêu, không thì tưởng máy hỏng. */
+.ai-nghe.dang-nghe { background: var(--nhan); color: var(--tren-nhan); border-color: var(--nhan); }

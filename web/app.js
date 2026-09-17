@@ -22,6 +22,7 @@ import { taoBangXuat } from './exportpanel.js';
 import { taoKhung } from './khung.js';
 import { taoBangVideo } from './videos.js';
 import { taoBangTieng } from './tieng.js';
+import { taoKhungAI } from './aigiong.js';
 import { taoZoom } from './zoom.js';
 import { taoAnhNho } from './anhnho.js';
 import { taoKeoCot } from './cot.js';
@@ -62,6 +63,20 @@ const bangTieng = taoBangTieng($('bang-tieng'), {
   // phần của kịch bản, không phải thiết lập riêng nằm ngoài lịch sử.
   sua: (f) => kho.sua('sửa rãnh tiếng', f),
   layGiay: () => (kho.doc()?.scenes || []).reduce((t, c) => t + (c.duration || 0), 0),
+});
+const khungAI = taoKhungAI($('bang-ai'), {
+  layDoc: () => kho.doc(),
+  bao: (c, h) => bao(c, h),
+  /* Đọc xong là gắn thẳng thành rãnh tiếng của clip. Đi qua `kho.sua` nên hoàn
+     tác được — lỡ đọc nhầm giọng thì Ctrl+Z là xong, file vẫn còn trên đĩa. */
+  themRanh: (r) => {
+    kho.sua('thêm lời đọc AI', (d) => {
+      d.audio = d.audio || { tracks: [] };
+      d.audio.tracks = [...(d.audio.tracks || []),
+        { id: `loi-${(d.audio.tracks || []).length + 1}`, ...r }];
+    });
+    doiThe('tieng'); bangTieng.ve();
+  },
 });
 const bangKhung = taoKhung({
   bocGiua: $('san-khung'), bocBang: $('bang-khung'), bao: (c, h) => bao(c, h),
@@ -421,6 +436,7 @@ function doiThe(ten) {
                                 ['xuat', 'the-xuat', 'bang-xuat'],
                                 ['khung', 'the-khung', 'bang-khung'],
                                 ['tieng', 'the-tieng', 'bang-tieng'],
+                                ['ai', 'the-ai', 'bang-ai'],
                                 ['video', 'the-video', 'bang-video']]) {
     $(the).setAttribute('aria-selected', String(t === ten));
     $(bang).classList.toggle('an', t !== ten);
@@ -435,6 +451,9 @@ $('the-tt').onclick = () => doiThe('tt');
 $('the-xuat').onclick = () => doiThe('xuat');
 $('the-khung').onclick = () => doiThe('khung');
 $('the-tieng').onclick = () => { doiThe('tieng'); bangTieng.ve(); };
+// Danh sách giọng nạp LÚC MỞ THẺ, không nạp lúc khởi động: nó gọi ra Internet,
+// mà phần lớn phiên làm việc không đụng tới giọng đọc.
+$('the-ai').onclick = () => { doiThe('ai'); khungAI.nap(); };
 $('the-video').onclick = () => { doiThe('video'); if (!bangVideo.coGi()) bangVideo.nap(); };
 
 /* ---------- danh sách clip ---------- */

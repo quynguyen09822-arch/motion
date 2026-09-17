@@ -23,6 +23,7 @@ import { chupBanGoc, lichSu } from './backup.js';
 import { khoiPhuc, luuClip } from './save.js';
 import { docNhap, ghiNhap, xoaNhap } from './drafts.js';
 import { duongDanTieng, khoTieng, songAm } from './tieng.js';
+import { docLoi, dsGiong, GIOI_HAN_KY_TU, khoaEleven, khoaGoogle, mauGiong } from './giong.js';
 import { chuyenVideo, huyViec, khoHopLe, kiemBoCuc, layViec, soDangCho, xuatDuocKhong, xuatNhanh, xuatVideo } from './jobs.js';
 import { THU_MUC, danhSachVideo as nguonVideo, duongDanThat, locTen, tenBanChuyen } from './nguonvideo.js';
 import { chanDoan, docKhung, suaKhung } from './khung.js';
@@ -169,6 +170,31 @@ const server = http.createServer(async (req, res) => {
     }
 
     /* ---------- video đã xuất ---------- */
+    /* ---------- giọng đọc AI ---------- */
+    if (p === '/api/giong' && req.method === 'GET') {
+      const d = await dsGiong({ moi: url.searchParams.get('moi') === '1' });
+      /* Trả 200 kèm `ok:false` chứ không trả 500: đây không phải app hỏng, mà là
+         chưa khai khoá — giao diện cần hiện lời hướng dẫn, không phải màn lỗi đỏ. */
+      return json(res, 200, { ...d, gioiHan: GIOI_HAN_KY_TU,
+        coGoogle: khoaGoogle().ok, coEleven: khoaEleven().ok });
+    }
+
+    if (p === '/api/nghe-thu' && req.method === 'GET') {
+      const d = await mauGiong(url.searchParams.get('id') || '');
+      if (!d.ok) return loi(res, 400, d.cau);
+      return guiFile(req, res, d.f);
+    }
+
+    if (p === '/api/doc-loi' && req.method === 'POST') {
+      const than = await docJson(req);
+      const d = await docLoi({
+        loi: than?.loi, giongId: than?.giongId, model: than?.model,
+        ten: than?.ten, toDo: Number(than?.toDo) || 1,
+      });
+      if (!d.ok) return loi(res, 400, d.cau);
+      return json(res, 200, d);
+    }
+
     /* ---------- rãnh tiếng ---------- */
     if (p === '/api/tieng' && req.method === 'GET') {
       return json(res, 200, { ok: true, kho: khoTieng() });
