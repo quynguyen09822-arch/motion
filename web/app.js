@@ -24,6 +24,7 @@ import { taoBangVideo } from './videos.js';
 import { taoZoom } from './zoom.js';
 import { taoAnhNho } from './anhnho.js';
 import { taoKeoCot } from './cot.js';
+import { hinhKit, hinhMon } from './hinhmon.js';
 
 const $ = (id) => document.getElementById(id);
 const chonClip = $('chon-clip'), dangClip = $('dang-clip'), dsCanhEl = $('ds-canh');
@@ -293,15 +294,25 @@ $('mon-them').onclick = (ev) => {
       h.className = 'kho-bo';
       h.textContent = bo.ten;
       than.appendChild(h);
+      const luoi = document.createElement('div');
+      luoi.className = 'kho-luoi';
+      than.appendChild(luoi);
       for (const m of ds) {
         const b = document.createElement('button');
         b.type = 'button';
         b.className = 'kho-mon';
-        b.innerHTML = `<span class="kho-ten"></span><span class="kho-mo"></span>`;
+        /*
+         * Hình vẽ trước, tên sau. Người mở bảng này ra là đang muốn LƯỚT, mà
+         * lướt thì mắt bắt hình nhanh hơn bắt chữ. Dòng tả để trong `title` —
+         * cần thì rê chuột vào, không thì đừng chiếm chỗ.
+         */
+        b.innerHTML = (dangXem === 'bo' ? hinhKit(m.id) : hinhMon(m.kind))
+          + '<span class="kho-ten"></span>';
         b.querySelector('.kho-ten').textContent = m.ten;
-        b.querySelector('.kho-mo').textContent = m.mo;
+        b.title = `${m.ten} — ${m.mo}`;
+        b.setAttribute('aria-label', `${m.ten}. ${m.mo}`);
         b.onclick = () => (dangXem === 'bo' ? themBo(m) : them(m));
-        than.appendChild(b);
+        luoi.appendChild(b);
       }
     }
     if (!co) {

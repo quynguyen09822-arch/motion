@@ -21,6 +21,7 @@ const PROJ = process.env.PROJ_ROOT
 const { chromium } = createRequire(path.join(PROJ, 'tools/'))('playwright');
 const { BO_KIT, BO_MON, KIT, MAU_MON, themKit } = await import(new URL('../web/them.js', import.meta.url));
 const { TEN_LOAI } = await import(new URL('../web/inspector/schema.js', import.meta.url));
+const { hinhKit, hinhMon } = await import(new URL('../web/hinhmon.js', import.meta.url));
 
 const GOC = process.argv[2] || 'http://127.0.0.1:7803';
 
@@ -187,6 +188,38 @@ dat('bộ nào cũng có tên và dòng tả', KIT.every((k) => k.ten && k.mo));
   dat('mọi món trong bộ đều có x/y là SỐ', thieuXY === 0,
     thieuXY ? `${thieuXY} món thiếu` : 'validateScene sẽ nhận');
 }
+
+/* ---------- 5. hình minh hoạ ---------- */
+/*
+ * Bảng chọn có 40 mục. Chỉ có tên thì phải ĐỌC từng dòng mới biết món nào là
+ * món nào — mà người mở bảng ra là đang muốn LƯỚT. Nên mỗi mục phải có hình.
+ *
+ * Hình là SƠ ĐỒ vẽ tay bằng SVG, không phải ảnh chụp: món trong bảng chọn CHƯA
+ * TỒN TẠI trong cảnh nên không có gì để chụp, và dựng thử 40 món mỗi lần mở
+ * bảng thì giật cả giao diện.
+ */
+console.log('\n5. Mỗi mục trong bảng chọn đều có hình minh hoạ');
+const khongHinh = MAU_MON.filter((m) => hinhMon(m.kind).includes('class="ch"'));
+dat('mọi món lẻ đều có hình riêng', khongHinh.length === 0,
+  khongHinh.map((m) => m.kind).join(', ') || `${MAU_MON.length} món`);
+
+/* Bộ nào chưa vẽ riêng thì rơi về hình mặc định — chấp nhận được về mặt chạy,
+   nhưng là "chưa vẽ", nên phải kêu lên chứ đừng im. */
+const hinhMacDinh = hinhKit('__khong-co-that__');
+const kitMacDinh = KIT.filter((k) => hinhKit(k.id) === hinhMacDinh);
+dat('mọi bộ đều có hình riêng, không dùng hình mặc định', kitMacDinh.length === 0,
+  kitMacDinh.map((k) => k.id).join(', ') || `${KIT.length} bộ`);
+
+const trungHinh = (() => {
+  const m = new Map();
+  for (const x of MAU_MON) {
+    const h = hinhMon(x.kind);
+    m.set(h, [...(m.get(h) || []), x.kind]);
+  }
+  return [...m.values()].filter((v) => v.length > 1);
+})();
+dat('không hai món nào dùng chung một hình', trungHinh.length === 0,
+  trungHinh.map((v) => v.join('=')).join(' · ') || 'mỗi món một hình');
 
 console.log(hong === 0 ? '\n✅ Kho thành phần: qua.\n' : `\n❌ ${hong} mục không đạt.\n`);
 process.exit(hong === 0 ? 0 : 1);

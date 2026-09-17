@@ -84,11 +84,37 @@ Mọi id trong bộ được đặt lại khi thêm. Trùng id thì `validateSce
 cho lưu**, mà lỗi chỉ hiện ra tận lúc bấm Lưu nên rất khó lần ngược — nên bài
 kiểm thêm cả kho **hai lượt** rồi đếm.
 
+## Hình minh hoạ — vì sao vẽ sơ đồ chứ không chụp ảnh
+
+Bảng chọn có **40 mục**. Chỉ có tên với một dòng tả thì phải **đọc** từng dòng
+mới biết món nào là món nào — mà người mở bảng ra là đang muốn **lướt**. Mắt bắt
+hình nhanh hơn bắt chữ.
+
+Nên mỗi mục có một **sơ đồ vẽ bằng SVG** (`web/hinhmon.js`), xếp thành lưới hai
+cột: hình trên, tên dưới, dòng tả nằm trong `title` — cần thì rê chuột, không
+thì đừng chiếm chỗ.
+
+**Ba lý do không chụp ảnh thật:**
+
+1. **Món trong bảng chọn CHƯA TỒN TẠI** trong cảnh — không có gì để mà chụp.
+2. **Chụp thật là dựng thật.** 40 lần dựng mỗi lần mở bảng thì giật cả giao diện.
+   Bảng lớp đã phải dựng **lười** vì đúng lý do đó (`web/anhnho.js`), mà đó mới
+   chỉ là ảnh của món **đã có** trong cảnh.
+3. **Sơ đồ nói đúng thứ cần nói: hình DÁNG.** Ảnh thật của "Thẻ" sẽ đầy chữ mẫu,
+   kéo mắt vào chữ chứ không vào dáng.
+
+Nét vẽ theo lối wireframe: viền xám, **đúng một** mảng màu nhấn cho phần "ruột"
+của món. Hình của **bộ** thì vẽ **bố cục** — một vạch câu dẫn ở trên, món khoe ở
+dưới — chứ không vẽ từng phần tử.
+
 ## Kiểm
 
 ```bash
 node tools/kiem-kho-mon.mjs
 ```
+
+Mục 5 canh hình: mọi món và mọi bộ phải có hình **riêng**, không mục nào rơi
+về hình mặc định, và **không hai món nào dùng chung một hình**.
 
 Mục 3 **dựng thật từng món** bằng đúng giá trị mặc định rồi đo xem có vẽ ra gì
 không. Ba lần phép đo này tự bắt lỗi của chính nó khi làm:

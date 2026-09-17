@@ -893,7 +893,7 @@ body:has(.keo-cot.dang-keo) iframe { pointer-events: none; }
 /* Trước đây đây là một danh sách phẳng 13 dòng. Kho giờ 24 món — đổ hết ra một
    cột thì phải cuộn, mà cuộn một danh sách toàn chữ thì không ai nhớ món nào
    nằm đâu. Nên: chia bộ, mỗi món một dòng tả ngắn, và có ô tìm. */
-.menu-them { width: 300px; padding: 0; max-height: min(560px, 76vh); display: flex; flex-direction: column; }
+.menu-them { width: 340px; padding: 0; max-height: min(600px, 80vh); display: flex; flex-direction: column; }
 .kho-dau {
   padding: 11px 13px 8px; font-size: 11px; font-weight: 700;
   text-transform: uppercase; letter-spacing: .06em; color: var(--chu-mo); flex: none;
@@ -905,15 +905,34 @@ body:has(.keo-cot.dang-keo) iframe { pointer-events: none; }
   text-transform: uppercase; letter-spacing: .05em; color: var(--chu-mo-2);
   position: sticky; top: 0; background: var(--nen-3); z-index: 1;
 }
+/* Lưới hai cột: hình vẽ trên, tên dưới. Mắt bắt hình nhanh hơn bắt chữ, mà
+   người mở bảng này ra là đang muốn LƯỚT chứ không muốn đọc. */
+.kho-luoi { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 0 3px; }
 .menu-them .kho-mon {
-  display: flex; flex-direction: column; gap: 1px; align-items: flex-start;
-  width: 100%; text-align: left; padding: 7px 9px; border-radius: var(--bo);
-  background: none; border: 0; color: var(--chu); font: inherit; cursor: pointer;
+  display: flex; flex-direction: column; gap: 5px; align-items: center;
+  width: 100%; text-align: center; padding: 8px 6px 7px; border-radius: var(--bo);
+  background: none; border: 1px solid transparent; color: var(--chu);
+  font: inherit; cursor: pointer;
+  transition: background var(--nhip-nhanh) var(--da-ra),
+              border-color var(--nhip-nhanh) var(--da-ra);
 }
-.menu-them .kho-mon:hover { background: var(--nhan); color: var(--tren-nhan); }
-.kho-ten { font-size: 13px; font-weight: 600; }
-.kho-mo { font-size: 11px; color: var(--chu-mo); line-height: 1.35; }
-.menu-them .kho-mon:hover .kho-mo { color: var(--tren-nhan); opacity: .75; }
+.menu-them .kho-mon:hover { background: var(--nen-2); border-color: var(--nhan); }
+.menu-them .kho-mon:focus-visible { outline: 2px solid var(--nhan); outline-offset: 1px; }
+.kho-ten { font-size: 11.5px; font-weight: 600; line-height: 1.25; }
+
+/* Hình sơ đồ: viền xám, đúng MỘT mảng nhấn cho phần "ruột" của món. */
+.hinh-mon {
+  width: 100%; height: 40px; display: block;
+  background: var(--nen); border-radius: var(--bo-nho);
+}
+.hinh-mon .v { fill: none; stroke: var(--chu-mo-2); stroke-width: 1.4;
+  stroke-linejoin: round; stroke-linecap: round; }
+.hinh-mon .d { fill: var(--nhan); stroke: none; opacity: .85; }
+.hinh-mon .d.net { fill: none; stroke: var(--nhan); stroke-width: 2;
+  stroke-linecap: round; stroke-linejoin: round; opacity: 1; }
+.hinh-mon .dut { stroke-dasharray: 3 2.5; }
+.hinh-mon .ch { fill: var(--chu-mo-2); font: 600 13px var(--font); text-anchor: middle; }
+.menu-them .kho-mon:hover .hinh-mon { background: var(--nen-3); }
 .kho-trong { padding: 14px 10px; font-size: 12px; color: var(--chu-mo); }
 
 /* ---------- hai thẻ trong bảng chọn: bộ dựng sẵn · một món ---------- */

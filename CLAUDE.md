@@ -80,6 +80,7 @@ clip. Node 22 tự lột kiểu file `.ts` nên `types.ts` nạp thẳng đượ
 | `zoom.js` | phóng khung làm việc bằng Ctrl+lăn, phóng quanh con trỏ |
 | `anhnho.js` | ảnh nhỏ từng thành phần — **quy tắc 7 điều áp cho mọi clip**, xem `docs/QUY-TAC-ANH-NHO.md` |
 | `huongdan.js` | bong bóng hướng dẫn tại chỗ; nội dung nằm ở `inspector/schema.js` |
+| `hinhmon.js` | sơ đồ SVG cho 24 món + 16 bộ trong bảng chọn — vẽ tay, không chụp |
 
 **Luồng dữ liệu một chiều, không ngoại lệ:**
 
