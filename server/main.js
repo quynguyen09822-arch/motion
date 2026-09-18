@@ -18,8 +18,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { PROJ, SCENES, kiemTraDuAn, soatKichBan } from './proj.js';
 import { duocPhucVu, guiFile } from './static.js';
-import { aiDangVao, daDatMatKhau, dangBiKhoa, datCookie, diaChi, duocVao, duoiEmail,
-  ghiSai, kiemEmail, kiemMatKhau, taoVe, xoaCookie, xoaSai } from './dangnhap.js';
+import { aiDangVao, daDatMatKhau, dangBiKhoa, datCookie, diaChi, dsTaiKhoan, duocVao,
+  duoiEmail, ghiSai, kiemEmail, kiemMatKhau, taoVe, xoaCookie, xoaSai } from './dangnhap.js';
 import { danhSachClip, docClip, duongDanXem, locSlug } from './clips.js';
 import { chupBanGoc, lichSu } from './backup.js';
 import { khoiPhuc, luuClip } from './save.js';
@@ -116,6 +116,9 @@ const server = http.createServer(async (req, res) => {
       return json(res, 200, {
         ok: true, coMatKhau: daDatMatKhau(), daVao: duocVao(req, '/'),
         email: aiDangVao(req), duoi: duoiEmail(),
+        /* Chỉ nói CÓ giới hạn hay không, KHÔNG trả danh sách tài khoản ra trang
+           đăng nhập — đó là danh sách người, không phải thứ để người lạ đọc. */
+        coDanhSach: dsTaiKhoan().length > 0,
       });
     }
 

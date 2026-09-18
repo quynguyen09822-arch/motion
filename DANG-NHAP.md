@@ -2,18 +2,35 @@
 
 Đăng nhập gồm **email công ty** + **một mật khẩu chung**.
 
-## Email: để biết ai, không phải để chặn
+## Ai được vào: khai thẳng danh sách
 
-Chỉ email đúng đuôi (`MOTION_DUOI_EMAIL`, mặc định `@matbao.com`) mới vào được.
+```
+MOTION_TAI_KHOAN=motion11011
+MOTION_DUOI_EMAIL=@matbao.com
+```
 
-> **Email KHÔNG được kiểm chứng.** Ai cũng gõ được `ai-do@matbao.com` — cửa thật
-> sự là mật khẩu. Email ở đây để **biết ai đang sửa**, và nó hiện trên thanh trên.
-> Đừng nhầm hai việc đó: nghĩ rằng email là một lớp bảo vệ thì sẽ đặt mật khẩu dễ
-> hơn mức cần thiết.
+Tên không có phần đuôi thì tự ghép `MOTION_DUOI_EMAIL` vào —
+`motion11011` hiểu thành `motion11011@matbao.com`. Nhiều người thì ngăn bằng dấu phẩy.
+
+### Vì sao đổi sang danh sách
+
+Bản đầu **chỉ kiểm đuôi email**, nghĩa là gõ `abc@matbao.com` — một địa chỉ không
+có thật — cũng vào được. quynd chỉ ra đúng chỗ đó khi dùng thật, và đó là một lỗi
+thật chứ không phải hạn chế đã biết.
+
+Cái sai không nằm ở chỗ "chưa làm kỹ", mà ở chỗ **lớp email tạo cảm giác an toàn
+giả**: nhìn vào thấy có lọc email, người ta sẽ đặt mật khẩu dễ hơn mức cần.
+
+`tools/kiem-dang-nhap.mjs` nay có một mục canh riêng cho ca này — gõ đúng đuôi
+nhưng không có trong danh sách thì vẫn phải bị chặn. Đã thử phá (gỡ danh sách,
+quay về luật đuôi) → mục đó đỏ ngay.
+
+> Vẫn nhớ: email **không được kiểm chứng bằng thư xác nhận**. Nó thu hẹp cửa vào
+> và cho biết ai đang sửa, nhưng **cửa thật vẫn là mật khẩu**.
 >
-> Hệ quả của "một mật khẩu chung": không thu hồi được quyền của riêng một người —
-> ai nghỉ việc thì phải đổi mật khẩu cho tất cả. Muốn làm được điều đó thì cần
-> mỗi người một mật khẩu riêng, là một việc khác.
+> Và một mật khẩu chung thì không thu hồi được quyền của riêng một người — ai
+> nghỉ việc thì phải đổi mật khẩu cho tất cả. Muốn thế cần mỗi người một mật khẩu
+> riêng, là một việc khác.
 
 Email sai khuôn hoặc sai đuôi thì báo **ngay** và **không tính** vào số lần gõ sai
 mật khẩu — gõ nhầm địa chỉ là chuyện thường, không phải dấu hiệu ai đó đang dò.

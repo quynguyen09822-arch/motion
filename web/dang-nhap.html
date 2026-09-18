@@ -51,6 +51,12 @@ try {
    mà chỗ này vẫn ghi đuôi cũ là nói dối người dùng. */
 fetch('/api/toi-la-ai').then((r) => r.json()).then((d) => {
   if (d?.duoi) email.placeholder = `ten.ban${d.duoi}`;
+  /* Có danh sách tài khoản thì nói rõ là KHÔNG phải email công ty nào cũng vào
+     được — người gõ đúng email của mình mà bị từ chối sẽ tưởng hệ thống hỏng. */
+  if (d?.coDanhSach) {
+    const p2 = document.querySelector('.phu');
+    if (p2) p2.textContent = 'Trình sửa clip của Mắt Bão — chỉ tài khoản được cấp quyền';
+  }
 }).catch(() => { /* không hỏi được thì giữ gợi ý sẵn */ });
 
 $('hien').onclick = () => {

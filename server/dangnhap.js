@@ -7,10 +7,16 @@
  *   họ, và cách duy nhất để vào lại là sửa file trên máy chủ — thứ mà người dùng
  *   của công cụ này không làm được.
  *
- * EMAIL PHẢI ĐÚNG ĐUÔI CÔNG TY, NHƯNG KHÔNG ĐƯỢC KIỂM CHỨNG.
- *   Ai cũng gõ được `ai-do@matbao.com` — cửa thật sự là mật khẩu. Email ở đây để
- *   BIẾT AI ĐANG SỬA, không phải để chặn. Đừng nhầm hai việc đó: nghĩ rằng email
- *   là một lớp bảo vệ thì sẽ đặt mật khẩu dễ hơn mức cần thiết.
+ * DANH SÁCH TÀI KHOẢN CHO PHÉP, không phải "đuôi email nào cũng được".
+ *   Bản đầu chỉ kiểm đuôi `@matbao.com`, nghĩa là gõ `abc@matbao.com` cũng vào
+ *   được — lớp email khi đó chỉ là trang trí. quynd chỉ ra đúng chỗ đó.
+ *
+ *   Nay `MOTION_TAI_KHOAN` khai thẳng ai được vào (ngăn nhau bằng dấu phẩy).
+ *   Khai rồi thì CHỈ những tài khoản đó vào được, đuôi email không còn quyết định.
+ *   Bỏ trống thì mới quay về luật đuôi cũ — dành cho lúc chạy thử ở máy.
+ *
+ *   Vẫn nhớ: email KHÔNG được kiểm chứng bằng thư xác nhận. Nó thu hẹp cửa vào
+ *   và cho biết ai đang sửa, nhưng cửa thật vẫn là mật khẩu.
  *
  * MẬT KHẨU CẤT DẠNG BĂM, KHÔNG CẤT NGUYÊN VĂN.
  *   `scrypt` với muối ngẫu nhiên. Ai đọc được file `.env` cũng không lấy ra được
@@ -87,6 +93,19 @@ export const daDatMatKhau = () => lay('MOTION_MAT_KHAU_HASH').startsWith('scrypt
 export const duoiEmail = () => (lay('MOTION_DUOI_EMAIL') || '').trim().toLowerCase();
 
 /**
+ * Danh sách tài khoản được vào. Ngăn nhau bằng dấu phẩy.
+ *
+ * Khai `motion11011` (không có phần đuôi) thì tự ghép thêm `MOTION_DUOI_EMAIL`
+ * — người đặt cấu hình không phải gõ lại đuôi cho từng dòng, và gõ lại thì sớm
+ * muộn cũng có dòng gõ sai.
+ */
+export function dsTaiKhoan() {
+  return (lay('MOTION_TAI_KHOAN') || '')
+    .split(',').map((x) => x.trim().toLowerCase()).filter(Boolean)
+    .map((x) => (x.includes('@') ? x : x + duoiEmail()));
+}
+
+/**
  * Email có dùng được không.
  *
  * Kiểm khuôn TRƯỚC rồi mới kiểm đuôi: `@matbao.com` tự nó khớp đuôi nhưng không
@@ -98,6 +117,17 @@ export function kiemEmail(em) {
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)) {
     return { ok: false, cau: 'Email chưa đúng khuôn. Ví dụ: ten.ban@matbao.com' };
   }
+  /* Có danh sách thì danh sách QUYẾT ĐỊNH, đuôi không còn vai trò. Kiểm cả hai
+     là thừa, mà thừa ở chỗ này thì sinh ra hai câu báo lỗi khác nhau cho cùng
+     một chuyện "bạn không được vào". */
+  const ds = dsTaiKhoan();
+  if (ds.length) {
+    if (!ds.includes(e)) {
+      return { ok: false, cau: 'Tài khoản này không được phép đăng nhập.' };
+    }
+    return { ok: true, email: e };
+  }
+
   const duoi = duoiEmail();
   if (duoi && !e.endsWith(duoi)) {
     return { ok: false, cau: `Chỉ email đuôi ${duoi} mới vào được.` };

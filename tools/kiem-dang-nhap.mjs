@@ -28,7 +28,8 @@ const { chromium } = createRequire(path.join(PROJ, 'tools/'))('playwright');
 
 const MK = 'mat-khau-kiem-thu-123';
 const DUOI = '@kiem-thu.test';
-const EMAIL = `ai-do${DUOI}`;
+const TK = 'nguoi-duoc-phep';
+const EMAIL = `${TK}${DUOI}`;
 const CONG_CO = 7897;      // máy chủ CÓ mật khẩu
 const CONG_KHONG = 7896;   // máy chủ KHÔNG mật khẩu
 
@@ -46,7 +47,7 @@ function moMayChu(cong, them) {
     /* `MOTION_KHOA_PHIEN` truyền vào để `dangnhap.js` KHỎI tự sinh rồi ghi vào
        `.env` thật — bài kiểm không được để lại dấu vết trong cấu hình. */
     env: { ...process.env, PORT: String(cong), MOTION_KHOA_PHIEN: 'khoa-kiem-thu',
-      MOTION_DUOI_EMAIL: DUOI, ...them },
+      MOTION_DUOI_EMAIL: DUOI, MOTION_TAI_KHOAN: TK, ...them },
   });
   return con;
 }
@@ -114,6 +115,19 @@ try {
   dat('email sai khuôn thì 400, không phải 401', km.status === 400, (await km.json()).loi);
   const kd = await dn(MK, 'ai-do@cho-khac.com');
   dat('email sai đuôi thì bị từ chối', kd.status === 400, (await kd.json()).loi);
+
+  /* ĐÂY LÀ MỤC QUAN TRỌNG NHẤT CỦA CẢ BÀI KIỂM.
+   *
+   * Bản đầu chỉ kiểm ĐUÔI email, nên gõ `abc@matbao.com` — một địa chỉ không có
+   * thật — cũng vào được. Lớp email khi đó chỉ là trang trí, mà lại tạo cảm giác
+   * an toàn giả: người ta sẽ đặt mật khẩu dễ hơn mức cần vì "đã có lọc email rồi".
+   *
+   * quynd chỉ ra đúng chỗ này khi dùng thật. Mục dưới canh để nó không quay lại. */
+  const bay = await dn(MK, `ai-cung-duoc${DUOI}`);
+  dat('ĐÚNG ĐUÔI nhưng KHÔNG trong danh sách thì vẫn bị chặn',
+    bay.status === 400, (await bay.json()).loi);
+  const hoa = await dn(MK, EMAIL.toUpperCase());
+  dat('viết HOA vẫn nhận ra đúng tài khoản', hoa.status === 200);
   const trong = await dn(MK, DUOI);
   dat('chỉ có đuôi, không có tên thì cũng bị chặn', trong.status === 400, (await trong.json()).loi);
 
