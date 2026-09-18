@@ -33,7 +33,7 @@ const GOI_Y = [
   'Nhịp chuyển động đã ổn chưa?',
 ];
 
-export function taoThanhAI({ nutBoc, laySlug, bao, dungKhungGiong }) {
+export function taoThanhAI({ nutBoc, laySlug, bao, dungKhungGiong, dungKhungHinh, dungKhungSua }) {
   let mo = false, dangHoi = false, the = 'hoi';
 
   const nut = el('button', 'nut-ai');
@@ -55,11 +55,13 @@ export function taoThanhAI({ nutBoc, laySlug, bao, dungKhungGiong }) {
   hangThe.setAttribute('role', 'tablist');
   const bocHoi = el('div', 'ai-noi');
   const bocGiong = el('div', 'ai-noi an');
+  const bocHinh = el('div', 'ai-noi an');
+  const bocSua = el('div', 'ai-noi an');
   const theHoi = el('button', 'ai-the', 'Hỏi AI');
   const theGiong = el('button', 'ai-the', 'Giọng đọc');
-  theHoi.type = theGiong.type = 'button';
-  theHoi.setAttribute('role', 'tab');
-  theGiong.setAttribute('role', 'tab');
+  const theHinh = el('button', 'ai-the', 'Dựng hình');
+  const theSua = el('button', 'ai-the', 'Sửa món');
+  for (const b of [theHoi, theGiong, theHinh, theSua]) { b.type = 'button'; b.setAttribute('role', 'tab'); }
 
   const hangGoi = el('div', 'ai-goi-y');
   const o = el('input', 'o-nhap o-hoi');
@@ -85,22 +87,31 @@ export function taoThanhAI({ nutBoc, laySlug, bao, dungKhungGiong }) {
      người dùng mở thẻ đó — danh sách giọng phải gọi ra Internet, mà phần lớn
      phiên làm việc không đụng tới giọng đọc. */
   const khungGiong = dungKhungGiong?.(bocGiong);
+  const khungHinh = dungKhungHinh?.(bocHinh);
+  const khungSua = dungKhungSua?.(bocSua);
 
   function datThe(t) {
     the = t;
-    for (const [b, x, n] of [[theHoi, bocHoi, 'hoi'], [theGiong, bocGiong, 'giong']]) {
+    for (const [b, x, n] of [[theHoi, bocHoi, 'hoi'], [theGiong, bocGiong, 'giong'],
+      [theHinh, bocHinh, 'hinh'], [theSua, bocSua, 'sua']]) {
       b.classList.toggle('chon', t === n);
       b.setAttribute('aria-selected', String(t === n));
       x.classList.toggle('an', t !== n);
     }
-    thanh.classList.toggle('rong', t === 'giong');
+    // Chỉ thẻ "Hỏi AI" là hẹp — ba thẻ còn lại đều cần chỗ cho danh sách, ô thả
+    // ảnh và bảng thay đổi.
+    thanh.classList.toggle('rong', t !== 'hoi');
     if (t === 'giong') khungGiong?.nap();
+    else if (t === 'hinh') khungHinh?.ve();
+    else if (t === 'sua') khungSua?.ve();
     else o.focus();
   }
   theHoi.onclick = () => datThe('hoi');
   theGiong.onclick = () => datThe('giong');
-  hangThe.append(theHoi, theGiong, dong);
-  thanh.append(hangThe, bocHoi, bocGiong);
+  theHinh.onclick = () => datThe('hinh');
+  theSua.onclick = () => datThe('sua');
+  hangThe.append(theHoi, theGiong, theHinh, theSua, dong);
+  thanh.append(hangThe, bocHoi, bocGiong, bocHinh, bocSua);
 
   function veGoiY() {
     hangGoi.innerHTML = '';
@@ -166,5 +177,14 @@ export function taoThanhAI({ nutBoc, laySlug, bao, dungKhungGiong }) {
 
   nutBoc.appendChild(nut);
   document.body.appendChild(thanh);
-  return { mo: () => datMo(true), dong: () => datMo(false), moGiong: () => { datMo(true); datThe('giong'); } };
+  return {
+    mo: () => datMo(true),
+    dong: () => datMo(false),
+    moGiong: () => { datMo(true); datThe('giong'); },
+    moHinh: () => { datMo(true); datThe('hinh'); },
+    moSua: () => { datMo(true); datThe('sua'); },
+    /* Trang cha gọi khi người dùng chọn món khác — thẻ "Sửa món" phải hiện đúng
+       món đang chọn, không thì nó nói tên món cũ và người ta sửa nhầm. */
+    doiChon: () => { if (the === 'sua') khungSua?.ve(); },
+  };
 }

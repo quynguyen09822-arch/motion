@@ -35,6 +35,10 @@ export const HAN_GIAY = 12;
 
 /**
  * Gọi Gemini, tự tụt model khi model đầu bảng bận.
+ *
+ * `loiNhac` nhận CHUỖI (chỉ chữ) hoặc MẢNG PHẦN (chữ + ảnh):
+ *   goiGemini('câu hỏi')
+ *   goiGemini([{ text: '…' }, { inline_data: { mime_type: 'image/png', data: b64 } }])
  * @param nghi  cho model "nghĩ" trước khi trả lời hay không.
  *
  * TẮT PHẦN NGHĨ CHO NHỮNG CÂU TRẢ LỜI NGẮN. Đo được: hỏi một câu ngắn với hạn
@@ -52,7 +56,7 @@ export async function goiGemini(loiNhac, { nong = 0.8, toiDa = 2048, nghi = true
   if (!kq.ok) return { ok: false, cau: kq.cau };
 
   const than = JSON.stringify({
-    contents: [{ role: 'user', parts: [{ text: loiNhac }] }],
+    contents: [{ role: 'user', parts: Array.isArray(loiNhac) ? loiNhac : [{ text: loiNhac }] }],
     generationConfig: {
       temperature: nong,
       maxOutputTokens: toiDa,

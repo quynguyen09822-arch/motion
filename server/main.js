@@ -26,6 +26,8 @@ import { duongDanTieng, khoTieng, songAm } from './tieng.js';
 import { docLoi, dsGiong, GIOI_HAN_KY_TU, khoaEleven, khoaGoogle, mauGiong } from './giong.js';
 import { vietLoi } from './vietloi.js';
 import { hoiAI } from './hoiai.js';
+import { dungCanh } from './dungcanh.js';
+import { suaMon } from './suamon.js';
 import { chuyenVideo, huyViec, khoHopLe, kiemBoCuc, layViec, soDangCho, xuatDuocKhong, xuatNhanh, xuatVideo } from './jobs.js';
 import { THU_MUC, danhSachVideo as nguonVideo, duongDanThat, locTen, tenBanChuyen } from './nguonvideo.js';
 import { chanDoan, docKhung, suaKhung } from './khung.js';
@@ -185,6 +187,48 @@ const server = http.createServer(async (req, res) => {
       const d = await mauGiong(url.searchParams.get('id') || '');
       if (!d.ok) return loi(res, 400, d.cau);
       return guiFile(req, res, d.f);
+    }
+
+    if (p === '/api/sua-mon' && req.method === 'POST') {
+      const than = await docJson(req);
+      const slug = locSlug(than?.slug);
+      if (!slug) return loi(res, 400, 'Tên clip không hợp lệ.');
+      const c = docClip(slug);
+      if (!c) return loi(res, 404, `Không thấy clip "${slug}".`);
+      const anh = than?.anh ? String(than.anh) : null;
+      if (anh && anh.length > 5.4 * 1024 * 1024) {
+        return loi(res, 400, 'Ảnh nặng quá 4 MB. Thu nhỏ lại rồi thử lại.');
+      }
+      const d = await suaMon({
+        doc: c.doc, canhId: than?.canhId, monId: than?.monId,
+        y: than?.y, anh, mime: than?.mime,
+      });
+      if (!d.va) return loi(res, 400, d.cau || 'AI sửa hỏng.');
+      return json(res, 200, d);
+    }
+
+    if (p === '/api/dung-canh' && req.method === 'POST') {
+      const than = await docJson(req);
+      const slug = locSlug(than?.slug);
+      if (!slug) return loi(res, 400, 'Tên clip không hợp lệ.');
+      const c = docClip(slug);
+      if (!c) return loi(res, 404, `Không thấy clip "${slug}".`);
+      /* Ảnh gửi lên dạng base64, dài hơn ảnh gốc khoảng 1,34 lần. Thân yêu cầu
+         bị chặn ở 8 MB (`GIOI_HAN_BODY` trong router.js), nên ảnh gốc chỉ được
+         tới ~4 MB. Chặn ở đây với ĐÚNG con số đó — nói "6 MB" rồi để router
+         chặn ở 8 MB là người dùng nhận một lỗi khác hẳn lời mình vừa hứa. */
+      const anh = String(than?.anh || '');
+      if (!anh) return loi(res, 400, 'Chưa chọn ảnh.');
+      if (anh.length > 5.4 * 1024 * 1024) {
+        return loi(res, 400, 'Ảnh nặng quá 4 MB. Thu nhỏ lại rồi thử lại.');
+      }
+      const mime = String(than?.mime || 'image/png');
+      if (!/^image\/(png|jpeg|webp|gif)$/.test(mime)) {
+        return loi(res, 400, `Không đọc được định dạng ảnh "${mime}". Dùng PNG, JPG hoặc WebP.`);
+      }
+      const d = await dungCanh({ doc: c.doc, anh, mime, y: than?.y });
+      if (d.cau && !d.canh) return loi(res, 400, d.cau);
+      return json(res, 200, d);
     }
 
     if (p === '/api/hoi-ai' && req.method === 'POST') {
