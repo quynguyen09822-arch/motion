@@ -30,6 +30,7 @@ import { vietLoi } from './vietloi.js';
 import { hoiAI } from './hoiai.js';
 import { dungCanh } from './dungcanh.js';
 import { daDung, ghiNhat, xin } from './hanmuc.js';
+import { thongKe } from './nhatky.js';
 import { suaMon } from './suamon.js';
 import { chuyenVideo, huyViec, khoHopLe, kiemBoCuc, layViec, soDangCho, xuatDuocKhong, xuatNhanh, xuatVideo } from './jobs.js';
 import { THU_MUC, danhSachVideo as nguonVideo, duongDanThat, locTen, tenBanChuyen } from './nguonvideo.js';
@@ -188,6 +189,12 @@ const server = http.createServer(async (req, res) => {
       return json(res, 200, { ok: true, up: Math.round(process.uptime()) });
     }
 
+    /* Thống kê lượt dùng. Để SAU cửa đăng nhập: nó cho biết ai đang sửa clip
+       nào, là chuyện nội bộ chứ không phải số liệu công khai. */
+    if (p === '/api/thong-ke' && req.method === 'GET') {
+      return json(res, 200, thongKe());
+    }
+
     if (p === '/api/clips' && req.method === 'GET') {
       const ds = await danhSachClip();
       return json(res, 200, { ok: true, clips: ds.map((c) => ({ ...c, xem: duongDanXem(c) })) });
@@ -211,7 +218,7 @@ const server = http.createServer(async (req, res) => {
       if (!slug) return loi(res, 400, 'Tên clip không hợp lệ.');
       if (!docClip(slug)) return loi(res, 404, `Không thấy clip "${slug}".`);
       const than = await docJson(req);
-      const kq = await luuClip(slug, than?.doc);
+      const kq = await luuClip(slug, than?.doc, aiDangVao(req));
       if (!kq.ok) return json(res, 422, { ok: false, vanDe: kq.vanDe });
       xoaNhap(slug); // lưu xong thì nháp hết nhiệm vụ
       return json(res, 200, { ...kq, suaLuc: docClip(slug).suaLuc });
@@ -243,7 +250,7 @@ const server = http.createServer(async (req, res) => {
       const slug = locSlug(m.slug);
       if (!slug) return loi(res, 400, 'Tên clip không hợp lệ.');
       const than = await docJson(req);
-      const kq = await khoiPhuc(slug, String(than?.dau || ''));
+      const kq = await khoiPhuc(slug, String(than?.dau || ''), aiDangVao(req));
       if (!kq.ok) return json(res, 422, kq);
       return json(res, 200, { ...kq, ...docClip(slug) });
     }

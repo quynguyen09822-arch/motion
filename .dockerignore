@@ -21,3 +21,6 @@ tools
 !tools/dat-mat-khau.mjs
 .env
 .env.*
+
+# Nhật ký lượt dùng — dữ liệu chạy.
+.nhat-ky/

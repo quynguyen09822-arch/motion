@@ -20,3 +20,6 @@ __pycache__/
 .env
 .env.*
 mcp-stitch.json.txt
+
+# Nhật ký lượt dùng — dữ liệu chạy.
+.nhat-ky/
