@@ -18,6 +18,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { PROJ, SCENES, kiemTraDuAn, soatKichBan } from './proj.js';
 import { duocPhucVu, guiFile } from './static.js';
+import { daDatMatKhau, dangBiKhoa, datCookie, diaChi, duocVao, ghiSai, kiemMatKhau,
+  taoVe, xoaCookie, xoaSai } from './dangnhap.js';
 import { danhSachClip, docClip, duongDanXem, locSlug } from './clips.js';
 import { chupBanGoc, lichSu } from './backup.js';
 import { khoiPhuc, luuClip } from './save.js';
@@ -59,6 +61,55 @@ const server = http.createServer(async (req, res) => {
   const p = url.pathname;
 
   try {
+    /* ---------- CỬA ĐĂNG NHẬP ----------
+     * Đặt TRƯỚC mọi thứ khác, kể cả trước `/clip/*`: bộ dựng clip nằm trong
+     * iframe cùng origin nên cookie vẫn đi theo, nhưng người lạ thì không được
+     * đọc file dự án qua đường đó.
+     *
+     * Chưa đặt mật khẩu thì `duocVao` luôn trả true — không khoá chính chủ ra
+     * khỏi công cụ của họ. Đặt bằng `npm run dat-mat-khau`. */
+    if (p === '/api/dang-nhap' && req.method === 'POST') {
+      const ip = diaChi(req);
+      const con = dangBiKhoa(ip);
+      if (con) return loi(res, 429, `Gõ sai nhiều lần quá. Thử lại sau ${con} phút.`);
+      const than = await docJson(req);
+      if (!daDatMatKhau()) return loi(res, 400, 'Máy chủ chưa đặt mật khẩu nào.');
+      if (!kiemMatKhau(than?.mk)) {
+        const con2 = ghiSai(ip);
+        return loi(res, 401, con2 > 0 && con2 <= 3
+          ? `Mật khẩu không đúng. Còn ${con2} lần trước khi bị khoá 15 phút.`
+          : 'Mật khẩu không đúng.');
+      }
+      xoaSai(ip);
+      res.setHeader('Set-Cookie', datCookie(req, taoVe()));
+      return json(res, 200, { ok: true });
+    }
+
+    if (p === '/api/dang-xuat' && req.method === 'POST') {
+      res.setHeader('Set-Cookie', xoaCookie(req));
+      return json(res, 200, { ok: true });
+    }
+
+    if (!duocVao(req, p)) {
+      // Lời gọi API thì trả 401 để giao diện tự xử; trang thì đưa thẳng tới chỗ
+      // đăng nhập, kèm đường đang định tới để vào xong quay lại đúng chỗ đó.
+      if (p.startsWith('/api/')) return loi(res, 401, 'Cần đăng nhập.');
+      const tiep = encodeURIComponent(p + url.search);
+      res.writeHead(302, { Location: `/dang-nhap?tiep=${tiep}` });
+      return res.end();
+    }
+
+    if (p === '/dang-nhap') {
+      // Đã đăng nhập rồi mà mở lại trang này thì đưa về thẳng trình sửa.
+      if (duocVao(req, '/')) { res.writeHead(302, { Location: '/' }); return res.end(); }
+      if (guiFile(req, res, path.join(WEB, 'dang-nhap.html'))) return;
+      return loi(res, 404, 'Không thấy trang đăng nhập.');
+    }
+
+    if (p === '/api/toi-la-ai' && req.method === 'GET') {
+      return json(res, 200, { ok: true, coMatKhau: daDatMatKhau(), daVao: duocVao(req, '/') });
+    }
+
     /* ---------- file của dự án clip, qua danh sách trắng ---------- */
     if (p.startsWith('/clip/')) {
       const rel = decodeURIComponent(p.slice('/clip/'.length));

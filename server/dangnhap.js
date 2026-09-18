@@ -1,0 +1,174 @@
+/**
+ * ĐĂNG NHẬP — một mật khẩu chung cho cả công cụ.
+ *
+ * KHÔNG BAO GIỜ KHOÁ NGƯỜI DÙNG RA NGOÀI.
+ *   Chưa đặt mật khẩu thì app chạy y như trước, chỉ hiện một lời nhắc. Bắt đăng
+ *   nhập ngay khi chưa ai kịp đặt mật khẩu là khoá chính chủ ra khỏi công cụ của
+ *   họ, và cách duy nhất để vào lại là sửa file trên máy chủ — thứ mà người dùng
+ *   của công cụ này không làm được.
+ *
+ * MẬT KHẨU CẤT DẠNG BĂM, KHÔNG CẤT NGUYÊN VĂN.
+ *   `scrypt` với muối ngẫu nhiên. Ai đọc được file `.env` cũng không lấy ra được
+ *   mật khẩu. Đặt bằng `npm run dat-mat-khau`.
+ *
+ * PHIÊN KHÔNG LƯU TRONG BỘ NHỚ.
+ *   Vé đăng nhập là một chuỗi tự chứng thực: `payload.chữ-ký`, ký bằng HMAC với
+ *   một khoá bí mật. Nhờ vậy khởi động lại máy chủ thì người dùng KHÔNG bị đá ra
+ *   — mà công cụ này khởi động lại rất thường xuyên.
+ *
+ * ĐẾM SỐ LẦN GÕ SAI.
+ *   Không đếm thì một mật khẩu bình thường bị dò ra trong vài giờ. Sai 8 lần
+ *   trong 15 phút là khoá theo địa chỉ máy.
+ */
+import { createHmac, randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const GOC = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const F_ENV = path.join(GOC, '.env');
+
+export const TEN_COOKIE = 'motion_phien';
+const SONG_NGAY = 14;                    // vé sống 14 ngày
+const SAI_TOI_DA = 8;
+const KHOA_PHUT = 15;
+
+/* ---------- đọc/ghi .env của CHÍNH repo này ---------- */
+/* Cố ý KHÔNG dùng `.env` của dự án clip: file đó đang chứa khoá ElevenLabs và
+   khoá Google, lại là dự án dùng chung không có git. Mật khẩu của công cụ này
+   là chuyện của công cụ này. */
+function docEnv() {
+  if (!existsSync(F_ENV)) return {};
+  const gt = {};
+  for (const dong of readFileSync(F_ENV, 'utf8').split('\n')) {
+    const d = dong.trim();
+    if (!d || d.startsWith('#') || !d.includes('=')) continue;
+    const i = d.indexOf('=');
+    let v = d.slice(i + 1).trim();
+    if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) v = v.slice(1, -1);
+    gt[d.slice(0, i).trim()] = v;
+  }
+  return gt;
+}
+
+export function ghiEnv(khoa, giaTri) {
+  const cu = existsSync(F_ENV) ? readFileSync(F_ENV, 'utf8') : '';
+  const dong = cu.split('\n');
+  const moi = `${khoa}=${giaTri}`;
+  const i = dong.findIndex((d) => d.trim().startsWith(`${khoa}=`));
+  if (i >= 0) dong[i] = moi; else dong.push(moi);
+  writeFileSync(F_ENV, dong.filter((d, j) => d !== '' || j < dong.length - 1).join('\n').replace(/\n*$/, '\n'), 'utf8');
+}
+
+/* Biến môi trường thắng file — để chạy thử và để bài kiểm dựng máy chủ riêng mà
+   không phải đụng vào `.env` thật. */
+const lay = (k) => process.env[k] || docEnv()[k] || '';
+
+/* ---------- mật khẩu ---------- */
+
+export function bam(mk, muoi = randomBytes(16).toString('hex')) {
+  return `scrypt$${muoi}$${scryptSync(String(mk), muoi, 32).toString('hex')}`;
+}
+
+export const daDatMatKhau = () => lay('MOTION_MAT_KHAU_HASH').startsWith('scrypt$');
+
+export function kiemMatKhau(mk) {
+  const luu = lay('MOTION_MAT_KHAU_HASH');
+  if (!luu.startsWith('scrypt$')) return false;
+  const [, muoi, dung] = luu.split('$');
+  if (!muoi || !dung) return false;
+  const thu = scryptSync(String(mk || ''), muoi, 32);
+  const chuan = Buffer.from(dung, 'hex');
+  /* `timingSafeEqual` ném lỗi nếu hai bên khác độ dài — kiểm trước, không thì
+     một mật khẩu dài bất thường làm sập máy chủ thay vì bị từ chối. */
+  return chuan.length === thu.length && timingSafeEqual(thu, chuan);
+}
+
+/* ---------- vé phiên ---------- */
+
+/** Khoá ký. Chưa có thì sinh một lần rồi cất — không sinh mới mỗi lần khởi động,
+ *  vì làm vậy là mọi người bị đá ra sau mỗi lần khởi động lại. */
+function khoaKy() {
+  let k = lay('MOTION_KHOA_PHIEN');
+  if (!k) { k = randomBytes(32).toString('hex'); ghiEnv('MOTION_KHOA_PHIEN', k); }
+  return k;
+}
+
+const b64 = (s) => Buffer.from(s, 'utf8').toString('base64url');
+const ky = (p) => createHmac('sha256', khoaKy()).update(p).digest('base64url');
+
+export function taoVe() {
+  const p = b64(JSON.stringify({ het: Date.now() + SONG_NGAY * 86400_000 }));
+  return `${p}.${ky(p)}`;
+}
+
+export function veConHan(ve) {
+  const s = String(ve || '');
+  const i = s.lastIndexOf('.');
+  if (i <= 0) return false;
+  const p = s.slice(0, i);
+  const c = s.slice(i + 1);
+  const dung = ky(p);
+  if (c.length !== dung.length || !timingSafeEqual(Buffer.from(c), Buffer.from(dung))) return false;
+  try { return JSON.parse(Buffer.from(p, 'base64url').toString('utf8')).het > Date.now(); }
+  catch { return false; }
+}
+
+export function docCookie(req, ten) {
+  for (const c of String(req.headers.cookie || '').split(';')) {
+    const i = c.indexOf('=');
+    if (i > 0 && c.slice(0, i).trim() === ten) return decodeURIComponent(c.slice(i + 1).trim());
+  }
+  return null;
+}
+
+/** `Secure` chỉ khi thật sự đang chạy qua https — bật bừa thì cookie không bao
+ *  giờ được gửi lúc chạy thử ở `http://127.0.0.1`, và đăng nhập thành vòng lặp. */
+export function datCookie(req, ve) {
+  const https = String(req.headers['x-forwarded-proto'] || '').split(',')[0].trim() === 'https';
+  return `${TEN_COOKIE}=${encodeURIComponent(ve)}; Path=/; HttpOnly; SameSite=Lax; `
+    + `Max-Age=${SONG_NGAY * 86400}${https ? '; Secure' : ''}`;
+}
+
+export function xoaCookie(req) {
+  const https = String(req.headers['x-forwarded-proto'] || '').split(',')[0].trim() === 'https';
+  return `${TEN_COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0${https ? '; Secure' : ''}`;
+}
+
+/* ---------- đếm lần gõ sai ---------- */
+
+const soSai = new Map();
+
+export function diaChi(req) {
+  const xf = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim();
+  return xf || req.socket?.remoteAddress || 'khong-ro';
+}
+
+export function dangBiKhoa(ip) {
+  const g = soSai.get(ip);
+  if (!g) return 0;
+  if (Date.now() > g.den) { soSai.delete(ip); return 0; }
+  return g.lan >= SAI_TOI_DA ? Math.ceil((g.den - Date.now()) / 60000) : 0;
+}
+
+export function ghiSai(ip) {
+  const g = soSai.get(ip) || { lan: 0, den: 0 };
+  g.lan += 1;
+  g.den = Date.now() + KHOA_PHUT * 60000;
+  soSai.set(ip, g);
+  return SAI_TOI_DA - g.lan;
+}
+
+export const xoaSai = (ip) => soSai.delete(ip);
+
+/* ---------- cửa ---------- */
+
+/** Đường nào đi được khi chưa đăng nhập. Danh sách TRẮNG, không phải đen. */
+const MO = new Set(['/dang-nhap', '/api/dang-nhap', '/api/dang-xuat', '/health', '/api/health',
+  '/dang-nhap.css', '/logo/motion-mark.png', '/logo/motion-full.png', '/logo/favicon.png']);
+
+export function duocVao(req, duong) {
+  if (!daDatMatKhau()) return true;          // chưa đặt mật khẩu → không chặn ai
+  if (MO.has(duong)) return true;
+  return veConHan(docCookie(req, TEN_COOKIE));
+}
