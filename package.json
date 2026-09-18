@@ -8,6 +8,7 @@
     "dev": "node server/main.js",
     "start": "node server/main.js",
     "kiem:schema": "node tools/kiem-schema.mjs",
-    "dat-mat-khau": "node tools/dat-mat-khau.mjs"
+    "dat-mat-khau": "node tools/dat-mat-khau.mjs",
+    "kiem": "node tools/chay-kiem.mjs"
   }
 }

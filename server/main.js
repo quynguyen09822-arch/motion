@@ -18,8 +18,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { PROJ, SCENES, kiemTraDuAn, soatKichBan } from './proj.js';
 import { duocPhucVu, guiFile } from './static.js';
-import { daDatMatKhau, dangBiKhoa, datCookie, diaChi, duocVao, ghiSai, kiemMatKhau,
-  taoVe, xoaCookie, xoaSai } from './dangnhap.js';
+import { aiDangVao, daDatMatKhau, dangBiKhoa, datCookie, diaChi, duocVao, duoiEmail,
+  ghiSai, kiemEmail, kiemMatKhau, taoVe, xoaCookie, xoaSai } from './dangnhap.js';
 import { danhSachClip, docClip, duongDanXem, locSlug } from './clips.js';
 import { chupBanGoc, lichSu } from './backup.js';
 import { khoiPhuc, luuClip } from './save.js';
@@ -74,6 +74,12 @@ const server = http.createServer(async (req, res) => {
       if (con) return loi(res, 429, `Gõ sai nhiều lần quá. Thử lại sau ${con} phút.`);
       const than = await docJson(req);
       if (!daDatMatKhau()) return loi(res, 400, 'Máy chủ chưa đặt mật khẩu nào.');
+
+      /* Email sai khuôn thì báo NGAY và KHÔNG tính vào số lần gõ sai mật khẩu.
+         Gõ nhầm địa chỉ là chuyện thường, không phải dấu hiệu ai đó đang dò. */
+      const em = kiemEmail(than?.email);
+      if (!em.ok) return loi(res, 400, em.cau);
+
       if (!kiemMatKhau(than?.mk)) {
         const con2 = ghiSai(ip);
         return loi(res, 401, con2 > 0 && con2 <= 3
@@ -81,8 +87,8 @@ const server = http.createServer(async (req, res) => {
           : 'Mật khẩu không đúng.');
       }
       xoaSai(ip);
-      res.setHeader('Set-Cookie', datCookie(req, taoVe()));
-      return json(res, 200, { ok: true });
+      res.setHeader('Set-Cookie', datCookie(req, taoVe(em.email)));
+      return json(res, 200, { ok: true, email: em.email });
     }
 
     if (p === '/api/dang-xuat' && req.method === 'POST') {
@@ -107,7 +113,10 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (p === '/api/toi-la-ai' && req.method === 'GET') {
-      return json(res, 200, { ok: true, coMatKhau: daDatMatKhau(), daVao: duocVao(req, '/') });
+      return json(res, 200, {
+        ok: true, coMatKhau: daDatMatKhau(), daVao: duocVao(req, '/'),
+        email: aiDangVao(req), duoi: duoiEmail(),
+      });
     }
 
     /* ---------- file của dự án clip, qua danh sách trắng ---------- */

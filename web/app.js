@@ -535,11 +535,21 @@ $('the-video').onclick = () => { doiThe('video'); if (!bangVideo.coGi()) bangVid
     return;
   }
 
+  /* Hiện EMAIL đang đăng nhập. Máy này có thể dùng chung — không nói ai đang
+     đăng nhập thì người ta sửa clip dưới tên người khác mà không biết. */
+  if (d.email) {
+    const e = document.createElement('span');
+    e.className = 'chip-ai';
+    e.textContent = d.email.split('@')[0];
+    e.title = `Đang đăng nhập: ${d.email}`;
+    boc.appendChild(e);
+  }
+
   const n = document.createElement('button');
   n.className = 'nut nho rong nut-ra';
   n.type = 'button';
   n.textContent = 'Thoát';
-  n.title = 'Đăng xuất khỏi trình sửa';
+  n.title = d.email ? `Đăng xuất ${d.email}` : 'Đăng xuất khỏi trình sửa';
   n.onclick = async () => {
     /* Hỏi trước: bấm nhầm lúc đang sửa dở là mất công mở lại và gõ mật khẩu.
        Dùng `kho.ban()` — tên thật của hàm. Viết `kho.chuaLuu?.()` thì optional

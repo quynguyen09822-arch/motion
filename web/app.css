@@ -1145,3 +1145,8 @@ body:has(.keo-cot.dang-keo) iframe { pointer-events: none; }
   border: 1px solid #f0b27a40; cursor: help;
 }
 .o-tai-khoan { display: flex; align-items: center; gap: 8px; }
+.chip-ai {
+  flex: none; font-size: 11.5px; font-weight: 600; padding: 4px 10px;
+  border-radius: 999px; color: var(--chu-mo); background: var(--nen-3);
+  border: 1px solid var(--vach); cursor: default;
+}

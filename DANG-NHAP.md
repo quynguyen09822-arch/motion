@@ -1,5 +1,23 @@
 # Đăng nhập và logo
 
+Đăng nhập gồm **email công ty** + **một mật khẩu chung**.
+
+## Email: để biết ai, không phải để chặn
+
+Chỉ email đúng đuôi (`MOTION_DUOI_EMAIL`, mặc định `@matbao.com`) mới vào được.
+
+> **Email KHÔNG được kiểm chứng.** Ai cũng gõ được `ai-do@matbao.com` — cửa thật
+> sự là mật khẩu. Email ở đây để **biết ai đang sửa**, và nó hiện trên thanh trên.
+> Đừng nhầm hai việc đó: nghĩ rằng email là một lớp bảo vệ thì sẽ đặt mật khẩu dễ
+> hơn mức cần thiết.
+>
+> Hệ quả của "một mật khẩu chung": không thu hồi được quyền của riêng một người —
+> ai nghỉ việc thì phải đổi mật khẩu cho tất cả. Muốn làm được điều đó thì cần
+> mỗi người một mật khẩu riêng, là một việc khác.
+
+Email sai khuôn hoặc sai đuôi thì báo **ngay** và **không tính** vào số lần gõ sai
+mật khẩu — gõ nhầm địa chỉ là chuyện thường, không phải dấu hiệu ai đó đang dò.
+
 ## Đặt mật khẩu
 
 ```bash
@@ -76,6 +94,32 @@ trong ảnh thì mờ khi phóng to. Ảnh chỉ lo phần dấu M.
 bản nhỏ hơn**, bài kiểm có mục canh điều đó.
 
 ## Chạy kiểm
+
+```bash
+npm run kiem                # cả 28 bài
+npm run kiem -- dang-nhap   # chỉ bài đăng nhập
+```
+
+### Vì sao phải có bộ chạy riêng
+
+Từ khi có đăng nhập, máy chủ thật đòi mật khẩu — mà 25 bài kiểm gọi thẳng vào
+đường dẫn, không có vé. Ba cách xử, chỉ một cách đúng:
+
+| | |
+|---|---|
+| ✗ Mở cửa hậu trong mã ("bỏ qua đăng nhập nếu gọi từ localhost") | cửa hậu nào rồi cũng có ngày bị bật nhầm trên bản chạy thật |
+| ✗ Bắt 25 bài tự đăng nhập | sửa 25 file, và mỗi bài mới lại phải nhớ làm |
+| ✓ **Dựng máy chủ riêng cho bài kiểm**, tắt mật khẩu bằng biến môi trường | mã nguồn không có ngoại lệ nào, máy chủ thật không bị đụng |
+
+`npm run kiem` dựng máy chủ ở **cổng 7804**, không phải 7803 — dùng chung cổng thì
+bài kiểm hoặc chiếm cổng của người dùng, hoặc âm thầm chạy vào máy chủ của họ và
+sửa clip thật.
+
+Địa chỉ truyền qua biến `MOTION_GOC`, **không qua tham số**: `kiem-canh.mjs` nhận
+*tên clip* ở tham số thứ nhất, nhét địa chỉ vào đó là nó đi tìm một clip tên
+`http://127.0.0.1:7804`.
+
+### Riêng bài đăng nhập
 
 ```bash
 node tools/kiem-dang-nhap.mjs

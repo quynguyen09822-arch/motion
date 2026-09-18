@@ -14,7 +14,12 @@
   <p class="phu">Trình sửa clip của Mắt Bão</p>
 
   <form id="phieu" novalidate>
-    <label class="nhan" for="mk">Mật khẩu</label>
+    <label class="nhan" for="email">Email công ty</label>
+    <input id="email" name="email" type="email" class="o o-email" inputmode="email"
+           autocomplete="username" placeholder="ten.ban@matbao.com" autofocus required
+           aria-describedby="loi">
+
+    <label class="nhan nhan-2" for="mk">Mật khẩu</label>
     <div class="o-hang">
       <input id="mk" name="mk" type="password" class="o" autocomplete="current-password"
              autofocus required aria-describedby="loi">
@@ -33,7 +38,20 @@
 
 <script type="module">
 const $ = (id) => document.getElementById(id);
-const phieu = $('phieu'), mk = $('mk'), loi = $('loi'), vao = $('vao');
+const phieu = $('phieu'), mk = $('mk'), email = $('email'), loi = $('loi'), vao = $('vao');
+
+/* Nhớ email đã gõ lần trước. Chỉ email — KHÔNG bao giờ nhớ mật khẩu: máy này có
+   thể là máy dùng chung, và `localStorage` thì mọi script trên trang đều đọc được. */
+try {
+  const cu = localStorage.getItem('motion_email');
+  if (cu) { email.value = cu; mk.focus(); }
+} catch { /* trình duyệt chặn localStorage thì thôi */ }
+
+/* Đuôi email do máy chủ quy định, không viết cứng ở đây — đổi đuôi trong `.env`
+   mà chỗ này vẫn ghi đuôi cũ là nói dối người dùng. */
+fetch('/api/toi-la-ai').then((r) => r.json()).then((d) => {
+  if (d?.duoi) email.placeholder = `ten.ban${d.duoi}`;
+}).catch(() => { /* không hỏi được thì giữ gợi ý sẵn */ });
 
 $('hien').onclick = () => {
   const ho = mk.type === 'password';
@@ -50,22 +68,26 @@ function bao(cau) {
 
 phieu.onsubmit = async (ev) => {
   ev.preventDefault();
-  if (!mk.value) return bao('Chưa gõ mật khẩu.');
+  if (!email.value.trim()) { email.focus(); return bao('Chưa gõ email.'); }
+  if (!mk.value) { mk.focus(); return bao('Chưa gõ mật khẩu.'); }
   vao.disabled = true; vao.textContent = 'Đang kiểm…'; bao('');
   try {
     const r = await fetch('/api/dang-nhap', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ mk: mk.value }),
+      body: JSON.stringify({ email: email.value.trim(), mk: mk.value }),
     });
     const d = await r.json();
     if (d.ok) {
+      try { localStorage.setItem('motion_email', d.email || email.value.trim()); } catch { /* kệ */ }
       // `?tiep=` giữ chỗ người dùng định tới trước khi bị hỏi mật khẩu.
       const tiep = new URLSearchParams(location.search).get('tiep');
       location.href = (tiep && tiep.startsWith('/') && !tiep.startsWith('//')) ? tiep : '/';
       return;
     }
     bao(d.loi || 'Mật khẩu không đúng.');
-    mk.select();
+    // Email sai khuôn thì trỏ vào ô email, sai mật khẩu thì trỏ vào ô mật khẩu —
+    // để người dùng khỏi phải tự đoán mình gõ sai chỗ nào.
+    if (/email/i.test(d.loi || '')) { email.focus(); email.select(); } else mk.select();
   } catch (e) {
     bao(`Không gọi được máy chủ — ${String(e.message || e).slice(0, 60)}`);
   } finally { vao.disabled = false; vao.textContent = 'Vào'; }

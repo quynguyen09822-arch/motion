@@ -27,6 +27,8 @@ const PROJ = process.env.PROJ_ROOT
 const { chromium } = createRequire(path.join(PROJ, 'tools/'))('playwright');
 
 const MK = 'mat-khau-kiem-thu-123';
+const DUOI = '@kiem-thu.test';
+const EMAIL = `ai-do${DUOI}`;
 const CONG_CO = 7897;      // máy chủ CÓ mật khẩu
 const CONG_KHONG = 7896;   // máy chủ KHÔNG mật khẩu
 
@@ -43,7 +45,8 @@ function moMayChu(cong, them) {
     cwd: M, stdio: ['ignore', 'pipe', 'pipe'],
     /* `MOTION_KHOA_PHIEN` truyền vào để `dangnhap.js` KHỎI tự sinh rồi ghi vào
        `.env` thật — bài kiểm không được để lại dấu vết trong cấu hình. */
-    env: { ...process.env, PORT: String(cong), MOTION_KHOA_PHIEN: 'khoa-kiem-thu', ...them },
+    env: { ...process.env, PORT: String(cong), MOTION_KHOA_PHIEN: 'khoa-kiem-thu',
+      MOTION_DUOI_EMAIL: DUOI, ...them },
   });
   return con;
 }
@@ -101,14 +104,24 @@ try {
 
   /* ---------- 3. đăng nhập ---------- */
   console.log('\n3. Đăng nhập');
-  const dn = (mk) => fetch(`http://127.0.0.1:${CONG_CO}/api/dang-nhap`, {
+  const dn = (mk, email = EMAIL) => fetch(`http://127.0.0.1:${CONG_CO}/api/dang-nhap`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ mk }), redirect: 'manual' });
+    body: JSON.stringify({ email, mk }), redirect: 'manual' });
+
+  /* Email sai khuôn / sai đuôi phải báo NGAY và KHÔNG tính vào số lần gõ sai
+     mật khẩu — gõ nhầm địa chỉ là chuyện thường, không phải dấu hiệu dò mật khẩu. */
+  const km = await dn(MK, 'khong-phai-email');
+  dat('email sai khuôn thì 400, không phải 401', km.status === 400, (await km.json()).loi);
+  const kd = await dn(MK, 'ai-do@cho-khac.com');
+  dat('email sai đuôi thì bị từ chối', kd.status === 400, (await kd.json()).loi);
+  const trong = await dn(MK, DUOI);
+  dat('chỉ có đuôi, không có tên thì cũng bị chặn', trong.status === 400, (await trong.json()).loi);
 
   const sai = await dn('sai-be-bet');
   dat('mật khẩu sai thì 401', sai.status === 401, (await sai.json()).loi);
   const dung = await dn(MK);
-  dat('mật khẩu đúng thì 200', dung.status === 200);
+  dat('email đúng đuôi + mật khẩu đúng thì 200', dung.status === 200);
+  dat('trả về email đã đăng nhập', (await dung.clone().json()).email === EMAIL);
   const ck = dung.headers.get('set-cookie') || '';
   dat('có đặt vé phiên', /motion_phien=/.test(ck));
   /* HttpOnly là cửa chặn quan trọng nhất của cookie này: thiếu nó thì một đoạn
@@ -126,6 +139,10 @@ try {
   }
   const lai = await ma(CONG_CO, '/dang-nhap', { headers: H });
   dat('vào rồi mà mở lại trang đăng nhập thì đá về trình sửa', lai.ma === 302 && lai.toi === '/');
+  /* Vé phải MANG THEO email — không thì thanh trên không biết ai đang sửa, mà
+     giữ một cuốn sổ riêng trong bộ nhớ thì khởi động lại là mất. */
+  const ai = await (await fetch(`http://127.0.0.1:${CONG_CO}/api/toi-la-ai`, { headers: H })).json();
+  dat('vé mang theo email, đọc lại được', ai.email === EMAIL, ai.email);
 
   console.log('\n4. Vé giả không dùng được');
   for (const [ten, v] of [['bịa hẳn', 'abc.xyz'], ['thiếu chữ ký', ve?.split('.')[0] || 'x'],
@@ -156,11 +173,21 @@ try {
     troVao: document.activeElement?.id,
     nut: document.querySelector('#vao')?.textContent,
     hien: Boolean(document.querySelector('#hien')),
+    coEmail: Boolean(document.querySelector('#email')),
+    goiY: document.querySelector('#email')?.placeholder,
+    rongBang: Math.abs(
+      (document.querySelector('#email')?.getBoundingClientRect().width || 0)
+      - (document.querySelector('.o-hang')?.getBoundingClientRect().width || 0)) < 2,
   }));
   dat('trang mở được và có tiêu đề riêng', /Đăng nhập/.test(t.tieuDe), t.tieuDe);
   dat('logo tải được (không phải ảnh vỡ)', t.logo > 0, `${t.logo}px`);
   dat('ô mật khẩu che chữ', t.oGo === 'password');
-  dat('con trỏ nhảy sẵn vào ô gõ', t.troVao === 'mk');
+  dat('có ô email', t.coEmail);
+  /* Gợi ý phải lấy đuôi TỪ MÁY CHỦ. Viết cứng ở trang thì đổi đuôi trong `.env`
+     mà chỗ này vẫn ghi đuôi cũ — tức là nói dối người dùng. */
+  dat('gợi ý email lấy đúng đuôi máy chủ khai', String(t.goiY || '').endsWith(DUOI), t.goiY);
+  dat('hai ô rộng bằng nhau', t.rongBang);
+  dat('con trỏ nhảy sẵn vào ô đầu', t.troVao === 'email');
   dat('có nút hiện/ẩn mật khẩu', t.hien);
   await tr.click('#hien');
   await tr.waitForTimeout(200);
@@ -182,7 +209,10 @@ try {
   });
   dat('logo là ảnh thật, tải được', l.the === 'IMG' && l.rong > 0, `${l.src} · gốc ${l.rong}px`);
   /* Ảnh gốc phải LỚN HƠN cỡ hiển thị: màn hình 2× cần gấp đôi, không thì logo rỗ. */
-  dat('ảnh gốc đủ nét cho màn hình 2×', l.rong >= l.cao * 2, `hiện ${l.cao}px, gốc ${l.rong}px`);
+  /* Phải có `l.rong > 0`: thiếu điều kiện đó thì ảnh KHÔNG tải được (0px) vẫn
+     "đạt" vì 0 >= 0 — một mục xanh giả, tệ hơn không có mục nào. */
+  dat('ảnh gốc đủ nét cho màn hình 2×', l.rong > 0 && l.rong >= l.cao * 2,
+    `hiện ${l.cao}px, gốc ${l.rong}px`);
   dat('cạnh logo có tên sản phẩm', /Motion/.test(l.chu || ''), l.chu);
   dat('chưa đặt mật khẩu thì NÓI RA ngay trên thanh', /Chưa đặt mật khẩu/.test(l.nhac || ''), l.nhac);
   await t2.close();

@@ -1,11 +1,16 @@
 /**
- * ĐĂNG NHẬP — một mật khẩu chung cho cả công cụ.
+ * ĐĂNG NHẬP — email công ty + một mật khẩu chung.
  *
  * KHÔNG BAO GIỜ KHOÁ NGƯỜI DÙNG RA NGOÀI.
  *   Chưa đặt mật khẩu thì app chạy y như trước, chỉ hiện một lời nhắc. Bắt đăng
  *   nhập ngay khi chưa ai kịp đặt mật khẩu là khoá chính chủ ra khỏi công cụ của
  *   họ, và cách duy nhất để vào lại là sửa file trên máy chủ — thứ mà người dùng
  *   của công cụ này không làm được.
+ *
+ * EMAIL PHẢI ĐÚNG ĐUÔI CÔNG TY, NHƯNG KHÔNG ĐƯỢC KIỂM CHỨNG.
+ *   Ai cũng gõ được `ai-do@matbao.com` — cửa thật sự là mật khẩu. Email ở đây để
+ *   BIẾT AI ĐANG SỬA, không phải để chặn. Đừng nhầm hai việc đó: nghĩ rằng email
+ *   là một lớp bảo vệ thì sẽ đặt mật khẩu dễ hơn mức cần thiết.
  *
  * MẬT KHẨU CẤT DẠNG BĂM, KHÔNG CẤT NGUYÊN VĂN.
  *   `scrypt` với muối ngẫu nhiên. Ai đọc được file `.env` cũng không lấy ra được
@@ -61,8 +66,14 @@ export function ghiEnv(khoa, giaTri) {
 }
 
 /* Biến môi trường thắng file — để chạy thử và để bài kiểm dựng máy chủ riêng mà
-   không phải đụng vào `.env` thật. */
-const lay = (k) => process.env[k] || docEnv()[k] || '';
+   không phải đụng vào `.env` thật.
+ *
+ * Kiểm bằng `k in process.env` chứ KHÔNG bằng `process.env[k] || …`: đặt biến
+ * thành CHUỖI RỖNG là cách nói "cố ý không có giá trị này". Dùng `||` thì chuỗi
+ * rỗng bị coi như chưa đặt và rơi xuống đọc `.env` — nghĩa là không có cách nào
+ * tắt mật khẩu bằng biến môi trường khi `.env` đang có mật khẩu. Bài kiểm dựng
+ * máy chủ "chưa đặt mật khẩu" vấp đúng chỗ này. */
+const lay = (k) => (k in process.env ? String(process.env[k]) : (docEnv()[k] || ''));
 
 /* ---------- mật khẩu ---------- */
 
@@ -71,6 +82,28 @@ export function bam(mk, muoi = randomBytes(16).toString('hex')) {
 }
 
 export const daDatMatKhau = () => lay('MOTION_MAT_KHAU_HASH').startsWith('scrypt$');
+
+/** Đuôi email được phép. Bỏ trống trong `.env` là chấp nhận mọi email. */
+export const duoiEmail = () => (lay('MOTION_DUOI_EMAIL') || '').trim().toLowerCase();
+
+/**
+ * Email có dùng được không.
+ *
+ * Kiểm khuôn TRƯỚC rồi mới kiểm đuôi: `@matbao.com` tự nó khớp đuôi nhưng không
+ * phải email của ai cả, và nếu chỉ kiểm đuôi thì chuỗi rỗng phía trước lọt qua,
+ * rồi hiện lên thanh trên thành một cái tên trống trơn.
+ */
+export function kiemEmail(em) {
+  const e = String(em || '').trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)) {
+    return { ok: false, cau: 'Email chưa đúng khuôn. Ví dụ: ten.ban@matbao.com' };
+  }
+  const duoi = duoiEmail();
+  if (duoi && !e.endsWith(duoi)) {
+    return { ok: false, cau: `Chỉ email đuôi ${duoi} mới vào được.` };
+  }
+  return { ok: true, email: e };
+}
 
 export function kiemMatKhau(mk) {
   const luu = lay('MOTION_MAT_KHAU_HASH');
@@ -97,22 +130,30 @@ function khoaKy() {
 const b64 = (s) => Buffer.from(s, 'utf8').toString('base64url');
 const ky = (p) => createHmac('sha256', khoaKy()).update(p).digest('base64url');
 
-export function taoVe() {
-  const p = b64(JSON.stringify({ het: Date.now() + SONG_NGAY * 86400_000 }));
+export function taoVe(email = '') {
+  const p = b64(JSON.stringify({ het: Date.now() + SONG_NGAY * 86400_000, em: email }));
   return `${p}.${ky(p)}`;
 }
 
-export function veConHan(ve) {
+/** Mở vé ra. Trả `null` nếu chữ ký sai hoặc đã hết hạn. */
+export function moVe(ve) {
   const s = String(ve || '');
   const i = s.lastIndexOf('.');
-  if (i <= 0) return false;
+  if (i <= 0) return null;
   const p = s.slice(0, i);
   const c = s.slice(i + 1);
   const dung = ky(p);
-  if (c.length !== dung.length || !timingSafeEqual(Buffer.from(c), Buffer.from(dung))) return false;
-  try { return JSON.parse(Buffer.from(p, 'base64url').toString('utf8')).het > Date.now(); }
-  catch { return false; }
+  if (c.length !== dung.length || !timingSafeEqual(Buffer.from(c), Buffer.from(dung))) return null;
+  try {
+    const d = JSON.parse(Buffer.from(p, 'base64url').toString('utf8'));
+    return d.het > Date.now() ? d : null;
+  } catch { return null; }
 }
+
+export const veConHan = (ve) => moVe(ve) !== null;
+
+/** Ai đang đăng nhập — lấy từ chính vé, không giữ sổ riêng trong bộ nhớ. */
+export const aiDangVao = (req) => moVe(docCookie(req, TEN_COOKIE))?.em || null;
 
 export function docCookie(req, ten) {
   for (const c of String(req.headers.cookie || '').split(';')) {
@@ -164,7 +205,11 @@ export const xoaSai = (ip) => soSai.delete(ip);
 /* ---------- cửa ---------- */
 
 /** Đường nào đi được khi chưa đăng nhập. Danh sách TRẮNG, không phải đen. */
-const MO = new Set(['/dang-nhap', '/api/dang-nhap', '/api/dang-xuat', '/health', '/api/health',
+/* `/api/toi-la-ai` nằm trong danh sách mở vì TRANG ĐĂNG NHẬP gọi nó để biết đuôi
+   email mà gợi ý. Nó chỉ trả những thứ ai cũng thấy được ở màn hình đăng nhập:
+   đã đặt mật khẩu chưa, đuôi email là gì, và ai đang đăng nhập (rỗng nếu chưa). */
+const MO = new Set(['/dang-nhap', '/api/dang-nhap', '/api/dang-xuat', '/api/toi-la-ai',
+  '/health', '/api/health',
   '/dang-nhap.css', '/logo/motion-mark.png', '/logo/motion-full.png', '/logo/favicon.png']);
 
 export function duocVao(req, duong) {
