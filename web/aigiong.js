@@ -151,13 +151,19 @@ export function taoKhungAI(boc, { layDoc, laySlug, bao, themRanh }) {
   function ve() {
     muc.innerHTML = '';
 
-    muc.appendChild(el('h3', 'muc-ten', 'Nói cho AI biết clip này về gì'));
-    muc.append(oBrief, nutViet);
-    muc.appendChild(el('p', 'num-goi',
+    /* HAI CỘT: bên trái là phần gõ (brief + lời), bên phải là danh sách giọng.
+       Xếp dọc hết thì danh sách 28 giọng bị đẩy xuống dưới đáy bảng và chỉ còn
+       thấy hai dòng — mà chọn giọng mới là việc chính ở đây. */
+    const trai = el('div', 'ai-cot');
+    const phai = el('div', 'ai-cot ai-cot-giong');
+
+    trai.appendChild(el('h3', 'muc-ten', 'Nói cho AI biết clip này về gì'));
+    trai.append(oBrief, nutViet);
+    trai.appendChild(el('p', 'num-goi',
       'AI đọc sẵn số cảnh, thời lượng từng cảnh và chữ đang hiện trên hình, rồi viết lời vừa với phim.'));
 
     const h1 = el('h3', 'muc-ten', 'Lời cần đọc');
-    muc.append(h1, oLoi);
+    trai.append(h1, oLoi);
     const hangLay = el('div', 'hang-nut');
     const lay = el('button', 'nut nho rong', 'Lấy lời từ clip');
     lay.type = 'button';
@@ -172,12 +178,13 @@ export function taoKhungAI(boc, { layDoc, laySlug, bao, themRanh }) {
     xoa.type = 'button';
     xoa.onclick = () => { oLoi.value = ''; demLai(); };
     hangLay.append(lay, xoa);
-    muc.append(hangLay, demChu);
+    trai.append(hangLay, demChu);
 
-    muc.appendChild(el('h3', 'muc-ten', 'Chọn giọng'));
-    muc.appendChild(veGiong());
+    phai.appendChild(el('h3', 'muc-ten', 'Chọn giọng'));
+    phai.appendChild(veGiong());
+    phai.appendChild(nutDoc);
 
-    muc.appendChild(nutDoc);
+    muc.append(trai, phai);
     demLai();
   }
 

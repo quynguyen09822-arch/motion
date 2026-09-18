@@ -110,16 +110,20 @@ try {
   await trang.waitForTimeout(2000);
   await trang.selectOption('#chon-clip', 'wireframe-thu');
   await trang.waitForTimeout(1800);
-  await trang.click('#the-ai');
+  /* Khung giọng đọc giờ nằm TRONG bảng AI dưới thanh phát, không còn thẻ riêng
+     bên cột phải: mở nút AI rồi sang thẻ con "Giọng đọc". */
+  await trang.click('.nut-ai');
+  await trang.waitForTimeout(500);
+  await trang.click('.ai-the >> nth=1');
   await trang.waitForTimeout(3000);
   const trongTrang = await trang.evaluate(() => document.documentElement.innerHTML);
   dat('không có khoá nào trong trang', !/sk_[A-Za-z0-9]{16,}/.test(trongTrang));
   dat('không có khoá trong bất kỳ lời đáp nào', thay.length === 0, thay.slice(0, 2).join(' | ') || 'sạch');
 
   /* ---------- 5. khung AI trong giao diện ---------- */
-  console.log('\n5. Khung AI trong giao diện');
+  console.log('\n5. Khung giọng đọc — nằm trong bảng AI dưới thanh phát');
   const b = await trang.evaluate(() => {
-    const x = document.querySelector('#bang-ai');
+    const x = document.querySelector('.thanh-ai');
     return { hien: !x.classList.contains('an'),
       giong: x.querySelectorAll('.ai-hang').length,
       nghe: x.querySelectorAll('.ai-nghe').length,
@@ -128,24 +132,28 @@ try {
       khoa: x.querySelector('.nut-doc')?.disabled };
   });
   dat('bảng mở được và bày đủ giọng', b.hien && b.giong === d.giong.length, `${b.giong} hàng`);
+  /* Không còn thẻ "AI" ở cột phải — gộp xuống thanh dưới rồi. Hai cửa cho cùng
+     một thứ thì người dùng bao giờ cũng mở nhầm cái kia. */
+  dat('cột phải KHÔNG còn thẻ AI riêng',
+    await trang.evaluate(() => !document.querySelector('#the-ai') && !document.querySelector('#bang-ai')));
   dat('giọng nào cũng có nút nghe thử', b.nghe === b.giong, `${b.nghe}/${b.giong}`);
   dat('có vạch ngăn giọng Việt với giọng nước ngoài', b.ngan);
   dat('chưa chọn giọng thì nút đọc bị khoá', b.khoa === true, b.nut);
 
-  await trang.click('#bang-ai .hang-nut button >> nth=0');    // lấy lời từ clip
+  await trang.click('.thanh-ai .hang-nut button >> nth=0');    // lấy lời từ clip
   await trang.waitForTimeout(700);
   const sauLay = await trang.evaluate(() => ({
     loi: document.querySelector('.o-loi').value.length,
-    dem: document.querySelector('#bang-ai .dem-chu').textContent }));
+    dem: document.querySelector('.thanh-ai .dem-chu').textContent }));
   dat('lấy được lời từ chữ trong clip', sauLay.loi > 20, `${sauLay.loi} ký tự · "${sauLay.dem}"`);
   dat('đếm ký tự khớp với lời đang có', sauLay.dem.startsWith(String(sauLay.loi)), sauLay.dem);
 
-  await trang.click('#bang-ai .ai-ten >> nth=0');
+  await trang.click('.thanh-ai .ai-ten >> nth=0');
   await trang.waitForTimeout(400);
   const sauChon = await trang.evaluate(() => ({
-    nut: document.querySelector('#bang-ai .nut-doc').textContent,
-    khoa: document.querySelector('#bang-ai .nut-doc').disabled,
-    chon: document.querySelectorAll('#bang-ai .ai-hang.chon').length }));
+    nut: document.querySelector('.thanh-ai .nut-doc').textContent,
+    khoa: document.querySelector('.thanh-ai .nut-doc').disabled,
+    chon: document.querySelectorAll('.thanh-ai .ai-hang.chon').length }));
   dat('chọn giọng xong thì nút mở và nói rõ giọng nào',
     sauChon.khoa === false && sauChon.chon === 1 && /giọng/.test(sauChon.nut), sauChon.nut);
   dat('không có lỗi JS', loiJS.length === 0, loiJS.slice(0, 2).join(' | ') || 'sạch');

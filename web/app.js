@@ -65,21 +65,6 @@ const bangTieng = taoBangTieng($('bang-tieng'), {
   sua: (f) => kho.sua('sửa rãnh tiếng', f),
   layGiay: () => (kho.doc()?.scenes || []).reduce((t, c) => t + (c.duration || 0), 0),
 });
-const khungAI = taoKhungAI($('bang-ai'), {
-  layDoc: () => kho.doc(),
-  laySlug: () => kho.slug(),
-  bao: (c, h) => bao(c, h),
-  /* Đọc xong là gắn thẳng thành rãnh tiếng của clip. Đi qua `kho.sua` nên hoàn
-     tác được — lỡ đọc nhầm giọng thì Ctrl+Z là xong, file vẫn còn trên đĩa. */
-  themRanh: (r) => {
-    kho.sua('thêm lời đọc AI', (d) => {
-      d.audio = d.audio || { tracks: [] };
-      d.audio.tracks = [...(d.audio.tracks || []),
-        { id: `loi-${(d.audio.tracks || []).length + 1}`, ...r }];
-    });
-    doiThe('tieng'); bangTieng.ve();
-  },
-});
 const bangKhung = taoKhung({
   bocGiua: $('san-khung'), bocBang: $('bang-khung'), bao: (c, h) => bao(c, h),
 });
@@ -438,7 +423,6 @@ function doiThe(ten) {
                                 ['xuat', 'the-xuat', 'bang-xuat'],
                                 ['khung', 'the-khung', 'bang-khung'],
                                 ['tieng', 'the-tieng', 'bang-tieng'],
-                                ['ai', 'the-ai', 'bang-ai'],
                                 ['video', 'the-video', 'bang-video']]) {
     $(the).setAttribute('aria-selected', String(t === ten));
     $(bang).classList.toggle('an', t !== ten);
@@ -455,7 +439,6 @@ $('the-khung').onclick = () => doiThe('khung');
 $('the-tieng').onclick = () => { doiThe('tieng'); bangTieng.ve(); };
 // Danh sách giọng nạp LÚC MỞ THẺ, không nạp lúc khởi động: nó gọi ra Internet,
 // mà phần lớn phiên làm việc không đụng tới giọng đọc.
-$('the-ai').onclick = () => { doiThe('ai'); khungAI.nap(); };
 
 /* Nút AI nằm ở thanh dưới, cạnh đồng hồ — chỗ người dùng đang nhìn khi XEM clip.
    Cột phải là chỗ sửa một món đang chọn, không phải chỗ hỏi về cả clip. */
@@ -463,7 +446,21 @@ taoThanhAI({
   nutBoc: document.querySelector('.tien-ich-phai'),
   laySlug: () => kho.slug(),
   bao: (c, h) => bao(c, h),
-  moKhungAI: () => { doiThe('ai'); khungAI.nap(); },
+  /* Khung giọng đọc dựng THẲNG VÀO bảng AI dưới thanh phát, không còn thẻ riêng
+     bên cột phải. Hai cửa cho cùng một thứ thì người dùng bao giờ cũng mở nhầm. */
+  dungKhungGiong: (boc) => taoKhungAI(boc, {
+    layDoc: () => kho.doc(),
+    laySlug: () => kho.slug(),
+    bao: (c, h) => bao(c, h),
+    themRanh: (r) => {
+      kho.sua('thêm lời đọc AI', (d) => {
+        d.audio = d.audio || { tracks: [] };
+        d.audio.tracks = [...(d.audio.tracks || []),
+          { id: `loi-${(d.audio.tracks || []).length + 1}`, ...r }];
+      });
+      doiThe('tieng'); bangTieng.ve();
+    },
+  }),
 });
 $('the-video').onclick = () => { doiThe('video'); if (!bangVideo.coGi()) bangVideo.nap(); };
 

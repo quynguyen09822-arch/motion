@@ -1,5 +1,5 @@
 /**
- * NÚT AI Ở THANH DƯỚI, và thanh hỏi bật lên từ đó.
+ * NÚT AI Ở THANH DƯỚI, và bảng AI bật lên từ đó.
  *
  * VÌ SAO Ở DƯỚI CHỨ KHÔNG PHẢI CỘT PHẢI
  *   Cột phải là chỗ SỬA MỘT MÓN đang chọn — mọi thứ trong đó đều thuộc về một
@@ -7,7 +7,12 @@
  *   lúc đang xem chứ không phải đang chỉnh. Nhét vào cột phải là bắt người dùng
  *   rời khỏi việc đang làm để đi tìm chỗ hỏi.
  *
- * THANH NẰM NGANG, KHÔNG PHẢI KHUNG CHAT
+ * MỌI VIỆC AI Ở ĐÂY HẾT, không rải ra hai chỗ.
+ *   Trước đây giọng đọc nằm ở một thẻ riêng bên cột phải. Hai cửa cho cùng một
+ *   thứ là người dùng phải nhớ cái nào ở đâu, và bao giờ cũng mở nhầm cái kia.
+ *   Giờ gộp làm hai thẻ con ngay trong bảng này: "Hỏi AI" và "Giọng đọc".
+ *
+ * PHẦN HỎI KHÔNG PHẢI KHUNG CHAT
  *   Không giữ lịch sử hội thoại. Một câu hỏi, một câu trả lời, xong. Giữ lịch sử
  *   thì phải có chỗ cuộn, có chỗ xoá, và người dùng bắt đầu chờ đợi nó nhớ được
  *   mọi thứ — mà nó thì không. Hứa ít, giữ đúng lời.
@@ -28,8 +33,8 @@ const GOI_Y = [
   'Nhịp chuyển động đã ổn chưa?',
 ];
 
-export function taoThanhAI({ nutBoc, laySlug, bao, moKhungAI }) {
-  let mo = false, dangHoi = false;
+export function taoThanhAI({ nutBoc, laySlug, bao, dungKhungGiong }) {
+  let mo = false, dangHoi = false, the = 'hoi';
 
   const nut = el('button', 'nut-ai');
   nut.type = 'button';
@@ -43,7 +48,18 @@ export function taoThanhAI({ nutBoc, laySlug, bao, moKhungAI }) {
 
   const thanh = el('div', 'thanh-ai an');
   thanh.setAttribute('role', 'dialog');
-  thanh.setAttribute('aria-label', 'Hỏi AI về clip');
+  thanh.setAttribute('aria-label', 'Trợ lý AI');
+
+  /* ---- hai thẻ con ---- */
+  const hangThe = el('div', 'ai-the-hang');
+  hangThe.setAttribute('role', 'tablist');
+  const bocHoi = el('div', 'ai-noi');
+  const bocGiong = el('div', 'ai-noi an');
+  const theHoi = el('button', 'ai-the', 'Hỏi AI');
+  const theGiong = el('button', 'ai-the', 'Giọng đọc');
+  theHoi.type = theGiong.type = 'button';
+  theHoi.setAttribute('role', 'tab');
+  theGiong.setAttribute('role', 'tab');
 
   const hangGoi = el('div', 'ai-goi-y');
   const o = el('input', 'o-nhap o-hoi');
@@ -62,8 +78,29 @@ export function taoThanhAI({ nutBoc, laySlug, bao, moKhungAI }) {
   const tra = el('div', 'ai-tra an');
 
   const hang = el('div', 'ai-hang-hoi');
-  hang.append(o, gui, dong);
-  thanh.append(hangGoi, hang, tra);
+  hang.append(o, gui);
+  bocHoi.append(hangGoi, hang, tra);
+
+  /* Khung giọng đọc dựng SẴN ngay lúc này nhưng chỉ NẠP danh sách giọng khi
+     người dùng mở thẻ đó — danh sách giọng phải gọi ra Internet, mà phần lớn
+     phiên làm việc không đụng tới giọng đọc. */
+  const khungGiong = dungKhungGiong?.(bocGiong);
+
+  function datThe(t) {
+    the = t;
+    for (const [b, x, n] of [[theHoi, bocHoi, 'hoi'], [theGiong, bocGiong, 'giong']]) {
+      b.classList.toggle('chon', t === n);
+      b.setAttribute('aria-selected', String(t === n));
+      x.classList.toggle('an', t !== n);
+    }
+    thanh.classList.toggle('rong', t === 'giong');
+    if (t === 'giong') khungGiong?.nap();
+    else o.focus();
+  }
+  theHoi.onclick = () => datThe('hoi');
+  theGiong.onclick = () => datThe('giong');
+  hangThe.append(theHoi, theGiong, dong);
+  thanh.append(hangThe, bocHoi, bocGiong);
 
   function veGoiY() {
     hangGoi.innerHTML = '';
@@ -75,9 +112,9 @@ export function taoThanhAI({ nutBoc, laySlug, bao, moKhungAI }) {
     }
     const b2 = el('button', 'ai-chip nhan', 'Viết lời đọc…');
     b2.type = 'button';
-    // Việc này đã có hẳn một khung riêng với brief, chọn giọng và nghe thử —
-    // đưa người dùng sang đó thay vì trả lời nửa vời trong một thanh ngang.
-    b2.onclick = () => { datMo(false); moKhungAI?.(); };
+    // Việc này có thẻ riêng ngay bên cạnh, với brief, chọn giọng và nghe thử —
+    // đưa sang đó thay vì trả lời nửa vời bằng một đoạn chữ.
+    b2.onclick = () => datThe('giong');
     hangGoi.appendChild(b2);
   }
 
@@ -116,7 +153,7 @@ export function taoThanhAI({ nutBoc, laySlug, bao, moKhungAI }) {
     thanh.classList.toggle('an', !v);
     nut.classList.toggle('dang-mo', v);
     nut.setAttribute('aria-expanded', String(v));
-    if (v) { veGoiY(); o.focus(); }
+    if (v) { veGoiY(); datThe(the); }
     else { tra.classList.add('an'); tra.textContent = ''; }
   }
 
@@ -129,5 +166,5 @@ export function taoThanhAI({ nutBoc, laySlug, bao, moKhungAI }) {
 
   nutBoc.appendChild(nut);
   document.body.appendChild(thanh);
-  return { mo: () => datMo(true), dong: () => datMo(false) };
+  return { mo: () => datMo(true), dong: () => datMo(false), moGiong: () => { datMo(true); datThe('giong'); } };
 }

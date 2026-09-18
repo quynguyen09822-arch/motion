@@ -141,20 +141,27 @@ try {
   }
 
   /* ---------- 5. gợi ý "viết lời đọc" đưa sang khung riêng ---------- */
-  console.log('\n5. Việc có khung riêng thì đưa sang khung riêng');
+  console.log('\n5. Gợi ý "viết lời đọc" đưa sang thẻ con Giọng đọc');
   await trang.evaluate(() => {
     const b = [...document.querySelectorAll('.ai-chip')].find((x) => /Viết lời đọc/.test(x.textContent));
     b?.click();
   });
   await trang.waitForTimeout(1200);
-  const sauChuyen = await trang.evaluate(() => ({
-    thanhDong: document.querySelector('.thanh-ai').classList.contains('an'),
-    theAI: document.querySelector('#the-ai').getAttribute('aria-selected'),
-    bangAI: !document.querySelector('#bang-ai').classList.contains('an'),
-  }));
-  dat('thanh hỏi đóng lại', sauChuyen.thanhDong);
-  dat('chuyển sang thẻ AI có brief + chọn giọng',
-    sauChuyen.theAI === 'true' && sauChuyen.bangAI);
+  const sauChuyen = await trang.evaluate(() => {
+    const the = [...document.querySelectorAll('.ai-the')];
+    return {
+      conMo: !document.querySelector('.thanh-ai').classList.contains('an'),
+      theGiongChon: the[1]?.getAttribute('aria-selected'),
+      coBrief: Boolean(document.querySelector('.thanh-ai .o-brief')),
+      coGiong: document.querySelectorAll('.thanh-ai .ai-hang').length,
+      khongConTheCu: !document.querySelector('#the-ai') && !document.querySelector('#bang-ai'),
+    };
+  });
+  // Bảng KHÔNG đóng — chỉ chuyển thẻ con. Đóng rồi mở lại là thừa một nhịp.
+  dat('bảng vẫn mở, chỉ đổi thẻ con', sauChuyen.conMo && sauChuyen.theGiongChon === 'true');
+  dat('thẻ Giọng đọc có đủ brief và danh sách giọng',
+    sauChuyen.coBrief && sauChuyen.coGiong > 0, `${sauChuyen.coGiong} giọng`);
+  dat('cột phải không còn thẻ AI riêng', sauChuyen.khongConTheCu);
 
   dat('không có lỗi JS', loiJS.length === 0, loiJS.slice(0, 2).join(' | ') || 'sạch');
 } finally {

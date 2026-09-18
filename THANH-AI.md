@@ -1,6 +1,7 @@
-# Nút AI ở thanh dưới và thanh hỏi
+# Nút AI ở thanh dưới
 
-Bấm nút **AI** ở góc phải thanh phát → một thanh hỏi nổi lên ngay trên đó.
+Bấm nút **AI** ở góc phải thanh phát → bảng AI nổi lên ngay trên đó, có hai thẻ:
+**Hỏi AI** và **Giọng đọc**.
 
 ## Vì sao ở dưới chứ không phải cột phải
 
@@ -12,7 +13,17 @@ việc đang làm để đi tìm chỗ hỏi.
 Thanh hỏi **không đè lên thanh phát** — nút Chạy và thanh tua phải còn bấm được
 trong lúc đang hỏi, vì người ta hay vừa tua vừa hỏi.
 
-## Thanh ngang, không phải khung chat
+## Mọi việc AI ở một chỗ
+
+Trước đây giọng đọc nằm ở một **thẻ riêng bên cột phải**. Hai cửa cho cùng một thứ
+là người dùng phải nhớ cái nào ở đâu, và bao giờ cũng mở nhầm cái kia. Đã gộp làm
+hai thẻ con ngay trong bảng này; thẻ AI ở cột phải **đã bỏ**.
+
+Thẻ **Giọng đọc** chia hai cột: gõ brief và lời bên trái, chọn giọng bên phải. Xếp
+dọc hết thì danh sách 28 giọng bị đẩy xuống đáy bảng và chỉ còn thấy hai dòng — mà
+chọn giọng mới là việc chính ở đây.
+
+## Phần hỏi: thanh ngang, không phải khung chat
 
 **Không giữ lịch sử hội thoại.** Một câu hỏi, một câu trả lời, xong.
 
@@ -21,8 +32,9 @@ Giữ lịch sử thì phải có chỗ cuộn, có chỗ xoá, và người dù
 
 Bốn gợi ý sẵn, là bốn câu hỏi có thật người dùng hay hỏi. Ô trống không có gợi ý là
 ô trống người ta không biết gõ gì vào. Riêng **"Viết lời đọc…"** không trả lời tại chỗ
-mà chuyển sang thẻ **AI** — việc đó đã có hẳn một khung riêng với brief, chọn giọng và
-nghe thử, trả lời nửa vời trong một thanh ngang thì tệ hơn.
+mà chuyển sang thẻ con **Giọng đọc** — việc đó có brief, chọn giọng và nghe thử,
+trả lời nửa vời bằng một đoạn chữ thì tệ hơn. Bảng **không đóng rồi mở lại**, chỉ đổi
+thẻ con: đóng mở là thừa một nhịp.
 
 ## Trả lời dựa trên clip thật
 

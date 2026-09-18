@@ -1035,9 +1035,30 @@ body:has(.keo-cot.dang-keo) iframe { pointer-events: none; }
 .thanh-ai { position: fixed; left: 50%; transform: translateX(-50%);
             bottom: calc(var(--cao-thanh-duoi, 64px) + 10px);
             width: min(720px, calc(100vw - 32px)); z-index: 40;
+            /* Không bao giờ cao quá màn hình: thẻ "Giọng đọc" có danh sách 28
+               giọng, để tự do là nó tràn lên che hết khung xem clip. */
+            max-height: min(560px, calc(100vh - 140px)); display: flex;
+            flex-direction: column;
             background: var(--nen-2); border: 1px solid var(--vach);
             border-radius: 14px; padding: 10px; box-shadow: 0 10px 34px rgba(0,0,0,.42); }
 .thanh-ai.an { display: none; }
+/* Thẻ "Giọng đọc" cần rộng hơn thẻ "Hỏi AI" — danh sách giọng có hai dòng chữ
+   mỗi hàng, để hẹp thì tên giọng bị cắt. */
+.thanh-ai.rong { width: min(860px, calc(100vw - 32px)); }
+
+.ai-the-hang { display: flex; align-items: center; gap: 4px; margin-bottom: 9px;
+               flex: none; }
+.ai-the { border: 0; background: none; color: var(--chu-mo); font: inherit;
+          font-size: 12px; font-weight: 600; padding: 5px 11px; border-radius: 8px;
+          cursor: pointer; }
+.ai-the:hover { color: var(--chu); }
+.ai-the.chon { background: var(--nen-3); color: var(--chu); }
+.ai-the-hang .nut-dong-ai { margin-left: auto; }
+.ai-noi { min-height: 0; overflow-y: auto; }
+.ai-noi.an { display: none; }
+/* Danh sách giọng tự co theo chỗ còn lại của bảng, không tự đặt trần riêng —
+   đặt hai trần lồng nhau là sinh ra hai thanh cuộn chồng lên nhau. */
+.ai-noi .ai-giong { max-height: none; }
 .ai-goi-y { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 8px; }
 .ai-chip { border: 1px solid var(--vach); background: var(--nen-3); color: var(--chu-mo);
            border-radius: 999px; padding: 4px 11px; font: inherit; font-size: 11px;
@@ -1053,3 +1074,15 @@ body:has(.keo-cot.dang-keo) iframe { pointer-events: none; }
           white-space: pre-wrap; max-height: 210px; overflow-y: auto; }
 .ai-tra.an { display: none; }
 .ai-tra.hong { color: #e0795a; }
+
+/* Hai cột trong thẻ "Giọng đọc": gõ bên trái, chọn giọng bên phải.
+   Dưới 720px thì xếp dọc lại — hai cột 300px thì cột nào cũng chật. */
+.ai-noi .muc-ai { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+                  gap: 6px 18px; align-items: start; }
+.ai-cot { display: flex; flex-direction: column; gap: 7px; min-width: 0; }
+.ai-cot-giong { max-height: 400px; }
+.ai-cot .muc-ten { margin: 0; }
+.ai-cot-giong .ai-giong { max-height: 300px; overflow-y: auto; }
+@media (max-width: 760px) {
+  .ai-noi .muc-ai { grid-template-columns: minmax(0, 1fr); }
+}

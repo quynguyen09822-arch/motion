@@ -1,7 +1,11 @@
 # Giọng đọc AI
 
-Lát 6a. Khung **"AI"** trong cột phải: gõ lời (hoặc rút từ chính chữ trong clip) →
-nghe thử giọng → đọc thành file → tự thành một rãnh tiếng của clip.
+Lát 6a. Nằm ở thẻ **"Giọng đọc"** trong bảng AI dưới thanh phát (bấm nút **AI** ở góc
+phải): gõ lời (hoặc rút từ chính chữ trong clip) → nghe thử giọng → đọc thành file →
+tự thành một rãnh tiếng của clip.
+
+> Trước đây đây là một thẻ riêng ở cột phải. Đã gộp xuống bảng AI — hai cửa cho cùng
+> một thứ thì người dùng bao giờ cũng mở nhầm cái kia. Xem [THANH-AI.md](THANH-AI.md).
 
 ## Khoá
 
