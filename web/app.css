@@ -1019,3 +1019,37 @@ body:has(.keo-cot.dang-keo) iframe { pointer-events: none; }
    đang kêu, không thì tưởng máy hỏng. */
 .ai-nghe.dang-nghe { background: var(--nhan); color: var(--tren-nhan); border-color: var(--nhan); }
 .o-brief { min-height: 62px; resize: vertical; font-family: inherit; line-height: 1.45; }
+
+/* ------------------------------------------------------------- nút AI + thanh hỏi */
+.nut-ai { display: inline-flex; align-items: center; gap: 6px; height: 32px;
+          padding: 0 13px 0 10px; border-radius: 999px; cursor: pointer;
+          border: 1px solid var(--vach); background: var(--nen-2); color: var(--chu);
+          font: inherit; font-size: 12px; font-weight: 600; }
+.nut-ai svg { width: 15px; height: 15px; fill: currentColor; stroke: none; flex: none; }
+.nut-ai:hover { border-color: var(--nhan); }
+.nut-ai.dang-mo { background: var(--nhan); color: var(--tren-nhan); border-color: var(--nhan); }
+.nut-ai-chu { letter-spacing: .04em; }
+
+/* Thanh hỏi nổi NGAY TRÊN thanh dưới, không phủ kín màn hình: người dùng phải
+   còn thấy khung hình trong lúc hỏi về nó. */
+.thanh-ai { position: fixed; left: 50%; transform: translateX(-50%);
+            bottom: calc(var(--cao-thanh-duoi, 64px) + 10px);
+            width: min(720px, calc(100vw - 32px)); z-index: 40;
+            background: var(--nen-2); border: 1px solid var(--vach);
+            border-radius: 14px; padding: 10px; box-shadow: 0 10px 34px rgba(0,0,0,.42); }
+.thanh-ai.an { display: none; }
+.ai-goi-y { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 8px; }
+.ai-chip { border: 1px solid var(--vach); background: var(--nen-3); color: var(--chu-mo);
+           border-radius: 999px; padding: 4px 11px; font: inherit; font-size: 11px;
+           cursor: pointer; }
+.ai-chip:hover { border-color: var(--nhan); color: var(--chu); }
+.ai-chip.nhan { border-color: var(--nhan); color: var(--nhan); }
+.ai-hang-hoi { display: flex; align-items: center; gap: 7px; }
+.o-hoi { flex: 1; min-width: 0; }
+.nut-gui { flex: 0 0 auto; padding: 0 18px; }
+.nut-dong-ai { flex: 0 0 auto; }
+.ai-tra { margin-top: 9px; padding: 9px 11px; border-radius: 10px;
+          background: var(--nen-3); font-size: 12.5px; line-height: 1.55;
+          white-space: pre-wrap; max-height: 210px; overflow-y: auto; }
+.ai-tra.an { display: none; }
+.ai-tra.hong { color: #e0795a; }

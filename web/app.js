@@ -23,6 +23,7 @@ import { taoKhung } from './khung.js';
 import { taoBangVideo } from './videos.js';
 import { taoBangTieng } from './tieng.js';
 import { taoKhungAI } from './aigiong.js';
+import { taoThanhAI } from './thanhai.js';
 import { taoZoom } from './zoom.js';
 import { taoAnhNho } from './anhnho.js';
 import { taoKeoCot } from './cot.js';
@@ -455,6 +456,15 @@ $('the-tieng').onclick = () => { doiThe('tieng'); bangTieng.ve(); };
 // Danh sách giọng nạp LÚC MỞ THẺ, không nạp lúc khởi động: nó gọi ra Internet,
 // mà phần lớn phiên làm việc không đụng tới giọng đọc.
 $('the-ai').onclick = () => { doiThe('ai'); khungAI.nap(); };
+
+/* Nút AI nằm ở thanh dưới, cạnh đồng hồ — chỗ người dùng đang nhìn khi XEM clip.
+   Cột phải là chỗ sửa một món đang chọn, không phải chỗ hỏi về cả clip. */
+taoThanhAI({
+  nutBoc: document.querySelector('.tien-ich-phai'),
+  laySlug: () => kho.slug(),
+  bao: (c, h) => bao(c, h),
+  moKhungAI: () => { doiThe('ai'); khungAI.nap(); },
+});
 $('the-video').onclick = () => { doiThe('video'); if (!bangVideo.coGi()) bangVideo.nap(); };
 
 /* ---------- danh sách clip ---------- */
