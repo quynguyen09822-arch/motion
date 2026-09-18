@@ -12,6 +12,10 @@ COPY package.json ./
 COPY server/ ./server/
 COPY web/ ./web/
 
+# Hai công cụ bản chạy thật cần. `.dockerignore` bỏ cả `tools/` rồi mở lại đúng
+# hai file này — chép cả thư mục là mang theo 28 bài kiểm Playwright vô dụng.
+COPY tools/xuat-nhanh.mjs tools/dat-mat-khau.mjs ./tools/
+
 # DỮ LIỆU CLIP gói kèm.
 #
 # Trình sửa là một cửa sổ nhìn vào dự án clip — thiếu nó thì server chết ngay
