@@ -19,3 +19,4 @@ __pycache__/
 # Mật khẩu (băm) và khoá ký phiên đăng nhập — KHÔNG bao giờ commit
 .env
 .env.*
+mcp-stitch.json.txt
