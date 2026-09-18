@@ -210,27 +210,61 @@ export function xoaCookie(req) {
 
 const soSai = new Map();
 
+/**
+ * Địa chỉ máy gọi tới, dùng làm khoá đếm số lần gõ sai.
+ *
+ * LẤY PHẦN CUỐI của `x-forwarded-for`, KHÔNG lấy phần đầu.
+ *
+ * Phần đầu là thứ NGƯỜI GỌI tự khai — ai cũng gửi được. Lấy phần đầu thì người
+ * dò mật khẩu chỉ cần đổi con số đó mỗi lần là bộ đếm không bao giờ tới ngưỡng.
+ * Đã đo thật trên bản chạy: gõ sai 12 lần kèm 12 địa chỉ giả thì 7 lần LỌT, còn
+ * không khai gì thì bị khoá đủ 12/12.
+ *
+ * Phần cuối do proxy gần mình nhất ghi vào, người ngoài không chèn được — trừ
+ * khi có nhiều tầng proxy, và lúc đó phải khai `MOTION_SO_PROXY` cho đúng số tầng.
+ */
 export function diaChi(req) {
-  const xf = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim();
-  return xf || req.socket?.remoteAddress || 'khong-ro';
+  const ds = String(req.headers['x-forwarded-for'] || '')
+    .split(',').map((x) => x.trim()).filter(Boolean);
+  if (ds.length) {
+    const soProxy = Math.max(1, Number(lay('MOTION_SO_PROXY')) || 1);
+    return ds[Math.max(0, ds.length - soProxy)] || ds[ds.length - 1];
+  }
+  return req.socket?.remoteAddress || 'khong-ro';
 }
 
-export function dangBiKhoa(ip) {
-  const g = soSai.get(ip);
-  if (!g) return 0;
-  if (Date.now() > g.den) { soSai.delete(ip); return 0; }
-  return g.lan >= SAI_TOI_DA ? Math.ceil((g.den - Date.now()) / 60000) : 0;
+/**
+ * Đếm theo CẢ HAI khoá: địa chỉ máy VÀ tài khoản.
+ *
+ * Chỉ đếm theo máy thì một mạng công ty dùng chung một địa chỉ ra ngoài sẽ khoá
+ * lẫn nhau; chỉ đếm theo tài khoản thì người dò chỉ việc đổi máy. Đếm cả hai:
+ * dò một tài khoản từ nhiều máy vẫn bị chặn, mà người ngồi cạnh gõ sai cũng
+ * không khoá được người khác quá lâu.
+ */
+export function dangBiKhoa(...khoa) {
+  let lau = 0;
+  for (const k of khoa.filter(Boolean)) {
+    const g = soSai.get(k);
+    if (!g) continue;
+    if (Date.now() > g.den) { soSai.delete(k); continue; }
+    if (g.lan >= SAI_TOI_DA) lau = Math.max(lau, Math.ceil((g.den - Date.now()) / 60000));
+  }
+  return lau;
 }
 
-export function ghiSai(ip) {
-  const g = soSai.get(ip) || { lan: 0, den: 0 };
-  g.lan += 1;
-  g.den = Date.now() + KHOA_PHUT * 60000;
-  soSai.set(ip, g);
-  return SAI_TOI_DA - g.lan;
+export function ghiSai(...khoa) {
+  let con = SAI_TOI_DA;
+  for (const k of khoa.filter(Boolean)) {
+    const g = soSai.get(k) || { lan: 0, den: 0 };
+    g.lan += 1;
+    g.den = Date.now() + KHOA_PHUT * 60000;
+    soSai.set(k, g);
+    con = Math.min(con, SAI_TOI_DA - g.lan);
+  }
+  return con;
 }
 
-export const xoaSai = (ip) => soSai.delete(ip);
+export function xoaSai(...khoa) { for (const k of khoa.filter(Boolean)) soSai.delete(k); }
 
 /* ---------- cửa ---------- */
 

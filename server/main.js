@@ -29,6 +29,7 @@ import { docLoi, dsGiong, GIOI_HAN_KY_TU, khoaEleven, khoaGoogle, mauGiong } fro
 import { vietLoi } from './vietloi.js';
 import { hoiAI } from './hoiai.js';
 import { dungCanh } from './dungcanh.js';
+import { daDung, ghiNhat, xin } from './hanmuc.js';
 import { suaMon } from './suamon.js';
 import { chuyenVideo, huyViec, khoHopLe, kiemBoCuc, layViec, soDangCho, xuatDuocKhong, xuatNhanh, xuatVideo } from './jobs.js';
 import { THU_MUC, danhSachVideo as nguonVideo, duongDanThat, locTen, tenBanChuyen } from './nguonvideo.js';
@@ -60,6 +61,36 @@ const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, 'http://x');
   const p = url.pathname;
 
+  /* ---------- ĐẦU ĐỀ BẢO MẬT ----------
+   * Đặt cho MỌI lời đáp, kể cả trang đăng nhập và file tĩnh.
+   *
+   * `frame-ancestors 'self'` thay cho X-Frame-Options: công cụ này DÙNG iframe
+   * cùng origin để hiện khung xem clip, nên cấm hết là tự bịt mắt mình; chỉ cấm
+   * trang NGOÀI nhúng vào — đó mới là cái bẫy lừa-bấm thật.
+   *
+   * CSP cho phép `'unsafe-inline'` vì bộ dựng clip và trang đăng nhập đều có
+   * script/style viết thẳng trong HTML. Siết chặt hơn thì phải băm từng khối,
+   * mà băm sai một chỗ là cả trang trắng — đổi lấy rủi ro lớn hơn cái tránh được. */
+  const httpsThat = String(req.headers['x-forwarded-proto'] || '').split(',')[0].trim() === 'https';
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Referrer-Policy', 'same-origin');
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  res.setHeader('Content-Security-Policy', [
+    "default-src 'self'", "img-src 'self' data: blob:", "media-src 'self' data: blob:",
+    "script-src 'self' 'unsafe-inline'",
+    /* PHẢI cho phép fonts.googleapis.com và fonts.gstatic.com: 12 clip đời cũ
+       nạp phông Be Vietnam Pro từ đó. Bản CSP đầu của em chặn mất, và 5 bài
+       kiểm đỏ ngay — nếu không có bài kiểm thì lỗi này chỉ lộ ra khi người dùng
+       mở clip và thấy chữ đổi phông, một thứ rất dễ bỏ qua. */
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    "font-src 'self' data: https://fonts.gstatic.com",
+    "connect-src 'self'", "frame-src 'self'",
+    "frame-ancestors 'self'", "base-uri 'self'", "form-action 'self'",
+  ].join('; '));
+  // HSTS chỉ khi ĐANG thật sự chạy https — bật lúc chạy thử ở máy là tự khoá
+  // trình duyệt của mình khỏi http://127.0.0.1 suốt một năm.
+  if (httpsThat) res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+
   try {
     /* ---------- CỬA ĐĂNG NHẬP ----------
      * Đặt TRƯỚC mọi thứ khác, kể cả trước `/clip/*`: bộ dựng clip nằm trong
@@ -70,9 +101,12 @@ const server = http.createServer(async (req, res) => {
      * khỏi công cụ của họ. Đặt bằng `npm run dat-mat-khau`. */
     if (p === '/api/dang-nhap' && req.method === 'POST') {
       const ip = diaChi(req);
-      const con = dangBiKhoa(ip);
-      if (con) return loi(res, 429, `Gõ sai nhiều lần quá. Thử lại sau ${con} phút.`);
       const than = await docJson(req);
+      /* Khoá đếm gồm CẢ tài khoản: dò một tài khoản từ nhiều máy vẫn bị chặn.
+         Đọc thân yêu cầu TRƯỚC khi kiểm khoá vì cần biết đang gõ tài khoản nào. */
+      const tk = `tk:${String(than?.email || '').trim().toLowerCase()}`;
+      const con = dangBiKhoa(ip, tk);
+      if (con) return loi(res, 429, `Gõ sai nhiều lần quá. Thử lại sau ${con} phút.`);
       if (!daDatMatKhau()) return loi(res, 400, 'Máy chủ chưa đặt mật khẩu nào.');
 
       /* Email sai khuôn thì báo NGAY và KHÔNG tính vào số lần gõ sai mật khẩu.
@@ -81,12 +115,12 @@ const server = http.createServer(async (req, res) => {
       if (!em.ok) return loi(res, 400, em.cau);
 
       if (!kiemMatKhau(than?.mk)) {
-        const con2 = ghiSai(ip);
+        const con2 = ghiSai(ip, tk);
         return loi(res, 401, con2 > 0 && con2 <= 3
           ? `Mật khẩu không đúng. Còn ${con2} lần trước khi bị khoá 15 phút.`
           : 'Mật khẩu không đúng.');
       }
-      xoaSai(ip);
+      xoaSai(ip, tk);
       res.setHeader('Set-Cookie', datCookie(req, taoVe(em.email)));
       return json(res, 200, { ok: true, email: em.email });
     }
@@ -119,6 +153,7 @@ const server = http.createServer(async (req, res) => {
         /* Chỉ nói CÓ giới hạn hay không, KHÔNG trả danh sách tài khoản ra trang
            đăng nhập — đó là danh sách người, không phải thứ để người lạ đọc. */
         coDanhSach: dsTaiKhoan().length > 0,
+        hanMuc: daDung(aiDangVao(req)),
       });
     }
 
@@ -254,6 +289,12 @@ const server = http.createServer(async (req, res) => {
 
     if (p === '/api/sua-mon' && req.method === 'POST') {
       const than = await docJson(req);
+      {
+        const ai = aiDangVao(req);
+        const q = xin('goiAI', ai);
+        if (!q.ok) return loi(res, 429, q.cau);
+        ghiNhat('goiAI', ai, 1, 'sửa món');
+      }
       const slug = locSlug(than?.slug);
       if (!slug) return loi(res, 400, 'Tên clip không hợp lệ.');
       const c = docClip(slug);
@@ -272,6 +313,12 @@ const server = http.createServer(async (req, res) => {
 
     if (p === '/api/dung-canh' && req.method === 'POST') {
       const than = await docJson(req);
+      {
+        const ai = aiDangVao(req);
+        const q = xin('goiAI', ai);
+        if (!q.ok) return loi(res, 429, q.cau);
+        ghiNhat('goiAI', ai, 1, 'dựng hình');
+      }
       const slug = locSlug(than?.slug);
       if (!slug) return loi(res, 400, 'Tên clip không hợp lệ.');
       const c = docClip(slug);
@@ -296,6 +343,12 @@ const server = http.createServer(async (req, res) => {
 
     if (p === '/api/hoi-ai' && req.method === 'POST') {
       const than = await docJson(req);
+      {
+        const ai = aiDangVao(req);
+        const q = xin('goiAI', ai);
+        if (!q.ok) return loi(res, 429, q.cau);
+        ghiNhat('goiAI', ai, 1, 'hỏi AI');
+      }
       const slug = locSlug(than?.slug);
       if (!slug) return loi(res, 400, 'Tên clip không hợp lệ.');
       const c = docClip(slug);
@@ -307,6 +360,12 @@ const server = http.createServer(async (req, res) => {
 
     if (p === '/api/viet-loi' && req.method === 'POST') {
       const than = await docJson(req);
+      {
+        const ai = aiDangVao(req);
+        const q = xin('goiAI', ai);
+        if (!q.ok) return loi(res, 429, q.cau);
+        ghiNhat('goiAI', ai, 1, 'viết lời');
+      }
       const slug = locSlug(than?.slug);
       if (!slug) return loi(res, 400, 'Tên clip không hợp lệ.');
       const c = docClip(slug);
@@ -318,6 +377,13 @@ const server = http.createServer(async (req, res) => {
 
     if (p === '/api/doc-loi' && req.method === 'POST') {
       const than = await docJson(req);
+      /* Tính theo SỐ KÝ TỰ vì ElevenLabs tính tiền theo ký tự — đếm "số lượt"
+         thì một lượt 5000 ký tự bằng 500 lượt ngắn mà vẫn qua cửa như nhau. */
+      const ai = aiDangVao(req);
+      const canKyTu = String(than?.loi || '').trim().length;
+      const q = xin('kyTu', ai, canKyTu);
+      if (!q.ok) return loi(res, 429, q.cau);
+      ghiNhat('kyTu', ai, canKyTu, `giọng ${than?.giongId || '?'}`);
       const d = await docLoi({
         loi: than?.loi, giongId: than?.giongId, model: than?.model,
         ten: than?.ten, toDo: Number(than?.toDo) || 1,
@@ -373,6 +439,12 @@ const server = http.createServer(async (req, res) => {
 
       const duoc = xuatDuocKhong();
       if (!duoc.ok) return loi(res, 501, duoc.cau);
+      {
+        const ai = aiDangVao(req);
+        const q = xin('xuat', ai);
+        if (!q.ok) return loi(res, 429, q.cau);
+        ghiNhat('xuat', ai, 1, slug);
+      }
 
       const rong = c.doc?.meta?.width, cao = c.doc?.meta?.height;
       const hopLe = khoHopLe(rong, cao).map((k) => k.v);

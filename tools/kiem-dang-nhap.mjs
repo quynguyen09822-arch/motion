@@ -173,6 +173,45 @@ try {
      thử tiếp là vào, và bộ đếm thành đồ trang trí. */
   dat('đang khoá thì gõ ĐÚNG cũng không vào được', (await dn(MK)).status === 429);
 
+  /* ---------- 5b. KHÔNG lách được bộ đếm bằng đầu đề tự khai ---------- */
+  console.log('\n5b. Không lách được bộ đếm bằng địa chỉ máy giả');
+  /* Bản đầu lấy PHẦN ĐẦU của `x-forwarded-for` — thứ người gọi tự khai. Đo thật
+     trên bản chạy: gõ sai 12 lần kèm 12 địa chỉ giả thì 7 lần LỌT. Nay lấy phần
+     cuối (do proxy ghi) và đếm thêm theo TÀI KHOẢN. */
+  const con2 = moMayChu(CONG_CO + 1, { MOTION_MAT_KHAU_HASH: bam(MK) });
+  con.push(con2);
+  await cho(CONG_CO + 1);
+  let bikhoa = 0;
+  for (let i = 0; i < 12; i++) {
+    const r = await fetch(`http://127.0.0.1:${CONG_CO + 1}/api/dang-nhap`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Forwarded-For': `203.0.113.${i + 1}` },
+      body: JSON.stringify({ email: EMAIL, mk: 'sai-be-bet' }) });
+    if (r.status === 429) bikhoa++;
+  }
+  dat('đổi địa chỉ máy mỗi lần vẫn bị khoá', bikhoa >= 3, `bị khoá ${bikhoa}/12 lần`);
+
+  /* ---------- 5c. đầu đề bảo mật ---------- */
+  console.log('\n5c. Đầu đề bảo mật');
+  const dd = (await fetch(`http://127.0.0.1:${CONG_CO}/dang-nhap`)).headers;
+  for (const [h, ten] of [['content-security-policy', 'CSP'],
+    ['x-content-type-options', 'chặn đoán kiểu file'],
+    ['referrer-policy', 'giữ kín đường dẫn'],
+    ['permissions-policy', 'khoá máy ảnh/micro']]) {
+    dat(`có ${ten}`, Boolean(dd.get(h)), (dd.get(h) || '').slice(0, 42));
+  }
+  /* CSP PHẢI cho phông Google: 12 clip đời cũ nạp Be Vietnam Pro từ đó. Bản CSP
+     đầu chặn mất và 5 bài kiểm đỏ ngay. */
+  dat('CSP vẫn cho phông Google (12 clip đời cũ cần)',
+    /fonts\.googleapis\.com/.test(dd.get('content-security-policy') || ''));
+  dat('CSP cho phép tự nhúng iframe cùng origin (khung xem clip)',
+    /frame-ancestors 'self'/.test(dd.get('content-security-policy') || ''));
+  // HSTS chỉ khi thật sự https — bật lúc chạy http là tự khoá trình duyệt của mình.
+  dat('chạy http thì KHÔNG bật HSTS', !dd.get('strict-transport-security'));
+  const dd2 = (await fetch(`http://127.0.0.1:${CONG_CO}/dang-nhap`,
+    { headers: { 'X-Forwarded-Proto': 'https' } })).headers;
+  dat('sau proxy https thì CÓ bật HSTS', Boolean(dd2.get('strict-transport-security')));
+
   /* ---------- 6. trang đăng nhập nhìn thấy được ---------- */
   console.log('\n6. Trang đăng nhập');
   const tr = await trinh.newPage({ viewport: { width: 900, height: 700 } });
