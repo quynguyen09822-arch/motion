@@ -79,12 +79,15 @@ const server = http.createServer(async (req, res) => {
   res.setHeader('Content-Security-Policy', [
     "default-src 'self'", "img-src 'self' data: blob:", "media-src 'self' data: blob:",
     "script-src 'self' 'unsafe-inline'",
-    /* PHẢI cho phép fonts.googleapis.com và fonts.gstatic.com: 12 clip đời cũ
-       nạp phông Be Vietnam Pro từ đó. Bản CSP đầu của em chặn mất, và 5 bài
-       kiểm đỏ ngay — nếu không có bài kiểm thì lỗi này chỉ lộ ra khi người dùng
-       mở clip và thấy chữ đổi phông, một thứ rất dễ bỏ qua. */
-    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-    "font-src 'self' data: https://fonts.gstatic.com",
+    /* KHÔNG còn nguồn phông ngoài. Trước đây phải mở fonts.googleapis.com và
+       fonts.gstatic.com vì 12 clip đời cũ nạp Be Vietnam Pro từ đó; nay cả bộ
+       chữ nằm trong `clip/public/fonts/` nên `'self'` là đủ.
+       Siết lại KHÔNG phải cho đẹp: chừng nào CSP còn mở hai tên miền đó, một
+       thẻ <link> lọt lại vào clip nào đó vẫn chạy ngon trên máy có mạng và chỉ
+       gãy đúng lúc máy chủ mất mạng — kiểu lỗi không ai bắt được. Đóng lại thì
+       nó gãy NGAY ở bài kiểm. */
+    "style-src 'self' 'unsafe-inline'",
+    "font-src 'self' data:",
     "connect-src 'self'", "frame-src 'self'",
     "frame-ancestors 'self'", "base-uri 'self'", "form-action 'self'",
   ].join('; '));

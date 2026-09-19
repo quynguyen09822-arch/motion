@@ -53,7 +53,10 @@
   /* Phông chữ tải từ Google Fonts, KÈM ĐỦ đường lùi hệ thống: mạng hỏng thì
      giao diện vẫn đúng, chỉ khác nét chữ. Không đưa phông vào clip — clip phải
      đo được cỡ chữ trên mọi máy, xem `measureFit()` của bộ dựng. */
-  --font: "Be Vietnam Pro", system-ui, "Segoe UI", Roboto, "Noto Sans", sans-serif;
+  /* Phao chỉ còn `system-ui`: Roboto/Noto không có file đi kèm, rơi vào đó là
+     lệch mặt chữ mà chẳng có gì báo. Rơi về system-ui nghĩa là bộ chữ hỏng,
+     nhìn ra ngay. */
+  --font: var(--bo-chu, "Be Vietnam Pro", system-ui, sans-serif);
   color-scheme: dark;
 }
 
