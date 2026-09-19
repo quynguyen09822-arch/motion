@@ -20,6 +20,7 @@ import { PROJ, SCENES, kiemTraDuAn, soatKichBan } from './proj.js';
 import { duocPhucVu, guiFile } from './static.js';
 import { aiDangVao, daDatMatKhau, dangBiKhoa, datCookie, diaChi, dsTaiKhoan, duocVao,
   duoiEmail, ghiSai, kiemEmail, kiemMatKhau, taoVe, xoaCookie, xoaSai } from './dangnhap.js';
+import { canhMau } from './canhmau.js';
 import { danhSachClip, docClip, duongDanXem, locSlug } from './clips.js';
 import { chupBanGoc, lichSu } from './backup.js';
 import { khoiPhuc, luuClip } from './save.js';
@@ -196,6 +197,19 @@ const server = http.createServer(async (req, res) => {
        nào, là chuyện nội bộ chứ không phải số liệu công khai. */
     if (p === '/api/thong-ke' && req.method === 'GET') {
       return json(res, 200, thongKe());
+    }
+
+    /* CẢNH MẪU cho ô xem thử trong bảng chỉnh. Bộ dựng tự gọi đường này qua
+       `?scene=/api/canh-mau?…` — xem `server/canhmau.js` để biết vì sao sinh ở
+       đây chứ không sinh ở trình duyệt.
+       Trả `no-store`: người dùng kéo thanh trượt là mỗi nấc một cảnh khác, để
+       trình duyệt nhớ bản cũ thì ô xem thử đứng im mà núm thì đã đổi. */
+    if (p === '/api/canh-mau' && req.method === 'GET') {
+      const y = Object.fromEntries(new URL(req.url, 'http://x').searchParams);
+      const { doc, vanDe } = await canhMau(y);
+      if (vanDe.length) return loi(res, 500, `Cảnh mẫu hỏng: ${vanDe.join('; ')}`);
+      res.setHeader('Cache-Control', 'no-store');
+      return json(res, 200, doc);
     }
 
     if (p === '/api/clips' && req.method === 'GET') {

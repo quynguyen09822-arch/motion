@@ -1,4 +1,9 @@
-# Ô xem thử dùng chung — đề xuất API (chờ duyệt)
+# Ô xem thử dùng chung — API và ghi chép khi làm
+
+> **19/09: đã duyệt và đã làm xong.** Ba câu hỏi bên dưới Quý đã chốt; phần
+> "Ba chỗ cần anh quyết" giữ lại nguyên văn kèm câu trả lời, để sau này còn biết
+> vì sao lại thế. Việc đã xong: `server/canhmau.js`, `web/inspector/o-xem-thu.js`,
+> `tools/kiem-o-xem-thu.mjs` (20 phép), trang thử `/thu-o-xem-thu.html`.
 
 > Theo `BANG-CHINH-V2.md`, phần **Hạ tầng**: *"Trước khi code, cho anh xem API
 > của thành phần này (nhận gì, trả gì)."* Đây là bản đó. **Chưa viết dòng mã
@@ -86,7 +91,19 @@ Vì sao dựng ở máy chủ chứ không ở trình duyệt:
 Đã cân nhắc và **bỏ**: ghi file cảnh mẫu vào `clip/scenes/`. Làm vậy thì chúng
 hiện lên trong danh sách clip của người dùng như clip thật.
 
-## Ba chỗ cần anh quyết
+## Ba chỗ cần anh quyết — đã chốt 19/09
+
+> **① Món mẫu:** chữ cố định **"Mắt Bão"** ở mọi ô, KHÔNG phải tên gói — tên gói
+> dài ngắn khác nhau thì mỗi thẻ một hình dạng, mắt hết so được chuyển động, mà
+> cả việc này sinh ra để so chuyển động. Riêng `push` dùng **mẫu khung** nhiều
+> món.
+> **② Lặp:** lặp liên tục nhưng **lệch pha** — mỗi ô vào một lúc để thành làn
+> sóng chứ không phải một nhịp giật đồng loạt. Công tắc một dòng giữ nguyên.
+> **③ `push`:** đổi nốt sang thanh kéo (Việc 1), giữ 5 nấc `BAC_DAY` làm điểm
+> bám và **chặn trần đúng bằng nấc cao nhất hiện tại**.
+
+<details><summary>Nguyên văn ba câu hỏi lúc trình</summary>
+
 
 **① Món mẫu trông ra sao.** Em định: một thẻ chữ trên nền xám nhạt, chữ là tên
 gói đang xem (vd "Trượt lên nhẹ"). Với hiệu ứng ảnh thì dùng một ô ảnh giả.
@@ -99,6 +116,32 @@ thấy mà không cần thao tác. Nếu anh thấy 10 thứ nhúc nhích cùng 
 
 **③ Ô xem thử có cần nghe được không.** Em định **không** — xem mặt chuyển động
 thôi, không tiếng. Mở 10 ô mà mỗi ô một tiếng thì thành ồn.
+
+</details>
+
+## Bốn chỗ vấp khi làm — ghi lại để khỏi vấp lại
+
+**① Đặt thẳng `iframe.src` là ô đứng im mà không báo gì.** `taoPlayer` chỉ gán
+được `clip` khi đi qua `may.mo()` — nó chờ `__clip` hiện ra bên trong rồi mới gọi
+`ready()`. Bỏ qua bước đó thì `san()` mãi false, `chay()` thành lệnh rỗng. Triệu
+chứng: sáu ô cùng đứng ở giây 0.
+
+**② `place: 'giua'` KHÔNG căn giữa.** Nó chỉ đặt khối phủ khung trừ lề; chữ vẫn
+nằm sát mép trên khối. Trong ô cao 110px trông như chữ bị đẩy lên góc. Phải đặt
+`y` tay.
+
+**③ Ô lệch tỉ lệ cảnh thì lòi hai dải màu nền của bộ dựng** — trông như ô hỏng.
+Đã ghim `aspect-ratio: 16 / 9` vào `.o-xem-thu` để chỗ gọi chỉ đặt bề ngang.
+
+**④ Phép kiểm lệch pha đầu tiên của em là bù nhìn.** Nó hỏi "các ô có khác nhau
+không" — mà các ô vốn nạp xong lệch nhau sẵn, nên nó **xanh cả khi đã bỏ hẳn lệch
+pha**. Phát hiện được là nhờ thử phá thật. Đã đo lại: có rải thì sáu ô trải rộng
+**1.27s**, bỏ rải chỉ **0.16s**; ngưỡng đặt ở 0.6s, và tách `buocLech()` thành hàm
+thuần để kiểm thẳng phép tính.
+
+Hai chỗ nữa cũng do phá mà lòi: đo trên `#cam` thay vì `#stage .el` (khung máy
+quay đứng yên và không mang `filter`, nên báo oan là "ô không chạy"), và cửa sổ
+lấy mẫu ngắn hơn một vòng diễn (rơi trúng đoạn món đã đứng yên).
 
 ## Hai chỗ trong `BANG-CHINH-V2.md` cần sửa lại cho khớp mã
 

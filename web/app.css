@@ -1153,3 +1153,32 @@ body:has(.keo-cot.dang-keo) iframe { pointer-events: none; }
   border-radius: 999px; color: var(--chu-mo); background: var(--nen-3);
   border: 1px solid var(--vach); cursor: default;
 }
+
+/* ---------------------------------------------------------------- ô xem thử
+ * Một ô nhỏ diễn lại một chuyển động, dùng chung cho dải gói chuyển động và
+ * popup hiệu ứng. Xem `web/inspector/o-xem-thu.js`.
+ *
+ * Kích thước do CHỖ GỌI đặt (thẻ trong dải rộng hẹp khác nhau), ở đây chỉ lo
+ * phần khung bên trong luôn phủ kín và không bắt chuột.
+ */
+.o-xem-thu {
+  position: relative;
+  overflow: hidden;
+  border-radius: 8px;
+  background: #eef0f4;          /* đúng nền cảnh mẫu — không chớp trắng lúc nạp */
+  /* Cảnh mẫu khổ 640×360. Ô lệch tỉ lệ là bộ dựng thu cho vừa rồi chừa hai dải
+     màu nền của nó ra hai bên — trông như ô bị hỏng. Ghim tỉ lệ ở đây để chỗ
+     gọi chỉ cần đặt bề ngang. */
+  aspect-ratio: 16 / 9;
+}
+.o-xem-thu-khung {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+  /* Ô xem thử là để NHÌN. Cho nó nhận chuột thì cú bấm chọn gói rơi vào trong
+     khung xem chứ không tới được thẻ, và người dùng bấm mãi không chọn được. */
+  pointer-events: none;
+}
