@@ -79,7 +79,10 @@ export function ghiEnv(khoa, giaTri) {
  * rỗng bị coi như chưa đặt và rơi xuống đọc `.env` — nghĩa là không có cách nào
  * tắt mật khẩu bằng biến môi trường khi `.env` đang có mật khẩu. Bài kiểm dựng
  * máy chủ "chưa đặt mật khẩu" vấp đúng chỗ này. */
-const lay = (k) => (k in process.env ? String(process.env[k]) : (docEnv()[k] || ''));
+export const layCauHinh = (k) => (k in process.env ? String(process.env[k]) : (docEnv()[k] || ''));
+/* Tên ngắn dùng trong chính file này; `layCauHinh` là tên cho người ngoài gọi
+   (`kho.js` cần đọc `MOTION_CHU_KHO` theo đúng luật biến-môi-trường-thắng-file). */
+const lay = layCauHinh;
 
 /* ---------- mật khẩu ---------- */
 

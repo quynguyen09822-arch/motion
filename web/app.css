@@ -443,6 +443,11 @@ body:has(.keo-cot.dang-keo) iframe { pointer-events: none; }
 
 /* ============ XUẤT VIDEO ============ */
 .nut.rong { width: 100%; }
+/* Nút là thẻ <a> thì phải gỡ gạch chân — `.nut` viết cho <button>, mà <button>
+   thì không có gạch chân để mà gỡ. */
+a.nut { text-decoration: none; }
+a.nut svg { fill: none; stroke: currentColor; stroke-width: 1.6;
+            stroke-linecap: round; stroke-linejoin: round; }
 .hang-nut { display: flex; gap: 7px; margin-bottom: 10px; }
 .hang-nut .nut.chinh { flex: 1; }
 

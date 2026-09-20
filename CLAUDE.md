@@ -51,6 +51,8 @@ clip. Node 22 tự lột kiểu file `.ts` nên `types.ts` nạp thẳng đượ
 | `main.js` | toàn bộ định tuyến + phục vụ file, một tiến trình duy nhất |
 | `router.js` | `json` · `loi` · `docJson` · `khop` (path param) · `moSSE` |
 | `proj.js` | **cửa DUY NHẤT sang dự án clip** — `PROJ`/`SCENES`/`OUT`/`TOOLS`, `soatKichBan` |
+| `kho.js` | **cửa DUY NHẤT trả lời "kịch bản của NGƯỜI NÀY nằm đâu"** — `khoCua(email)`, chủ kho dùng thẳng `SCENES`, người khác dùng `kho/<mã>/` |
+| `duan.js` | tạo dự án mới: dự án trắng, chép từ mẫu, không bao giờ đè |
 | `static.js` | phục vụ file tĩnh + **danh sách trắng** cho dự án clip, có `Range` |
 | `clips.js` | liệt kê clip, phân biệt đời 1 / đời 2, lọc slug |
 | `save.js` | đường ghi: soát → cất → ghi tạm+đổi tên → báo |
@@ -77,6 +79,8 @@ clip. Node 22 tự lột kiểu file `.ts` nên `types.ts` nạp thẳng đượ
 | `inspector/index.js` `fields.js` | dựng bảng thuộc tính từ schema |
 | `exportpanel.js` `videos.js` `khung.js` | ba thẻ còn lại của cột phải |
 | `soat.js` | **soát chất lượng** — JS thuần, cả trình duyệt lẫn Node dùng chung |
+| `chao.js` `chao.css` `chao.html` | **trang chào** ở `/` — giới thiệu, nút tạo dự án, kho dự án của người đang đăng nhập |
+| `tenfile.js` | đổi tên người gõ thành tên file — JS thuần, cả hai bên dùng chung như `soat.js` |
 | `zoom.js` | phóng khung làm việc bằng Ctrl+lăn, phóng quanh con trỏ |
 | `anhnho.js` | ảnh nhỏ từng thành phần — **quy tắc 7 điều áp cho mọi clip**, xem `docs/QUY-TAC-ANH-NHO.md` |
 | `huongdan.js` | bong bóng hướng dẫn tại chỗ; nội dung nằm ở `inspector/schema.js` |
@@ -126,6 +130,11 @@ nó (`getBoundingClientRect`, hệ số phóng).
    tác luôn đúng. `nhãn` là câu tiếng Việt tả việc vừa làm ("kéo đổi chỗ").
 7. **`proj.js` là chỗ duy nhất biết dự án clip nằm đâu.** Đừng rải đường dẫn.
    `validateScene` thì **mượn**, không chép — hai bản sẽ trôi khỏi nhau.
+   Từ 20/09/2026 có thêm **`kho.js`**: `proj.js` biết *dự án clip* ở đâu, `kho.js`
+   biết *kho của ai* ở đâu. Mọi đường đọc/ghi kịch bản đều nhận `kho` ở tham số
+   — `main.js` tính **một lần cho mỗi lời gọi** rồi truyền xuống. Đừng để module
+   nào tự đi hỏi lại: hai chỗ hỏi vào hai thời điểm là hai kho khác nhau, và kiểu
+   lệch đó hiện ra thành "lưu xong mở lại không thấy đâu". Xem `docs/KHO-RIENG.md`.
 8. **Một slot việc nặng, không bao giờ hai.** `export-video.mjs` để khung hình
    tạm ở `.export-frames` theo cwd; hai lệnh song song đẻ ra hai video hỏng, im
    lặng. Script trong `tools/` của dự án clip **bắt buộc chạy với cwd = `TOOLS`**.
@@ -273,6 +282,12 @@ node tools/kiem-kho-mon.mjs         # menu thêm: bày đủ 24 loại + 10 bộ
 npm run kiem:schema                 # CHẶN LỆCH SCHEMA giữa types.ts ↔ schema.js ↔ bộ dựng
 ```
 
+**`node tools/kiem-kho-rieng.mjs`** cũng chạy bằng Node trần — 44 mục, tự dựng hai
+máy chủ ở cổng 7894/7895, canh chuyện mỗi tài khoản một kho. Luật của chính nó:
+**không bao giờ ghi với tư cách chủ kho**, vì kho của chủ kho chính là `scenes/`
+thật (không có git); mọi lần ghi đi bằng tài khoản "người mới" trong `kho/<mã>/`
+rồi xoá sạch trong `finally`.
+
 Riêng **`node tools/kiem-lichsu.mjs`** chạy bằng Node trần — không cần server,
 không cần Chromium, vài trăm mili giây. Nó giữ luật "mọi thay đổi đi qua
 `kho.sua()`": làm 20 việc rồi hoàn tác 20 lần thì kịch bản phải về đúng từng
@@ -398,6 +413,7 @@ sao cho sửa được bằng chuột), `STITCH.md` (MCP Stitch dựng màn hìn
 nay có núm "Màu chữ riêng" trong bảng thuộc tính, không phải sửa tay JSON nữa),
 `QUY-TAC-ANH-NHO.md` (quy tắc ảnh nhỏ bảng lớp, áp cho mọi clip),
 `GIAO-DIEN.md` (dựng lại giao diện theo bản Stitch, và những gì cố ý không dựng),
+`KHO-RIENG.md` (mỗi tài khoản một kho dự án, trang chào ở `/`, trình sửa ở `/sua`),
 `KEO-COT.md` (kéo đổi bề rộng hai cột, và bẫy khung chọn lệch),
 `DOI-KHO-HINH.md` (đổi khổ cùng tỉ lệ, và vì sao khác tỉ lệ phải xếp lại chứ không nhân được),
 `CHAN-LECH-SCHEMA.md` (đối soát ba nơi khai trường, và ba cái bẫy trong chính phép kiểm),

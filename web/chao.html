@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Motion — kho dự án của bạn</title>
+<link rel="icon" type="image/png" href="/logo/favicon.png">
+<!-- Bộ chữ tự chứa, không tải gì qua mạng. Cùng một bản với trình sửa và với
+     bộ dựng clip — ba bản chữ khác nhau là ba mặt chữ khác nhau. -->
+<link rel="stylesheet" href="/clip/public/fonts/chu.css">
+<link rel="stylesheet" href="/chao.css">
+</head>
+<body>
+
+<header class="thanh">
+  <img class="dau" src="/logo/motion-mark.png" alt="" aria-hidden="true" width="28" height="15">
+  <b class="hieu">Motion</b>
+  <div class="day"></div>
+  <span id="o-tai-khoan" class="o-tai-khoan"></span>
+</header>
+
+<main>
+  <!-- ---------- GIỚI THIỆU ---------- -->
+  <section class="chao">
+    <p class="nhan-tren">Trình sửa clip của Mắt Bão</p>
+    <h1>Video AI dựng ra, bạn sửa bằng chuột.</h1>
+    <p class="dan">
+      AI dựng clip thành một trang HTML chạy được. Motion mở trang đó ra, cho bạn
+      <b>bấm thẳng vào chữ, ảnh hay khung hình</b> rồi vặn lại cho vừa ý — đổi chữ,
+      dời chỗ, chỉnh màu, đổi cách bay vào — xong thì xuất ra video.
+      Không cần biết code, không cần mở phần mềm dựng phim.
+    </p>
+
+    <div class="nut-hang">
+      <button id="nut-tao" class="nut chinh to" type="button">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3.5v9M3.5 8h9"/></svg>
+        Tạo dự án mới
+      </button>
+      <button id="nut-kho" class="nut vien to" type="button">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="2" y="3.5" width="12" height="9" rx="1.6"/><path d="M2 6.5h12"/></svg>
+        Kho dự án của bạn
+        <span id="dem-kho" class="dem"></span>
+      </button>
+    </div>
+
+    <ol class="buoc">
+      <li><span class="so">1</span><b>Chọn dự án</b>Mở một dự án trong kho, hoặc tạo dự án mới từ trang trắng.</li>
+      <li><span class="so">2</span><b>Bấm rồi vặn</b>Bấm vào thành phần trên khung hình, chỉnh ở cột phải, xem đổi ngay.</li>
+      <li><span class="so">3</span><b>Xuất video</b>Chọn khổ hình rồi tải file về — MP4, WebM, GIF hoặc chuỗi ảnh.</li>
+    </ol>
+  </section>
+
+  <!-- ---------- KHO DỰ ÁN ---------- -->
+  <section class="kho" id="kho">
+    <div class="tieu">
+      <h2>Kho dự án của bạn</h2>
+      <span id="ai-kho" class="phu"></span>
+    </div>
+
+    <p id="dang-nap" class="trong">Đang mở kho…</p>
+    <div id="luoi" class="luoi"></div>
+
+    <div id="kho-trong" class="trong-han an">
+      <svg viewBox="0 0 16 16" aria-hidden="true" width="34" height="34"><rect x="2" y="3.5" width="12" height="9" rx="1.6"/><path d="M2 6.5h12"/></svg>
+      <b>Kho của bạn chưa có dự án nào.</b>
+      <p>Đây là kho riêng của tài khoản này — không ai khác nhìn thấy, và bạn
+         cũng không thấy dự án của người khác.</p>
+      <button id="tao-dau" class="nut chinh" type="button">Tạo dự án đầu tiên</button>
+    </div>
+
+    <div id="boc-doi-cu" class="an">
+      <div class="tieu"><h2>Clip đời cũ</h2><span class="phu">xem và xuất video được, chưa sửa bằng chuột được</span></div>
+      <div id="luoi-cu" class="luoi"></div>
+    </div>
+  </section>
+</main>
+
+<!-- ---------- Ô TẠO DỰ ÁN ----------
+     Dùng <dialog> thật của trình duyệt: nó tự lo phím Esc, tự khoá tiêu điểm
+     trong ô, và tự chặn cuộn nền. Tự dựng lại ba thứ đó bằng tay thì bao giờ
+     cũng sót một. -->
+<dialog id="o-tao" class="o-tao">
+  <form id="phieu" method="dialog">
+    <h3>Dự án mới</h3>
+
+    <label class="nhan" for="ten">Tên dự án</label>
+    <input id="ten" class="o" type="text" maxlength="80" required
+           placeholder="Ví dụ: Giới thiệu gói hosting" autocomplete="off">
+    <p class="goi">Tên file: <code id="xem-slug">…</code></p>
+
+    <fieldset class="khokhung">
+      <legend class="nhan">Khổ hình</legend>
+      <div id="kho-hinh" class="kho-hinh"></div>
+    </fieldset>
+
+    <label class="nhan nhan-2" for="mau">Bắt đầu từ</label>
+    <select id="mau" class="o"></select>
+
+    <p id="loi-tao" class="loi an" role="alert" aria-live="polite"></p>
+
+    <div class="cuoi">
+      <button id="thoi" class="nut vien" type="button">Thôi</button>
+      <button id="lam" class="nut chinh" type="submit">Tạo dự án</button>
+    </div>
+  </form>
+</dialog>
+
+<div id="bao" class="bao an" role="status" aria-live="polite"></div>
+
+<script type="module" src="/chao.js"></script>
+</body>
+</html>

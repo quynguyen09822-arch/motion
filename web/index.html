@@ -17,7 +17,13 @@
          xanh navy đậm, đặt lên giao diện tối gần như mất hút. -->
     <img class="o-hieu" src="/logo/motion-mark.png" alt="" aria-hidden="true" width="28" height="15">
     <div class="hieu"><b>Motion</b> · Sửa clip</div>
-    <select id="chon-clip" class="chon" aria-label="Chọn clip"></select>
+    <!-- Đường về kho dự án. Là THẺ <a> thật chứ không phải nút gọi JS: người
+         dùng phải mở được ở tab mới, và phải thấy đường dẫn khi rê chuột. -->
+    <a id="ve-kho" class="nut nho" href="/" title="Về kho dự án của bạn">
+      <svg viewBox="0 0 16 16" aria-hidden="true" width="12" height="12"><path d="M6.5 3.5L2.5 8l4 4.5"/><path d="M13.5 8h-11"/></svg>
+      Kho dự án
+    </a>
+    <select id="chon-clip" class="chon" aria-label="Chọn dự án"></select>
     <span id="dau-ban" class="dau-ban an">chưa lưu</span>
 
     <div class="day"></div>

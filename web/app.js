@@ -827,7 +827,16 @@ nutToi.onclick = () => { const n = kho.lamLai(); if (n) { bang.ve(); bao(`Đã l
 
 thanhTua.oninput = () => { dangKeoThanh = true; player.tua((Number(thanhTua.value) / 1000) * player.thoiLuong()); };
 thanhTua.onchange = () => { dangKeoThanh = false; };
-chonClip.onchange = () => moClip(chonClip.value);
+chonClip.onchange = () => {
+  /* Ghi tên dự án vào đường dẫn để bấm F5 hay gửi link cho người khác thì vẫn
+     mở đúng dự án đang xem. `replaceState` chứ không `pushState`: nút Lùi của
+     trình duyệt phải đưa người ta về trang chào, không phải lùi qua từng dự án
+     đã mở trong phiên. */
+  try {
+    history.replaceState(null, '', `/sua?clip=${encodeURIComponent(chonClip.value)}`);
+  } catch { /* trình duyệt chặn thì thôi, không đáng để hỏng việc mở clip */ }
+  moClip(chonClip.value);
+};
 
 document.addEventListener('keydown', (e) => {
   const trongO = e.target.matches('input, select, textarea');
@@ -861,10 +870,21 @@ window.addEventListener('beforeunload', (e) => {
   if (kho.ban()) { e.preventDefault(); e.returnValue = ''; }
 });
 
-/* ---------- chạy ---------- */
+/* ---------- chạy ----------
+ * `/sua?clip=<tên>` mở đúng dự án đó. Trang chào và mọi đường dẫn chia sẻ cho
+ * nhau đều đi lối này — không có tham số thì mới rơi về dự án đầu danh sách.
+ *
+ * Tên không có trong kho thì KHÔNG báo lỗi rồi đứng im: mở dự án đầu tiên và
+ * nói một câu. Người dùng thường tới đây từ một đường dẫn cũ, và một màn hình
+ * trắng thì chẳng chỉ cho họ làm gì tiếp. */
 try {
   await napDanhSach();
-  const dau = clips.find((c) => c.doi === 2 && !c.hong);
+  const muon = new URLSearchParams(location.search).get('clip');
+  const dung = muon && clips.find((c) => c.slug === muon && !c.hong);
+  if (muon && !dung) bao(`Kho của bạn không có dự án "${muon}".`, true);
+  const dau = dung || clips.find((c) => c.doi === 2 && !c.hong);
   if (dau) { chonClip.value = dau.slug; await moClip(dau.slug); }
-  else bao('Không thấy clip nào sửa được trong thư mục scenes/.', true);
+  else if (!muon) {
+    bao('Kho của bạn chưa có dự án nào — bấm "Kho dự án" ở thanh trên để tạo dự án đầu tiên.', true);
+  }
 } catch (e) { bao(e.message, true); }
