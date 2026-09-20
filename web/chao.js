@@ -97,22 +97,58 @@ async function veTaiKhoan() {
 }
 
 /* ---------- kho dự án ---------- */
+
+/**
+ * Màu lấy từ `meta` của chính clip, mà `meta` thì do người dùng gõ vào.
+ *
+ * `style.setProperty` đã tự bỏ giá trị sai khuôn, nhưng vẫn lọc ở đây: chỉ nhận
+ * mã màu dạng `#abc`/`#aabbcc` và tên màu chữ cái trần. Lọc bằng DANH SÁCH
+ * TRẮNG chứ không đi tìm chuỗi nguy hiểm — danh sách đen thì bao giờ cũng thiếu
+ * một dạng mà người viết chưa nghĩ ra.
+ */
+const locMau = (m) =>
+  (typeof m === 'string' && /^(#[0-9a-f]{3,8}|[a-z]{3,20})$/i.test(m.trim()) ? m.trim() : null);
+
+/** Ảnh đại diện: hai màu của chính clip, cộng một khung đúng hướng ngang/dọc. */
+function veAnh(c) {
+  const anh = document.createElement('div');
+  anh.className = 'the-anh';
+  const nen = locMau(c.nen);
+  const nhan = locMau(c.nhan);
+  if (nen) anh.style.setProperty('--nen-clip', nen);
+  if (nhan) anh.style.setProperty('--nhan-clip', nhan);
+
+  const hinh = document.createElement('div');
+  hinh.className = 'the-hinh';
+  /* Tỉ lệ THẬT của clip, không phải 16:9 cho tất cả. Clip dọc mà bày khung ngang
+     thì lưới nói dối đúng cái điều người ta nhìn vào để quyết định. */
+  if (c.rong > 0 && c.cao > 0) hinh.style.setProperty('--ti-le', `${c.rong} / ${c.cao}`);
+  for (const t of ['i', 'i', 'u']) hinh.appendChild(document.createElement(t));
+  anh.appendChild(hinh);
+  return anh;
+}
+
 function veThe(c) {
   const a = document.createElement('a');
   a.className = 'the' + (c.hong ? ' hong' : '');
   a.href = `/sua?clip=${encodeURIComponent(c.slug)}`;
+  a.appendChild(veAnh(c));
+
+  const chu = document.createElement('div');
+  chu.className = 'the-chu';
+  a.appendChild(chu);
 
   const ten = document.createElement('div');
   ten.className = 'the-ten';
   ten.textContent = c.ten || c.slug;
-  a.appendChild(ten);
+  chu.appendChild(ten);
 
   const so = document.createElement('div');
   so.className = 'the-so';
   so.textContent = c.hong ? c.hong
     : c.doi === 2 ? `${c.soCanh} cảnh · ${giay1(c.giay)} giây`
       : 'clip đời cũ — chỉ xem';
-  a.appendChild(so);
+  chu.appendChild(so);
 
   const chan = document.createElement('div');
   chan.className = 'the-chan';
@@ -126,7 +162,7 @@ function veThe(c) {
   t.className = 'the-luc';
   t.textContent = luc(c.suaLuc);
   chan.appendChild(t);
-  a.appendChild(chan);
+  chu.appendChild(chan);
 
   return a;
 }
@@ -251,16 +287,17 @@ function moPhieu() {
 }
 
 /* ---------- nối dây ---------- */
-$('nut-tao').onclick = moPhieu;
-$('tao-dau').onclick = moPhieu;
+/* Bốn chỗ mở cùng một ô: nút trên thanh, nút trong phần mở đầu, nút cạnh tiêu
+   đề kho, và nút trong ô trống. Nối bằng vòng lặp chứ không viết bốn dòng —
+   thêm chỗ thứ năm mà quên một dòng thì có một nút chết, im lặng. */
+for (const id of ['nut-tao-tren', 'nut-tao', 'nut-tao-2', 'tao-dau']) {
+  const n = $(id);
+  if (n) n.onclick = moPhieu;
+}
 $('thoi').onclick = () => oTao.close();
 oTen.oninput = dongBoNum;
 oMau.onchange = dongBoNum;
 $('phieu').onsubmit = (ev) => { ev.preventDefault(); taoThat(); };
-
-$('nut-kho').onclick = () => {
-  $('kho').scrollIntoView({ behavior: 'smooth', block: 'start' });
-};
 
 /* ---------- chạy ---------- */
 veTaiKhoan();

@@ -127,6 +127,12 @@ export async function danhSachClip(kho = GOC()) {
         cao: doc?.meta?.height ?? null,
         dung: doc?.meta?.height > doc?.meta?.width,
         soCanh: Array.isArray(doc?.scenes) ? doc.scenes.length : 0,
+        /* Hai màu của chính clip, để trang chào vẽ ảnh đại diện cho từng thẻ.
+           Lấy màu thật chứ không phát màu ngẫu nhiên: nhìn lưới dự án là nhận
+           ra ngay clip nào của chiến dịch nào, mà không phải mở từng cái.
+           `null` nếu clip không khai — thẻ tự rơi về màu chung. */
+        nen: doc?.meta?.bg ?? null,
+        nhan: doc?.meta?.accent ?? null,
         giay: Math.round((await tongThoiLuong(doc)) * 10) / 10,
         file: `scenes/${ten}`,
         suaLuc: statSync(f).mtimeMs,
