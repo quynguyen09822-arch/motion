@@ -17,7 +17,11 @@
  *     là khung đen thui — người dùng tưởng công cụ hỏng. Đặt sẵn đúng một thẻ
  *     chữ mang tên dự án.
  */
+import { rmSync } from 'node:fs';
+import path from 'node:path';
+import { catBanCu } from './backup.js';
 import { docClip } from './clips.js';
+import { xoaNhap } from './drafts.js';
 import { luuClip } from './save.js';
 /* MƯỢN của `web/`, không chép: trang tạo dự án hiện tên file ngay lúc gõ, và
    hai bản luật đặt tên thì sớm muộn cũng lệch. Cùng cách `main.js` mượn
@@ -118,4 +122,35 @@ export async function taoDuAn(y, kho, email = null) {
   const kq = await luuClip(slug, doc, email, kho);
   if (!kq.ok) return { ok: false, ma: 422, loi: 'Dự án mới không qua được bộ soát.', vanDe: kq.vanDe };
   return { ok: true, slug, ten };
+}
+
+/**
+ * XOÁ MỘT DỰ ÁN.
+ *
+ * Luật cứng số 1 của repo này: dự án clip KHÔNG có git, ghi đè sai một lần là
+ * mất hẳn. Xoá còn nặng hơn ghi đè, nên ở đây **cất bản cũ TRƯỚC**, rồi mới xoá,
+ * và trả về đường dẫn bản đã cất để câu báo nói được cho người dùng biết đồ của
+ * họ đang nằm ở đâu. "Đã xoá" mà không nói cất ở đâu thì người ta không dám bấm.
+ *
+ * KHÔNG xoá được clip đời cũ: chúng là file HTML ở gốc dự án chung, không thuộc
+ * kho của ai, và nhiều người khác cũng đang dùng. `catBanCu` trả null khi không
+ * thấy file kịch bản — lấy luôn đó làm cửa chặn, khỏi phải kiểm hai lần.
+ */
+export function xoaDuAn(slug, kho) {
+  if (!docClip(slug, kho)) {
+    return { ok: false, ma: 404, loi: `Không thấy dự án "${slug}" trong kho của bạn.` };
+  }
+
+  const ban = catBanCu(slug, kho);
+  if (!ban) {
+    return { ok: false, ma: 400,
+      loi: 'Chỉ xoá được dự án trong kho của bạn. Clip đời cũ là file dùng chung, không xoá ở đây được.' };
+  }
+
+  rmSync(path.join(kho.scenes, `${slug}.json`), { force: true });
+  /* Xoá cả bản nháp. Để lại thì lần mở kho sau nó hiện ra như dự án chưa xoá,
+     và người dùng tưởng nút xoá không ăn. */
+  try { xoaNhap(slug, kho); } catch { /* không có nháp thì thôi */ }
+
+  return { ok: true, slug, ban };
 }

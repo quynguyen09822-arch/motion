@@ -164,7 +164,50 @@ function veThe(c) {
   chan.appendChild(t);
   chu.appendChild(chan);
 
+
+  /* NÚT XOÁ — chỉ cho dự án đời 2 trong kho của mình. Clip đời cũ là file dùng
+     chung ở gốc dự án clip, không thuộc kho ai cả; bày nút xoá lên đó là mời
+     người ta xoá đồ của người khác. */
+  if (c.doi === 2) a.appendChild(veNutXoa(c));
   return a;
+}
+
+/**
+ * Nút xoá trên một thẻ dự án.
+ *
+ * Cả tấm thẻ là một thẻ `<a>`, nên nút bên trong PHẢI chặn cả `click` lẫn hành
+ * vi mặc định — không chặn thì bấm xoá xong trình duyệt vẫn nhảy sang trình sửa
+ * của chính dự án vừa xoá, và người dùng nhận một màn hình lỗi.
+ */
+function veNutXoa(c) {
+  const n = document.createElement('button');
+  n.className = 'nut-xoa';
+  n.type = 'button';
+  n.title = `Xoá dự án "${c.ten || c.slug}"`;
+  n.setAttribute('aria-label', n.title);
+  n.textContent = '\u2715';
+  n.onclick = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const ten = c.ten || c.slug;
+    /* HỎI TRƯỚC. Xoá không lùi được bằng một phím, nên đừng làm ngay chỉ vì
+       người ta bấm trúng. Câu hỏi nói rõ CÓ bản lùi, để người thật sự muốn xoá
+       thì dám bấm. */
+    if (!confirm(`Xoá dự án "${ten}"?\n\nBản cũ vẫn được cất trong kho sao lưu, `
+      + 'nhưng ở màn hình này thì nó biến mất.')) return;
+    n.disabled = true;
+    try {
+      const r = await fetch(`/api/du-an/${encodeURIComponent(c.slug)}`, { method: 'DELETE' });
+      const kq = await r.json();
+      if (!kq.ok) { bao(kq.loi || 'Không xoá được.', true); n.disabled = false; return; }
+      bao(`Đã xoá "${ten}". Bản cũ còn trong kho sao lưu.`);
+      await napKho();
+    } catch (err) {
+      bao(err.message || 'Không xoá được.', true);
+      n.disabled = false;
+    }
+  };
+  return n;
 }
 
 async function napKho() {
