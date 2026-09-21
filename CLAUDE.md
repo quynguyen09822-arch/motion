@@ -282,6 +282,10 @@ node tools/kiem-kho-mon.mjs         # menu thêm: bày đủ 24 loại + 10 bộ
 npm run kiem:schema                 # CHẶN LỆCH SCHEMA giữa types.ts ↔ schema.js ↔ bộ dựng
 ```
 
+**`node tools/kiem-co-kho.mjs`** chạy bằng Node trần — canh việc bộ dựng sẵn và
+món lẻ co đúng theo khổ clip. Sai ở đây không làm gãy gì: kịch bản vẫn hợp lệ,
+clip vẫn chạy, chỉ sai cỡ — nên không có bài kiểm thì nó cứ thế trôi.
+
 **`node tools/kiem-keo-lop.mjs`** chạy bằng Node trần — canh phép đổi chỗ trong
 cây lớp (kéo thả ở cột thành phần). Thứ tự trong `elements` là thứ tự VẼ và cũng
 là bậc trễ của `stagger`, nên một phép đổi chỗ sai không làm gãy gì cả: kịch bản
@@ -350,6 +354,15 @@ từ khối hình học và chạy bốn phép kiểm bố cục (`kiem_trong`, 
 - **Bộ dựng sẵn (`KIT` trong `them.js`) phải khai `place`, đừng khai toạ độ.**
   Cụm khai `place` thì tự xếp lại khi đổi khổ clip; khai toạ độ cứng là góp thêm
   vào 96,8% số món hiện không đổi khổ được. Khuôn lấy từ clip thật, không bịa.
+- **Kho mẫu viết theo khổ 720×1280, và `themKit`/`themMon` CO LẠI theo khổ clip
+  đang mở** (`heSoKho` = `min(rộng/720, cao/1280)`). Khổ mẫu là đo ra chứ không
+  chọn: `chuDan` khai `w: 374, size: 96`, trùng từng số với `vibe-host`. Thả
+  nguyên si vào clip 1280×720 là chữ 96 trong khung cao 720, trong khi chín clip
+  thật dùng 54–72 — và 96 × 0,5625 đúng bằng 54. Một ngoại lệ: **`w` của chữ đi
+  theo bề ngang khung**, vì đó là bề ngang ngắt dòng chứ không phải kích thước
+  hình; co đều thì câu dẫn bảy chữ gãy làm bốn dòng. `pad`/`gap` là BẬC 0..7,
+  tuyệt đối không nhân. Có `tools/kiem-co-kho.mjs` canh, và
+  `docs/KHO-THANH-PHAN.md` ghi đủ số đo.
 - **Chỉ bày núm mà bộ dựng THẬT SỰ đọc.** `DEM_TRONG`/`KHE_HO` trong `schema.js`
   là bảng sự thật cho `pad`/`gap`, kèm bậc mặc định thật. Bày núm chết còn tệ hơn
   không bày — bấm vào thì kịch bản đổi mà khung hình đứng im. `tools/kiem-dem-khe.mjs`
