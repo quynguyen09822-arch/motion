@@ -23,7 +23,7 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { goiGemini, HAN_GIAY_ANH } from './gemini.js';
 import { PROJ, soatKichBan } from './proj.js';
-import { soatChatLuong } from '../web/soat.js';
+import { banDoNen, soatChatLuong, tuongPhan } from '../web/soat.js';
 
 /* 23 loại có mẫu thật trong kho clip. `video` không có mẫu nên không mời AI dùng
    — món đó cần file phim có thật, AI đoán tên file là ra món hỏng. */
@@ -33,9 +33,11 @@ export const LOAI_CHO_PHEP = [
   'wheel', 'calendar', 'hangnhan', 'quydao', 'pointer', 'nen',
 ];
 
-/** Mẫu thật, rút từ chính các clip trong dự án. Đọc một lần rồi nhớ. */
+/** Mẫu thật, rút từ chính các clip trong dự án. Đọc một lần rồi nhớ.
+    Xuất ra để `tuhtml.js` dùng CHUNG — hai kho mẫu khác nhau là hai lời nhắc
+    dạy AI hai hình dạng khác nhau cho cùng một `kind`. */
 let _mau = null;
-function mauThat() {
+export function mauThat() {
   if (_mau) return _mau;
   const thuMuc = path.join(PROJ, 'scenes');
   const mau = {};
@@ -225,4 +227,74 @@ export async function dungCanh({ doc, anh, mime, y }) {
       : chimNen.length ? `Dựng xong, nhưng còn ${chimNen.length} chỗ chữ chìm vào nền.`
         : null,
   };
+}
+
+/**
+ * CHUẨN HOÁ CẢNH AI VỪA SINH, trước khi đem đi soát.
+ *
+ * `validateScene` đòi `x` và `y` là SỐ ở mọi phần tử — kể cả phần tử nằm trong
+ * `group`, nơi hai con số ấy vô nghĩa vì flex tự xếp chỗ (xem mục 5 CLAUDE.md).
+ * Model bỏ quên chúng ở đúng những chỗ đó, và bỏ quên đều đặn: đo trên một lượt
+ * dựng từ HTML thật, ba phần tử con trong cụm đều thiếu.
+ *
+ * Bắt AI nhớ một điều vô nghĩa là cách tốn tiền nhất để có một con số 0. Điền hộ
+ * rẻ hơn, và KHÔNG che giấu lỗi nào: chỉ điền khi trường VẮNG MẶT, sai kiểu thì
+ * vẫn để bộ soát bắt.
+ */
+export function chuanHoaCanh(canh) {
+  if (!canh || typeof canh !== 'object') return canh;
+  const di = (ds) => {
+    for (const e of ds || []) {
+      if (!e || typeof e !== 'object') continue;
+      if (e.x == null) e.x = 0;
+      if (e.y == null) e.y = 0;
+      di(e.children);
+    }
+  };
+  di(canh.elements);
+  return canh;
+}
+
+/** Dưới ngưỡng này thì chữ coi như chìm vào nền. WCAG đòi 4.5 cho chữ nhỏ; ở
+    đây chữ clip thường to nên lấy 3.0 — đủ để bắt ca hỏng thật mà không đi sửa
+    những chỗ người ta cố tình làm mờ. */
+const NGUONG_TUONG_PHAN = 3.0;
+
+/**
+ * VÁ CHỮ CHÌM NỀN, tất định.
+ *
+ * Vòng sửa của AI đã được xem lời than của bộ soát, nhưng đo thật thì nó vẫn sót:
+ * một lượt dựng từ HTML còn đúng một nút chữ đen nằm trên nền tối, và lượt sửa
+ * KHÔNG gỡ được. Nhờ model nhớ một luật số học là cách đắt và không chắc.
+ *
+ * Ở đây tính thẳng: lấy màu nền THẬT dưới từng món (`banDoNen` — chính hàm mà
+ * bảng soát và bảng lớp đang dùng, nên ba nơi không nói khác nhau), đo tương
+ * phản, thấp quá thì đổi `ink` sang trắng hoặc gần đen, chọn bên nào tương phản
+ * hơn.
+ *
+ * KHÔNG đụng tới `fill`: đổi màu nền là đổi thiết kế của người ta. Chỉ đổi màu
+ * CHỮ, vì chữ không đọc được thì không còn là thiết kế nữa.
+ */
+export function vaTuongPhan(canh, meta) {
+  if (!canh || !Array.isArray(canh.elements)) return 0;
+  const nen = banDoNen(canh, meta);
+  let va = 0;
+  const di = (ds) => {
+    for (const e of ds || []) {
+      if (!e || typeof e !== 'object') { continue; }
+      if (typeof e.ink === 'string' && e.id != null) {
+        const duoi = nen.get(e.id)?.mau || meta?.bg;
+        const tp = tuongPhan(e.ink, duoi);
+        if (tp != null && tp < NGUONG_TUONG_PHAN) {
+          const sang = tuongPhan('#ffffff', duoi) || 0;
+          const toi = tuongPhan('#101010', duoi) || 0;
+          e.ink = sang >= toi ? '#ffffff' : '#101010';
+          va++;
+        }
+      }
+      di(e.children);
+    }
+  };
+  di(canh.elements);
+  return va;
 }

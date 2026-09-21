@@ -195,9 +195,29 @@ try {
 
   await tr.click('.ai-the >> nth=2');
   await tr.waitForTimeout(400);
-  dat('thẻ Dựng hình: chưa có ảnh thì nút bị khoá',
+  /* Nhãn đổi từ "Chọn ảnh trước đã" sang "Chọn ảnh hoặc dán HTML" khi thêm
+     đường Stitch → Motion: bảng này nay nhận HAI nguồn. Điều bài kiểm canh vẫn
+     y nguyên — chưa có nguồn nào thì nút phải khoá. */
+  dat('thẻ Dựng hình: chưa có nguồn nào thì nút bị khoá',
     await tr.evaluate(() => document.querySelector('.nut-dung').disabled
-      && /Chọn ảnh trước/.test(document.querySelector('.nut-dung').textContent)));
+      && /Chọn ảnh/.test(document.querySelector('.nut-dung').textContent)));
+
+  /* Dán một địa chỉ vào là nút phải MỞ, kể cả khi chưa chọn ảnh — đó là cả
+     điểm của đường HTML. */
+  await tr.evaluate(() => {
+    const o = document.querySelector('.o-dung-html');
+    o.value = 'https://example.com';
+    o.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  await tr.waitForTimeout(200);
+  dat('dán địa chỉ trang thì nút mở ra',
+    await tr.evaluate(() => !document.querySelector('.nut-dung').disabled
+      && /Dựng từ trang/.test(document.querySelector('.nut-dung').textContent)));
+  await tr.evaluate(() => {
+    const o = document.querySelector('.o-dung-html');
+    o.value = '';
+    o.dispatchEvent(new Event('input', { bubbles: true }));
+  });
   await tr.setInputFiles('.muc-dung input[type=file]', anhF);
   await tr.waitForTimeout(900);
   dat('chọn ảnh xong thì hiện ảnh xem trước và mở nút',

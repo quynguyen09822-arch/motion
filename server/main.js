@@ -33,6 +33,7 @@ import { docLoi, dsGiong, GIOI_HAN_KY_TU, khoaEleven, khoaGoogle, mauGiong } fro
 import { vietLoi } from './vietloi.js';
 import { hoiAI } from './hoiai.js';
 import { dungCanh } from './dungcanh.js';
+import { dungTuHtml } from './tuhtml.js';
 import { daDung, ghiNhat, xin } from './hanmuc.js';
 import { thongKe } from './nhatky.js';
 import { suaMon } from './suamon.js';
@@ -413,6 +414,35 @@ const server = http.createServer(async (req, res) => {
         y: than?.y, anh, mime: than?.mime,
       });
       if (!d.va) return loi(res, 400, d.cau || 'AI sửa hỏng.');
+      return json(res, 200, d);
+    }
+
+    /* DỰNG CẢNH TỪ HTML — đường Stitch → Motion.
+       Khác `/api/dung-canh` ở chỗ nguồn vào là TRANG, không phải ảnh: ta đọc
+       trang bằng trình duyệt nên có số đo thật, AI khỏi phải đoán từ pixel. */
+    if (p === '/api/tu-html' && req.method === 'POST') {
+      const than = await docJson(req);
+      {
+        const ai = aiDangVao(req);
+        const q = xin('goiAI', ai);
+        if (!q.ok) return loi(res, 429, q.cau);
+        ghiNhat('goiAI', ai, 1, 'dựng từ HTML');
+      }
+      const slug = locSlug(than?.slug);
+      if (!slug) return loi(res, 400, 'Tên clip không hợp lệ.');
+      const c = docClip(slug, kho);
+      if (!c) return loi(res, 404, `Không thấy clip "${slug}".`);
+
+      const html = String(than?.html || '');
+      const url = String(than?.url || '').trim();
+      if (!html && !url) return loi(res, 400, 'Chưa dán HTML hay địa chỉ trang.');
+      /* Chỉ nhận http(s). Cho `file:` là mở cửa đọc mọi file trên máy chủ qua
+         một đường API ai đăng nhập cũng gọi được. */
+      if (url && !/^https?:\/\//i.test(url)) {
+        return loi(res, 400, 'Địa chỉ phải bắt đầu bằng http:// hoặc https://');
+      }
+      const d = await dungTuHtml({ doc: c.doc, html, url, y: than?.y });
+      if (d.cau && !d.canh) return loi(res, 400, d.cau);
       return json(res, 200, d);
     }
 
