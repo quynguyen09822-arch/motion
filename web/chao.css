@@ -406,3 +406,21 @@ h3 { font-size: 18px; margin: 0; letter-spacing: -.3px; }
   html { scroll-behavior: auto; }
   * { animation-duration: .001ms !important; transition-duration: .001ms !important; }
 }
+
+/* Nút xoá trên thẻ dự án — nấp đi cho tới khi rê chuột vào thẻ.
+   Hiện thường trực thì mười một tấm thẻ có mười một dấu ✕ đập vào mắt, mà xoá
+   là việc hiếm; nấp đi thì thẻ vẫn sạch mà cần là có. Trên màn cảm ứng không có
+   "rê chuột" nên luôn hiện — thà thừa một nút còn hơn không bấm được. */
+.the { position: relative; }
+.nut-xoa {
+  position: absolute; top: 8px; right: 8px; z-index: 2;
+  width: 26px; height: 26px; padding: 0; line-height: 1;
+  border: 1px solid var(--vach-sang); border-radius: 8px;
+  background: rgba(0, 0, 0, .55); color: var(--chu-mo);
+  font: 600 13px/1 var(--font, inherit); cursor: pointer;
+  opacity: 0; transition: opacity .12s, color .12s, border-color .12s;
+}
+.the:hover .nut-xoa, .nut-xoa:focus-visible { opacity: 1; }
+.nut-xoa:hover { color: #ffb4b4; border-color: rgba(239, 68, 68, .5); }
+.nut-xoa[disabled] { opacity: .5; cursor: default; }
+@media (hover: none) { .nut-xoa { opacity: 1; } }

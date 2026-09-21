@@ -1233,3 +1233,13 @@ a.nut svg { fill: none; stroke: currentColor; stroke-width: 1.6;
      khung xem chứ không tới được thẻ, và người dùng bấm mãi không chọn được. */
   pointer-events: none;
 }
+
+/* ------------------------------------------------- clip đời cũ: chỉ chiếu
+ * Clip đời cũ không tách được cảnh và không liệt kê được thành phần, nên cả
+ * cột trái rỗng trơn. Để nguyên thì màn hình trông như hỏng — hai bảng trống
+ * và một ô tìm kiếm vô dụng bao quanh một clip vẫn đang chạy đúng.
+ * Giấu đi, trả 272px lại cho khung hình. Cột phải giữ nguyên vì "Xuất video"
+ * và "Khung nhấn" vẫn dùng được thật.
+ */
+body.doi-cu .cot-trai,
+body.doi-cu .keo-cot[data-cot="trai"] { display: none; }

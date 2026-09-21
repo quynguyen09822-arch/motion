@@ -640,6 +640,13 @@ async function moClip(slug) {
      * cũ đều phơi) thì MỞ HẲN nút Chạy với thanh tua. Thẻ Khung nhấn vẫn hiện
      * ra để bấm, chỉ không tự nhảy vào nữa.
      */
+    /* GIẤU CỘT TRÁI. Với clip đời cũ, cả hai bảng trong đó đều rỗng — không
+       tách được cảnh, không liệt kê được thành phần — nên nó chỉ còn là 272px
+       báo rằng "ở đây không có gì", kèm một ô tìm kiếm không tìm được gì. Nhìn
+       vào tưởng công cụ hỏng, trong khi clip vẫn chạy đúng. Bỏ đi thì clip được
+       thêm 272px, và màn hình nói đúng việc nó làm được: chiếu và xuất video.
+       Câu giải thích đã có sẵn ở dải báo giữa khung. */
+    document.body.classList.add('doi-cu');
     lopBat.style.display = 'none';
     dsCanhEl.innerHTML = '<li class="khong-the">Clip đời cũ không tách được ra từng cảnh.</li>';
     const laiDuoc = player.san();
@@ -665,6 +672,7 @@ async function moClip(slug) {
     trangThai('san-sang');
     return;
   }
+  document.body.classList.remove('doi-cu');   // trả cột trái lại cho clip đời 2
   $('the-khung').classList.add('an');
 
   lopBat.style.display = '';

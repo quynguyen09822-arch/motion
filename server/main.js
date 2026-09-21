@@ -23,7 +23,7 @@ import { aiDangVao, daDatMatKhau, dangBiKhoa, datCookie, diaChi, dsTaiKhoan, duo
 import { canhMau } from './canhmau.js';
 import { danhSachClip, docClip, duongDanXem, locSlug } from './clips.js';
 import { chuKho, khoCua, oLuuBenVung, soDuAn } from './kho.js';
-import { KHO_HINH, taoDuAn } from './duan.js';
+import { KHO_HINH, taoDuAn, xoaDuAn } from './duan.js';
 import { chupBanGoc, lichSu } from './backup.js';
 import { khoiPhuc, luuClip } from './save.js';
 import { docNhap, ghiNhap, xoaNhap } from './drafts.js';
@@ -241,6 +241,17 @@ const server = http.createServer(async (req, res) => {
         /* Chỉ gửi ra khi THẬT SỰ có chuyện. Gửi kèm cả lúc bình thường thì giao
            diện phải tự đoán nên hiện hay không, và chỗ đoán ấy sẽ đoán sai. */
         canhBaoOLuu: oLuu.hopLe ? null : oLuu.lyDo });
+    }
+
+    /* XOÁ dự án. Đặt TRƯỚC nhánh POST cho gọn nhóm.
+       Chỉ xoá trong kho của người ĐANG ĐĂNG NHẬP — `kho` lấy từ vé chứ không
+       lấy từ tham số, nên không ai xoá được đồ của người khác. */
+    if ((m = khop('/api/du-an/:slug', p)) && req.method === 'DELETE') {
+      const slug = locSlug(m.slug);
+      if (!slug) return loi(res, 400, 'Tên dự án không hợp lệ.');
+      const kq = xoaDuAn(slug, kho);
+      if (!kq.ok) return json(res, kq.ma || 400, kq);
+      return json(res, 200, kq);
     }
 
     if (p === '/api/du-an' && req.method === 'POST') {
