@@ -190,17 +190,39 @@ body:has(.keo-cot.dang-keo) iframe { pointer-events: none; }
   display: flex; align-items: center; justify-content: center;
   padding: 18px; overflow: hidden;
 }
+/* Chỉ sân khấu của clip mới làm khung chứa đo được — `.boc-khung` cần biết CẢ
+   HAI cạnh của nó (xem `cqh` ngay bên dưới). Không đặt cho cả `.san-khau` vì hai
+   sân còn lại (khung nhấn, video) cao theo nội dung, mà `container-type: size`
+   thì cắt đứt đúng cái đường phụ thuộc đó. */
+#san-clip { container-type: size; }
 
-/* Khung xem giữ đúng tỉ lệ của clip; JS đặt --ti-le. */
+/* KHUNG XEM PHẢI GIỮ ĐÚNG TỈ LỆ CỦA CLIP — cả hai chiều, không chỉ một.
+ *
+ * Bản cũ viết `height: 100%` KÈM `aspect-ratio`, và hai dòng đó cãi nhau: chiều
+ * cao đã định sẵn nên bề ngang tính ra từ tỉ lệ, rồi `max-width` cắt bề ngang
+ * lại cho vừa cột — mà chiều cao thì KHÔNG được tính lại. Kết quả là tỉ lệ bị bẻ
+ * gãy IM LẶNG.
+ *
+ * Đo thật trên clip 1280×720 trong cửa sổ cao 977px: khung ra 483×799, tức tỉ lệ
+ * 0,605 — dọc hẳn, trong khi `--ti-le` vẫn đang là `1280 / 720`. Bộ dựng bên
+ * trong tự co cho vừa nên clip vẫn đúng hình, chỉ là nằm giữa hai dải trắng trên
+ * dưới; người dùng mở clip ngang lên thấy một khung dọc và tưởng dự án hỏng.
+ *
+ * Cách chữa: đừng định sẵn cạnh nào cả, lấy CẠNH NÀO CHẠM TRƯỚC. `cqw`/`cqh` đo
+ * đúng lòng trong của sân khấu (đã trừ padding), nên không phải cộng trừ tay. */
 .boc-khung {
   position: relative;
   background: #000;
   border-radius: var(--bo);
   overflow: hidden;
   box-shadow: 0 14px 46px rgba(0, 0, 0, .6);
-  max-width: 100%; max-height: 100%;
   aspect-ratio: var(--ti-le, 16 / 9);
-  height: 100%;
+  max-width: 100%; max-height: 100%;
+  /* Đường lùi cho trình duyệt chưa có truy vấn khung chứa: chiếm hết bề ngang,
+     cao tính theo tỉ lệ. Hẹp hơn mức có thể ở sân khấu lùn, nhưng KHÔNG BAO GIỜ
+     méo tỉ lệ — mà méo tỉ lệ mới là lỗi người dùng nhìn thấy. */
+  width: 100%;
+  width: min(100cqw, calc(100cqh * var(--ti-le, 16 / 9)));
 }
 #khung { width: 100%; height: 100%; border: 0; display: block; background: #000; }
 
