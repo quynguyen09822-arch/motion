@@ -151,12 +151,17 @@ chiếu lại: chạy xong `scenes/` phải y nguyên từng tên file.
   đỏ ngay trên lưới dự án. Chỉ báo khi đủ ba điều kiện — kho riêng đang bật, đang
   chạy trong container, và thư mục chưa gắn ổ — vì một lời báo sai dạy người dùng
   rằng chỗ này nói nhảm, và từ đó họ bỏ qua cả lời báo đúng.
-- **Xuất video trong kho riêng chưa chạy được.** Bộ xuất mở khung xem bằng
-  Chromium *không có vé đăng nhập*, nên trang bị cửa chặn. Đây **không phải lỗi
-  mới**: từ khi có đăng nhập thì mọi lần xuất trên máy chủ có mật khẩu đều đã
-  hỏng như vậy — kho riêng chỉ làm nó lộ ra, vì kho riêng chỉ tồn tại khi đăng
-  nhập đang bật. Cách vá đúng là cấp cho việc xuất một **vé ngắn hạn có chữ ký**,
-  KHÔNG phải mở cửa hậu "bỏ qua đăng nhập ở localhost".
+- ~~Xuất video trong kho riêng chưa chạy được.~~ **Đã vá 22/09/2026** bằng vé
+  ngắn hạn có chữ ký (`taoVeXuat` trong `server/dangnhap.js`): máy chủ tự ký một
+  vé sống một giờ, nhét vào `?ve=` của đường dẫn đưa cho bộ xuất, và lời đáp đầu
+  tiên biến vé ấy thành cookie để hàng chục đường con (phông, ảnh, video nguồn)
+  đi được. Vé mang theo email nên bộ dựng đọc đúng kho của người bấm nút.
+
+  Vé **không phải một lần đăng nhập**: danh sách trắng `duocVaoKhiXuat` chỉ mở
+  `/clip/*`, `/api/kich-ban/*`, `/api/canh-mau` và `/health` — không một đường
+  ghi nào. Lỡ lọt ra ngoài thì thứ lấy được cũng chỉ là xem clip, trong một giờ.
+  KHÔNG dùng cửa hậu "bỏ qua đăng nhập ở localhost": cửa hậu nào rồi cũng có
+  ngày bị bật nhầm trên bản chạy thật. Canh bằng `tools/kiem-ve-xuat.mjs`.
 - **Vẫn một mật khẩu chung.** Chia kho là chia *chỗ để đồ*, không phải chia
   quyền: ai biết mật khẩu và có tên trong `MOTION_TAI_KHOAN` đều đăng nhập được
   thành bất kỳ ai trong danh sách đó. Muốn thật sự tách quyền thì phải mỗi người

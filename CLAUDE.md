@@ -282,6 +282,12 @@ node tools/kiem-kho-mon.mjs         # menu thêm: bày đủ 24 loại + 10 bộ
 npm run kiem:schema                 # CHẶN LỆCH SCHEMA giữa types.ts ↔ schema.js ↔ bộ dựng
 ```
 
+**`node tools/kiem-ve-xuat.mjs`** chạy bằng Node trần — canh VÉ XUẤT VIDEO, chỗ
+DUY NHẤT trong cả ứng dụng mà một đường dẫn tự nó mở được cửa đăng nhập. Nới nó
+ra một ly — thêm một đường vào danh sách trắng, quên mất hạn, hay lỡ bỏ điều
+kiện `xuat` — là biến một chiếc chìa thành một cửa sau, mà cửa sau thì không kêu
+và không ai biết cho tới lúc muộn.
+
 **`node tools/kiem-co-kho.mjs`** chạy bằng Node trần — canh việc bộ dựng sẵn và
 món lẻ co đúng theo khổ clip. Sai ở đây không làm gãy gì: kịch bản vẫn hợp lệ,
 clip vẫn chạy, chỉ sai cỡ — nên không có bài kiểm thì nó cứ thế trôi.

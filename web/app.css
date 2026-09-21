@@ -160,6 +160,15 @@ body {
 /* Nút đang bật thì sáng màu nhấn — người dùng phải biết vì sao cột biến mất. */
 .nut-tron[aria-pressed="true"] { color: var(--nhan); background: var(--nhan-nhe); }
 
+/* Đường thoát khi bản chạy không dựng được video — xem `web/exportpanel.js`. */
+.duong-thoat {
+  margin-top: 10px; padding: 14px; border-radius: var(--bo);
+  background: var(--nen-2); border: 1px solid var(--nen-4);
+}
+.duong-thoat b { display: block; font-size: var(--chu-vua); }
+.duong-thoat p { margin: 6px 0 12px; font-size: var(--chu-nho); color: var(--chu-mo); }
+.duong-thoat .thoat-chi { margin: 10px 0 0; color: var(--chu-mo-2); }
+
 /* ---------- tay nắm kéo cột ---------- */
 /* Vạch mảnh 4px nhưng vùng bấm rộng 12px: tay nắm đúng 4px thì phải ngắm mới
    trúng. Nới bằng đệm ngang rồi kéo lề âm cho nó không chiếm thêm chỗ. */
