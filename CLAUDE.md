@@ -372,6 +372,15 @@ từ khối hình học và chạy bốn phép kiểm bố cục (`kiem_trong`, 
   clip đời cũ không sửa được nên không có gì để lệch, mà đổi lại thì có `__clip`
   (cả 12 clip đều phơi `duration/ready/play/at/seek`) nên chạy và tua được.
   `__clip` của clip đời cũ **không có `scenes()`** — hỏi trước rồi hãy gọi.
+- **Cỡ chữ lấy từ thang ba bậc trong `:root`** — `--chu-nho` 12px · `--chu-vua`
+  14px · `--chu-to` 16px. KHÔNG viết `font-size: 11px` thẳng vào rule nữa: đo
+  trước khi sửa thì 57/74 chỗ khai cỡ chữ nằm trong 10–12px và chỉ đúng MỘT chỗ
+  đạt 15px, tức gần như không có chữ nào đọc thoải mái được cả buổi. Chật thì
+  **nới ô chứa**, đừng hạ cỡ chữ xuống lại — hạ xuống là quay về đúng chỗ vừa đi
+  ra. Xem `docs/KHONG-GIAN-LAM-VIEC.md`.
+- **Hai cột ẩn được** (`web/cot.js`): phím gạch ngược dọn sạch màn hình, hai nút
+  ở thanh trên thu riêng từng cột, nhớ qua `localStorage`. Ẩn KHÔNG đụng tới bề
+  rộng đã kéo. Chọn một món khi đang dọn màn hình thì cột phải tự mở lại.
 - **Giao diện theo bản dựng Stitch** (`stitch_d_n_kh_i_nghi_p/`) — bảng màu và
   nhịp nằm gọn trong `:root` của `web/app.css`, đừng viết màu thẳng vào rule.
   Nhấn là **xanh lá**, chữ trên nhấn là `var(--tren-nhan)`. Không dựng nút cho

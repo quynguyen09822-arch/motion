@@ -93,7 +93,18 @@ nhất thì bị ép vào giữa. Đó chính là định nghĩa của bí bách
 
 ---
 
-## Việc 1 · Một phím dọn sạch màn hình `[P0 · nửa ngày]`
+## Việc 1 · Một phím dọn sạch màn hình `[P0 · ĐÃ LÀM 22/09/2026]`
+
+> **Đã làm.** Phím gạch ngược bật/tắt chế độ trống; hai nút ở thanh trên thu
+> riêng từng cột; nhớ qua `localStorage` cùng chỗ với bề rộng; chọn một món khi
+> đang dọn màn hình thì cột phải tự mở lại.
+>
+> Không dùng `Tab` như bản nháp đề nghị: Tab là đường đi giữa các ô nhập của
+> bảng chỉnh, cướp nó là mất luôn cách dùng bằng bàn phím.
+>
+> Đo ở cửa sổ 1280×900 với clip ngang: hai cột hiện thì khung xem chiếm **48%**
+> bề ngang, dọn sạch thì **97%**. Bấm lại về đúng 272/316.
+
 
 **Vì sao trước nhất.** Rẻ nhất, mà đổi cảm giác nhiều nhất. Không phải dựng lại
 gì — chỉ thêm một trạng thái ẩn hai cột.
@@ -126,7 +137,17 @@ Trước khi code, cho anh biết định gán phím nào và vì sao.
 
 ---
 
-## Việc 2 · Nâng nền cỡ chữ `[P0 · nửa ngày]`
+## Việc 2 · Nâng nền cỡ chữ `[P0 · ĐÃ LÀM 22/09/2026]`
+
+> **Đã làm.** Thang ba bậc trong `:root` (`--chu-nho` 12 · `--chu-vua` 14 ·
+> `--chu-to` 16), thay cho **92** chỗ khai cỡ chữ rời. Không còn một `font-size`
+> viết cứng nào trong `web/app.css`.
+>
+> Soi tràn bằng máy chứ không bằng mắt: mở bảng chỉnh cho cả 9 loại thành phần
+> của một clip, rồi cả bốn thẻ bên phải — **không một phần tử nào có
+> `scrollWidth` vượt `clientWidth`**. Cột phải ở bề rộng mặc định 316px không vỡ
+> hàng, không tràn chữ.
+
 
 **Cách làm.** Dựng một thang cỡ chữ trong `:root` thay cho 74 chỗ khai rời:
 
