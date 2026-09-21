@@ -23,6 +23,7 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { goiGemini, HAN_GIAY_ANH } from './gemini.js';
 import { PROJ, soatKichBan } from './proj.js';
+import { soatChatLuong } from '../web/soat.js';
 
 /* 23 loại có mẫu thật trong kho clip. `video` không có mẫu nên không mời AI dùng
    — món đó cần file phim có thật, AI đoán tên file là ra món hỏng. */
@@ -88,6 +89,12 @@ MÀU — ĐỌC THẲNG TỪ ẢNH, đây là việc quan trọng bậc nhất.
     \`ink\`   màu chữ của một khối  (text, và mọi món có chữ bên trong)
   Nền cả khung: nếu ảnh có màu nền rõ rệt, đặt món ĐẦU TIÊN là
     {"kind":"panel","id":"nen-khung","x":0,"y":0,"place":"day","fill":"<màu nền của ảnh>"}
+  TƯƠNG PHẢN LÀ BẮT BUỘC. Trước khi chốt \`ink\` cho một món, nhìn xem PHÍA SAU
+  nó là gì — \`fill\` của khối bọc ngoài, hoặc màu nền khung nếu không có khối
+  nào. Nền TỐI thì chữ phải SÁNG; nền SÁNG thì chữ phải TỐI. Đừng đặt #333 lên
+  #222. Đây là lỗi hay gặp nhất, và nó làm cả cảnh không đọc được dù mọi thứ
+  khác đúng.
+
   Bảng màu sẵn của clip chỉ là ĐƯỜNG LÙI, dùng khi ảnh mờ hoặc không rõ màu:
     nền ${meta.bg} · chữ ${meta.ink} · nhấn ${meta.accent}${meta.accent2 ? ` · nhấn 2 ${meta.accent2}` : ''}${meta.hot ? ` · nóng ${meta.hot}` : ''}
 
@@ -167,15 +174,40 @@ export async function dungCanh({ doc, anh, mime, y }) {
      Hai bộ soát khác nhau là sớm muộn cũng lệch, và lúc đó AI sinh ra thứ qua
      được cửa này nhưng không lưu được. */
   const thu = (c) => soatKichBan({ version: 1, meta, scenes: [c] });
+
+  /* TẦNG SOÁT THỨ HAI, đưa vào vòng sửa của AI.
+     `validateScene` chỉ hỏi "kịch bản có HỢP LỆ không". Một cảnh chữ đen đặt
+     trên nền đen thì hợp lệ hoàn toàn — và không đọc được chữ nào. Bảng soát
+     chất lượng của app bắt đúng lỗi đó từ lâu (`CHU_CHIM_NEN`,
+     `TUONG_PHAN_THAP`), chỉ là AI chưa bao giờ được xem. Nay đưa cho nó.
+     Dùng CHÍNH `soatChatLuong` mà bảng bên phải đang dùng — hai bộ soát khác
+     nhau là sớm muộn cũng nói khác nhau, và lúc đó AI sửa xong bảng vẫn kêu.
+     CHỈ lấy nhóm tương phản: lời than về nhịp hay khổ hình thì AI sửa được ít
+     mà dễ làm hỏng chỗ đang đúng. */
+  const soatChu = (c) => {
+    try {
+      return (soatChatLuong({ version: 1, meta, scenes: [c] }).loi || [])
+        .filter((l) => l.ma === 'CHU_CHIM_NEN' || l.ma === 'TUONG_PHAN_THAP')
+        .map((l) => l.cau);
+    } catch { return []; }   // bộ soát hỏng thì đừng kéo cả tính năng theo
+  };
+
   let vanDe = await thu(r.canh);
+  let chimNen = soatChu(r.canh);
   let daSua = false;
 
-  if (vanDe.length) {
-    // Cho đúng MỘT lượt sửa. Sai hai lần thì lượt ba cũng không khá hơn, chỉ tốn thêm thời gian.
-    const r2 = await goi(vanDe, r.canh);
+  if (vanDe.length || chimNen.length) {
+    // Cho đúng MỘT lượt sửa. Sai hai lần thì lượt ba cũng không khá hơn.
+    const r2 = await goi([...vanDe, ...chimNen], r.canh);
     if (!r2.loi && r2.canh) {
       const v2 = await thu(r2.canh);
-      if (v2.length < vanDe.length) { r = r2; vanDe = v2; daSua = true; }
+      const c2 = soatChu(r2.canh);
+      /* Nhận bản sửa khi TỔNG số chỗ hỏng giảm. So riêng từng nhóm thì gặp ca
+         sửa được tương phản mà sinh thêm một lỗi định dạng, và lúc đó không
+         biết chọn bản nào. */
+      if (v2.length + c2.length < vanDe.length + chimNen.length) {
+        r = r2; vanDe = v2; chimNen = c2; daSua = true;
+      }
     }
   }
 
@@ -183,8 +215,14 @@ export async function dungCanh({ doc, anh, mime, y }) {
     ok: vanDe.length === 0,
     canh: r.canh,
     vanDe,
+    chimNen,
     model: r.model,
     daSua,
-    cau: vanDe.length ? `Cảnh AI dựng còn ${vanDe.length} chỗ chưa hợp lệ.` : null,
+    /* `ok` CHỈ nhìn tầng soát định dạng. Tương phản kém vẫn là cảnh hợp lệ, và
+       người dùng có quyền cố tình làm vậy — luật ở mục 5.1 CLAUDE.md: "Tầng hai
+       KHÔNG bao giờ được chặn lưu". Nên chữ chìm chỉ báo ra, không hạ `ok`. */
+    cau: vanDe.length ? `Cảnh AI dựng còn ${vanDe.length} chỗ chưa hợp lệ.`
+      : chimNen.length ? `Dựng xong, nhưng còn ${chimNen.length} chỗ chữ chìm vào nền.`
+        : null,
   };
 }
