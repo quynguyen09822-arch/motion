@@ -136,6 +136,18 @@ body {
 .cot-trai { width: var(--cot-trai, 272px); }
 .cot-phai { width: var(--cot-phai, 316px); }
 
+/* ẨN HẲN MỘT CỘT — xem `web/cot.js`.
+   Giấu cả tay nắm kéo đi cùng: để lại một tay nắm cạnh chỗ trống thì kéo nó ra
+   cái gì? Và `display:none` chứ không phải bề rộng 0 — cột bề rộng 0 vẫn ăn
+   `Tab`, người dùng bàn phím sẽ đi lạc vào một cột vô hình. */
+#app[data-an-trai="1"] .cot-trai,
+#app[data-an-trai="1"] .keo-cot[data-cot="trai"],
+#app[data-an-phai="1"] .cot-phai,
+#app[data-an-phai="1"] .keo-cot[data-cot="phai"] { display: none; }
+
+/* Nút đang bật thì sáng màu nhấn — người dùng phải biết vì sao cột biến mất. */
+.nut-tron[aria-pressed="true"] { color: var(--nhan); background: var(--nhan-nhe); }
+
 /* ---------- tay nắm kéo cột ---------- */
 /* Vạch mảnh 4px nhưng vùng bấm rộng 12px: tay nắm đúng 4px thì phải ngắm mới
    trúng. Nới bằng đệm ngang rồi kéo lề âm cho nó không chiếm thêm chỗ. */

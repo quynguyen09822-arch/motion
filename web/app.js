@@ -73,6 +73,10 @@ function keoDoiCho({ canhId, monId, dichId, kieu }) {
 }
 
 let clips = [], clipDangMo = null, chon = null, dangKeoThanh = false;
+/* Khai SỚM dù mãi cuối file mới dựng. `datChon` ở ngay dưới đây có hỏi tới nó,
+   mà `const` khai muộn thì `cot?.` vẫn ném ReferenceError chứ không trả
+   `undefined` — optional chaining không cứu được vùng chết của `const`/`let`. */
+let cot = null;
 
 const bangXuat = taoBangXuat($('bang-xuat'), {
   laySlug: () => kho.slug(),
@@ -133,6 +137,12 @@ function veLopPhu() {
 /* ---------- chọn ---------- */
 function datChon(c) {
   chon = c;
+  /* ĐANG DỌN MÀN HÌNH MÀ BẤM CHỌN MỘT MÓN → tự mở lại bảng chỉnh.
+     Không mở thì người dùng bấm trúng món, thấy khung chọn hiện ra, rồi ngồi
+     đợi một bảng núm không bao giờ tới — và không có gì trên màn hình nói cho
+     họ biết bảng ấy đang bị giấu. Chỉ mở CỘT PHẢI: cột trái là danh sách, giấu
+     nó đi không cản trở việc vặn núm. */
+  if (c?.monId && cot?.dangAn('phai')) { cot.datAn('phai', false); veNutCot(); }
   bang.dat(c);
   /* Thẻ "Sửa món" phải hiện đúng món đang chọn. Không báo cho nó biết thì nó
      nói tên món cũ, và người dùng bảo AI sửa nhầm một món khác. */
@@ -750,9 +760,34 @@ function thoiKhoTho() {
 addEventListener('resize', () => { if (clipDangMo && clipDangMo.doi !== 2) vuaKhoTho(); });
 
 /* ---------- kéo đổi bề rộng hai cột ---------- */
-taoKeoCot($('app'), document.querySelector('.than'), () => {
+cot = taoKeoCot($('app'), document.querySelector('.than'), () => {
   if (clipDangMo && clipDangMo.doi !== 2) vuaKhoTho();
 });
+
+/* ---------- ẩn/hiện hai cột ----------
+ * Hai cột hẹp nhất vẫn chiếm 380px không bao giờ trả lại; trên màn laptop 1280
+ * thì clip còn chưa tới nửa màn hình. Lúc xem lại thành quả thì không cần núm
+ * nào cả — xem `docs/KHONG-GIAN-LAM-VIEC.md`. */
+function veNutCot() {
+  for (const [id, ben] of [['cot-trai-an', 'trai'], ['cot-phai-an', 'phai']]) {
+    const n = $(id);
+    if (!n) continue;
+    const an = cot.dangAn(ben);
+    n.setAttribute('aria-pressed', an ? 'true' : 'false');
+    const ten = ben === 'trai' ? 'cột trái' : 'cột phải';
+    n.title = `${an ? 'Hiện' : 'Ẩn'} ${ten} (\\)`;
+    n.setAttribute('aria-label', `${an ? 'Hiện' : 'Ẩn'} ${ten}`);
+  }
+  /* Cột đổi bề rộng thì khung xem đổi theo, mà lớp phủ vẽ khung chọn nằm ở
+     trang cha và tính theo toạ độ màn hình — không vẽ lại là khung chọn lệch
+     hẳn khỏi món. Cùng lý do `khiDoi` của `taoKeoCot`. */
+  veLopPhu();
+  if (clipDangMo && clipDangMo.doi !== 2) vuaKhoTho();
+}
+veNutCot();
+
+$('cot-trai-an').onclick = () => { cot.doiAn('trai'); veNutCot(); };
+$('cot-phai-an').onclick = () => { cot.doiAn('phai'); veNutCot(); };
 
 /*
  * KHUNG XEM ĐỔI CỠ → VẼ LẠI LỚP PHỦ.
@@ -891,7 +926,11 @@ chonClip.onchange = () => {
 };
 
 document.addEventListener('keydown', (e) => {
-  const trongO = e.target.matches('input, select, textarea');
+  /* `?.matches?.()` chứ không `e.target.matches()`: đích của một sự kiện bàn
+     phím không phải lúc nào cũng là phần tử (gửi thẳng vào `document` là một
+     ca), và `matches` không có ở đó thì cả bộ bắt phím ném lỗi — nghĩa là
+     Ctrl+S, Ctrl+Z cùng chết im trong lần bấm ấy. */
+  const trongO = Boolean(e.target?.matches?.('input, select, textarea'));
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') { e.preventDefault(); return luu(); }
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
     e.preventDefault();
@@ -909,6 +948,14 @@ document.addEventListener('keydown', (e) => {
   if (e.code === 'Space') { e.preventDefault(); nutChay.click(); }
   if (e.key === 'ArrowLeft') player.tua(player.giay() - (e.shiftKey ? 1 : 0.1));
   if (e.key === 'ArrowRight') player.tua(player.giay() + (e.shiftKey ? 1 : 0.1));
+  /* Phím gạch ngược dọn sạch màn hình. KHÔNG dùng `Tab`: Tab là đường đi giữa các ô nhập
+     của bảng chỉnh, cướp nó là mất luôn cách dùng bằng bàn phím. */
+  if (e.key === '\\') {
+    e.preventDefault();
+    const trong = cot.doiTrong();
+    veNutCot();
+    return bao(trong ? 'Đã dọn màn hình — bấm phím \\ để lấy lại hai cột.' : 'Đã trả hai cột về chỗ cũ.');
+  }
   if (e.key === 'Escape') datChon({ canhId: chon?.canhId });
   if ((e.key === 'Delete' || e.key === 'Backspace') && chon?.monId) {
     e.preventDefault(); $('mon-xoa').click();

@@ -33,6 +33,20 @@
          không phải thanh dưới: thanh dưới là điều khiển phát phim. -->
     <span id="o-tai-khoan" class="o-tai-khoan"></span>
 
+    <!-- Ẩn/hiện hai cột. Nút nằm ở THANH TRÊN chứ không nằm trong chính cột nó
+         điều khiển: nút nằm trong cột thì ẩn cột xong nút biến mất theo, và
+         người dùng không còn đường nào mở lại ngoài việc đoán ra phím tắt. -->
+    <span class="nhom-nut">
+      <button id="cot-trai-an" class="nut-tron" type="button" aria-pressed="false"
+              title="Ẩn cột trái (\)" aria-label="Ẩn cột trái">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="2" y="3" width="12" height="10" rx="2"/><path d="M6.5 3v10"/></svg>
+      </button>
+      <button id="cot-phai-an" class="nut-tron" type="button" aria-pressed="false"
+              title="Ẩn cột phải (\)" aria-label="Ẩn cột phải">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="2" y="3" width="12" height="10" rx="2"/><path d="M9.5 3v10"/></svg>
+      </button>
+    </span>
+
     <span class="nhom-nut">
       <button id="nut-lui" class="nut-tron" type="button" title="Hoàn tác (Ctrl+Z)" aria-label="Hoàn tác"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6 4L2.5 7.5 6 11"/><path d="M2.5 7.5h7a4 4 0 0 1 0 8H8"/></svg></button>
       <button id="nut-toi" class="nut-tron" type="button" title="Làm lại (Ctrl+Shift+Z)" aria-label="Làm lại"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10 4l3.5 3.5L10 11"/><path d="M13.5 7.5h-7a4 4 0 0 0 0 8H8"/></svg></button>
