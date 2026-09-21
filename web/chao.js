@@ -180,6 +180,10 @@ async function napKho() {
 
   $('dang-nap').classList.add('an');
   $('dem-kho').textContent = duAn.length || '';
+  /* Cảnh báo mất dữ liệu đặt ngay trên lưới dự án, không nhét xuống chân trang:
+     nó nói về chính mấy cái thẻ người dùng đang nhìn. */
+  if (k.canhBaoOLuu) veCanhBao(k.canhBaoOLuu);
+
   $('ai-kho').textContent = k.laGoc
     ? 'kho gốc — chứa toàn bộ clip sẵn có của dự án'
     : `kho riêng của ${k.email || 'bạn'} — không ai khác nhìn thấy`;
@@ -191,6 +195,22 @@ async function napKho() {
   luoiCu.innerHTML = '';
   for (const c of doiCu) luoiCu.appendChild(veThe(c));
   $('boc-doi-cu').classList.toggle('an', doiCu.length === 0);
+}
+
+/** Dải cảnh báo đỏ: kho riêng chưa nằm trên ổ lưu bền. */
+function veCanhBao(lyDo) {
+  const o = document.createElement('div');
+  o.className = 'canh-bao';
+  o.setAttribute('role', 'alert');
+  const b = document.createElement('b');
+  b.textContent = 'Dự án trong kho này CHƯA được lưu bền.';
+  const p = document.createElement('p');
+  /* Nói thẳng hậu quả, không nói tên lỗi. "Chưa gắn volume" là câu của người
+     dựng máy chủ; "mất hết khi dựng lại" mới là câu của người đang làm việc. */
+  p.textContent = `${lyDo}. Dựng lại ứng dụng một lần là mất hết dự án ở đây, `
+    + 'và không có bản sao nào khác. Báo người dựng máy chủ gắn ổ lưu vào /app/kho.';
+  o.append(b, p);
+  $('kho').insertBefore(o, $('luoi'));
 }
 
 /* ---------- ô tạo dự án ---------- */

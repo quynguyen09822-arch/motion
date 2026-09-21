@@ -141,10 +141,16 @@ chiếu lại: chạy xong `scenes/` phải y nguyên từng tên file.
 
 ## Giới hạn thật, nói thẳng
 
-- **`kho/` mất khi dựng lại container.** Cùng đúng một lỗ với clip trong
-  `clip/scenes` — vibehost chưa có công cụ gắn ổ lưu trong MCP. Với kho gốc thì
-  còn `.hub-video-backups` của bản chạy trước; với kho riêng thì **không còn gì
-  cả**. Đây là việc phải làm trước khi mời người thứ hai vào dùng thật.
+- **`kho/` phải gắn ổ lưu, nếu không mất hẳn khi dựng lại container.** Với kho
+  gốc thì còn `.hub-video-backups` và bản chụp hằng ngày làm phao; với kho riêng
+  thì `kho/` là **nơi duy nhất trên đời**. `docker-compose.yml` đã khai sẵn
+  `motion-kho:/app/kho` — đừng bỏ dòng đó.
+
+  App **tự dò và hét lên** nếu thiếu: `oLuuBenVung()` đọc `/proc/self/mountinfo`
+  xem `/app/kho` có phải điểm gắn không, rồi báo ở log khởi động và bằng một dải
+  đỏ ngay trên lưới dự án. Chỉ báo khi đủ ba điều kiện — kho riêng đang bật, đang
+  chạy trong container, và thư mục chưa gắn ổ — vì một lời báo sai dạy người dùng
+  rằng chỗ này nói nhảm, và từ đó họ bỏ qua cả lời báo đúng.
 - **Xuất video trong kho riêng chưa chạy được.** Bộ xuất mở khung xem bằng
   Chromium *không có vé đăng nhập*, nên trang bị cửa chặn. Đây **không phải lỗi
   mới**: từ khi có đăng nhập thì mọi lần xuất trên máy chủ có mật khẩu đều đã

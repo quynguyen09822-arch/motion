@@ -22,7 +22,7 @@ import { aiDangVao, daDatMatKhau, dangBiKhoa, datCookie, diaChi, dsTaiKhoan, duo
   duoiEmail, ghiSai, kiemEmail, kiemMatKhau, taoVe, xoaCookie, xoaSai } from './dangnhap.js';
 import { canhMau } from './canhmau.js';
 import { danhSachClip, docClip, duongDanXem, locSlug } from './clips.js';
-import { chuKho, khoCua, soDuAn } from './kho.js';
+import { chuKho, khoCua, oLuuBenVung, soDuAn } from './kho.js';
 import { KHO_HINH, taoDuAn } from './duan.js';
 import { chupBanGoc, lichSu } from './backup.js';
 import { khoiPhuc, luuClip } from './save.js';
@@ -234,9 +234,13 @@ const server = http.createServer(async (req, res) => {
     /* ---------- KHO DỰ ÁN ---------- */
     /* Trang chào hỏi đường này để biết bày gì: tên người, kho nào, có dự án chưa. */
     if (p === '/api/kho' && req.method === 'GET') {
+      const oLuu = oLuuBenVung();
       return json(res, 200, { ok: true, email: kho.email || null, ma: kho.ma,
         laGoc: kho.laGoc, soDuAn: soDuAn(kho), khoHinh: KHO_HINH,
-        coMatKhau: daDatMatKhau() });
+        coMatKhau: daDatMatKhau(),
+        /* Chỉ gửi ra khi THẬT SỰ có chuyện. Gửi kèm cả lúc bình thường thì giao
+           diện phải tự đoán nên hiện hay không, và chỗ đoán ấy sẽ đoán sai. */
+        canhBaoOLuu: oLuu.hopLe ? null : oLuu.lyDo });
     }
 
     if (p === '/api/du-an' && req.method === 'POST') {
@@ -660,5 +664,14 @@ server.listen(PORT, '0.0.0.0', () => {
     console.log(c
       ? `   Kho riêng:  bật — chủ kho là ${c}, người khác có kho riêng trong kho/`
       : '   Kho riêng:  tắt — chưa khai MOTION_TAI_KHOAN nên mọi người dùng chung kho gốc');
+    /* Hét to ngay lúc khởi động, không nép vào một dòng info: đây là ca mất dữ
+       liệu không lấy lại được, và người triển khai chỉ nhìn log đúng lúc này. */
+    const oLuu = oLuuBenVung();
+    if (!oLuu.hopLe) {
+      console.error(`\n⚠️  NGUY: ${oLuu.lyDo}.`);
+      console.error('   Dự án của mọi tài khoản KHÔNG phải chủ kho sẽ mất hẳn khi dựng lại');
+      console.error('   container — kho riêng không có bản sao nào khác. Gắn volume vào');
+      console.error('   /app/kho rồi chạy lại. Xem docs/KHO-RIENG.md.\n');
+    }
   }
 });

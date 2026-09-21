@@ -32,7 +32,7 @@
  *   người dùng của công cụ này không làm được.
  */
 import { createHash } from 'node:crypto';
-import { existsSync, mkdirSync, readdirSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { PROJ, SCENES } from './proj.js';
@@ -125,4 +125,43 @@ export function moKho(kho) {
 export function soDuAn(kho) {
   if (!existsSync(kho.scenes)) return 0;
   return readdirSync(kho.scenes).filter((t) => t.endsWith('.json')).length;
+}
+
+/* ---------- ổ lưu có bền không ---------- */
+
+/**
+ * KHO RIÊNG CÓ ĐANG NẰM TRÊN Ổ LƯU BỀN KHÔNG.
+ *
+ * Kho gốc mất thì còn `.hub-video-backups` và bản chụp hằng ngày làm phao. Kho
+ * riêng thì `kho/` là NƠI DUY NHẤT trên đời giữ dự án của người không phải chủ
+ * kho — dựng lại container mà không gắn ổ là mất sạch, không có bản nào khác.
+ *
+ * Nên phải nói TRƯỚC khi mất, chứ không phải sau.
+ *
+ * CHỈ BÁO KHI CHẮC, và ba điều kiện phải đủ cả:
+ *   1. kho riêng đang bật (có khai `MOTION_TAI_KHOAN`) — không thì chẳng ai có
+ *      kho riêng để mà mất;
+ *   2. đang chạy trong container — ở máy làm việc thì thư mục nằm trên đĩa thật,
+ *      báo là báo nhảm;
+ *   3. `kho/` không phải một điểm gắn ổ.
+ *
+ * Thà im khi không chắc còn hơn báo sai: mỗi lời báo sai dạy người dùng rằng
+ * chỗ này nói nhảm, và từ đó họ bỏ qua cả lời báo đúng.
+ */
+export function oLuuBenVung() {
+  if (!chuKho()) return { hopLe: true, lyDo: 'chưa bật kho riêng' };
+  /* `/.dockerenv` là dấu Docker để lại trong mọi container. Không thấy thì coi
+     như đang ở máy thật — im lặng. */
+  if (!existsSync('/.dockerenv')) return { hopLe: true, lyDo: 'không chạy trong container' };
+
+  let mount = '';
+  try { mount = readFileSync('/proc/self/mountinfo', 'utf8'); }
+  catch { return { hopLe: true, lyDo: 'không đọc được bảng ổ đĩa' }; }
+
+  /* Cột thứ 5 của mỗi dòng trong `mountinfo` là ĐIỂM GẮN. So đúng cả dòng, không
+     dùng `includes` trên cả file: `/app/kho-cu` cũng chứa chuỗi `/app/kho`. */
+  const gan = mount.split('\n').some((dong) => dong.split(' ')[4] === GOC_KHO);
+  return gan
+    ? { hopLe: true, lyDo: 'đã gắn ổ lưu' }
+    : { hopLe: false, lyDo: `"${GOC_KHO}" chưa gắn ổ lưu` };
 }
