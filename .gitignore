@@ -19,6 +19,11 @@ __pycache__/
 # Mật khẩu (băm) và khoá ký phiên đăng nhập — KHÔNG bao giờ commit
 .env
 .env.*
+# KHÔNG mở ngoại lệ cho `.env.example`. Em đã thử và nó LÀM SẬP BẢN CHẠY THẬT:
+# vibehost quét repo thấy file mẫu rồi coi mọi biến trong đó là BẮT BUỘC, và lượt
+# triển khai kế tiếp hỏng ở chặng Containerization với "thiếu MOTION_DUOI_EMAIL"
+# — dù biến ấy đã khai sẵn trên máy chủ. Muốn người mới biết phải khai gì thì ghi
+# vào README, đừng để file mẫu nằm trong repo.
 mcp-stitch.json.txt
 
 # Nhật ký lượt dùng — dữ liệu chạy.
