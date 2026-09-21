@@ -17,7 +17,7 @@ import { taoLopPhu } from './overlay.js';
 import { taoDanhSach } from './layers.js';
 import { taoBang, tenMon } from './inspector/index.js';
 import { ganKeo } from './drag.js';
-import { BO_KIT, BO_MON, KIT, MAU_MON, nhanBanCanh, nhanBanMon, themCanh, themKit, themMon, xoaCanh, xoaMon } from './them.js';
+import { BO_KIT, BO_MON, KIT, MAU_MON, doiChoHopLe, doiChoMon, nhanBanCanh, nhanBanMon, themCanh, themKit, themMon, xoaCanh, xoaMon } from './them.js';
 import { taoBangXuat } from './exportpanel.js';
 import { taoKhung } from './khung.js';
 import { taoBangVideo } from './videos.js';
@@ -49,7 +49,28 @@ const dsLop = taoDanhSach($('ds-lop'), {
   onChon: (c) => datChon(c),
   onRe: (c) => lopPhu.veRe(c.canhId, c.monId),
   onThoiRe: () => lopPhu.xoaRe(),
+  onDoiCho: keoDoiCho,
 });
+
+/**
+ * Kéo đổi chỗ trong cột thành phần.
+ *
+ * HỎI HỢP LỆ TRƯỚC, SỬA SAU. `kho.sua()` ghi một bước hoàn tác ngay cả khi việc
+ * bên trong không làm gì — thả bậy một cái mà vẫn ghi sổ thì người dùng phải
+ * bấm hoàn tác cho một chuyện chưa từng xảy ra, và sổ hoàn tác mất tin cậy.
+ */
+function keoDoiCho({ canhId, monId, dichId, kieu }) {
+  const doc = kho.doc();
+  if (!doc || !doiChoHopLe(doc, canhId, monId, dichId, kieu)) return;
+  const t = timMon(doc, canhId, monId);
+  const ten = t ? tenMon(t.el) : 'thành phần';
+  kho.sua(`kéo ${ten} đổi chỗ`, (d) => doiChoMon(d, canhId, monId, dichId, kieu));
+  /* Chọn lại đúng món vừa kéo: `datChon` cũng là đường vẽ lại danh sách, nên
+     một lời gọi lo cả hai việc. Không chọn lại thì món vừa kéo mất khung chọn
+     và người dùng tưởng mình vừa làm hỏng cái gì. */
+  datChon({ canhId, monId });
+  bao(kieu === 'vao' ? `Đã đưa ${ten} vào cụm.` : `Đã đổi chỗ ${ten}.`);
+}
 
 let clips = [], clipDangMo = null, chon = null, dangKeoThanh = false;
 
@@ -822,8 +843,31 @@ async function luu() {
 
 nutChay.onclick = () => (player.dangChay() ? player.dung() : player.chay());
 nutLuu.onclick = luu;
-nutLui.onclick = () => { const n = kho.hoanTac(); if (n) { bang.ve(); bao(`Đã hoàn tác: ${n}`); } };
-nutToi.onclick = () => { const n = kho.lamLai(); if (n) { bang.ve(); bao(`Đã làm lại: ${n}`); } };
+/* Hoàn tác / làm lại có thể đổi CẢ HÌNH DẠNG CÂY, không chỉ đổi giá trị núm:
+   lùi một bước "kéo đổi chỗ" hay "xoá thành phần" là danh sách bên trái phải
+   khác đi. Trước đây hai nút này chỉ vẽ lại bảng thuộc tính, nên kịch bản đã lùi
+   đúng mà cột thành phần vẫn bày thứ tự cũ — danh sách nói dối, và người dùng
+   bấm vào một hàng không còn tồn tại.
+
+   Không vẽ lại trong tay nghe chung của kho: tay nghe đó chạy theo TỪNG PHÍM gõ
+   vào ô chữ, mà vẽ lại danh sách là dựng lại tới 156 hàng. Hai nút này người
+   dùng bấm, hiếm, nên vẽ thẳng ở đây là đúng chỗ. */
+function veLaiCot(nhan) {
+  bang.ve();
+  const doc = kho.doc();
+  if (doc && chon?.canhId) {
+    /* Món đang chọn có thể vừa biến mất theo bước hoàn tác — bỏ chọn nó đi chứ
+       đừng giữ một lựa chọn trỏ vào hư không. */
+    if (chon.monId && !timMon(doc, chon.canhId, chon.monId)) chon = { canhId: chon.canhId };
+    dsLop.dat(chon);
+    dsLop.ve(doc, chon.canhId);
+  }
+  veLopPhu();
+  bao(nhan);
+}
+
+nutLui.onclick = () => { const n = kho.hoanTac(); if (n) veLaiCot(`Đã hoàn tác: ${n}`); };
+nutToi.onclick = () => { const n = kho.lamLai(); if (n) veLaiCot(`Đã làm lại: ${n}`); };
 
 thanhTua.oninput = () => { dangKeoThanh = true; player.tua((Number(thanhTua.value) / 1000) * player.thoiLuong()); };
 thanhTua.onchange = () => { dangKeoThanh = false; };

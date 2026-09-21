@@ -335,6 +335,74 @@ export function nhanBanMon(doc, canhId, monId) {
   return banSao.id;
 }
 
+/* ---------- đổi chỗ trong cây lớp ---------- */
+
+/** Mọi id nằm trong một nhánh, kể cả chính gốc nhánh. */
+function hoHang(el) {
+  const ra = new Set([el.id]);
+  const dao = (e) => { for (const c of e.children || []) { ra.add(c.id); dao(c); } };
+  if (el.kind === 'group') dao(el);
+  return ra;
+}
+
+/**
+ * Cú thả này có hợp lệ không. Phải hỏi TRƯỚC khi gọi `kho.sua()`: `sua()` ghi
+ * một bước hoàn tác ngay cả khi việc bên trong không làm gì, nên thả bậy một
+ * cái là người dùng phải bấm hoàn tác một lần cho một chuyện chưa từng xảy ra.
+ *
+ * @param kieu 'truoc' | 'sau' (thành anh em của `dichId`) · 'vao' (thành con của
+ *             cụm `dichId`) · 'cuoi' (xuống cuối danh sách ngoài cùng, `dichId`
+ *             bỏ trống)
+ */
+export function doiChoHopLe(doc, canhId, monId, dichId, kieu) {
+  if (!monId) return false;
+  const t = timMon(doc, canhId, monId);
+  if (!t) return false;
+  if (kieu === 'cuoi') return true;
+  if (!dichId || dichId === monId) return false;
+  const d = timMon(doc, canhId, dichId);
+  if (!d) return false;
+  /* Thả một cụm vào chính con cháu của nó thì cây tự ăn lấy mình: nhánh ấy biến
+     mất khỏi cảnh mà vẫn còn trong bộ nhớ, và `validateScene` không bắt được vì
+     thứ nó soát là cái còn lại. */
+  if (hoHang(t.el).has(dichId)) return false;
+  if (kieu === 'vao' && d.el.kind !== 'group') return false;
+  return true;
+}
+
+/**
+ * Kéo một thành phần sang chỗ khác trong cây lớp.
+ *
+ * Thứ tự trong mảng CHÍNH LÀ thứ tự vẽ: món đứng sau nằm đè lên món đứng trước,
+ * và chỉ số của nó cũng là bậc trễ khi cảnh có `stagger`. Nên đổi chỗ ở đây
+ * không phải chuyện sắp xếp cho gọn mắt — nó đổi cả hình lẫn nhịp.
+ */
+export function doiChoMon(doc, canhId, monId, dichId, kieu) {
+  if (!doiChoHopLe(doc, canhId, monId, dichId, kieu)) return false;
+  const canh = timCanh(doc, canhId);
+  const t = timMon(doc, canhId, monId);
+  const el = t.el;
+
+  /* GỠ TRƯỚC, TÌM CHỖ ĐẶT SAU. Làm ngược lại thì chỉ số đã tính xong bị lệch
+     đúng lúc gỡ, và món nhảy sai một ô — lỗi chỉ lộ ra khi kéo xuống dưới, tức
+     đúng nửa số lần dùng. */
+  const dsCu = t.cha ? t.cha.children : canh.elements;
+  dsCu.splice(dsCu.indexOf(el), 1);
+
+  if (kieu === 'cuoi') { canh.elements.push(el); return true; }
+
+  const d = timMon(doc, canhId, dichId);
+  if (kieu === 'vao') {
+    d.el.children = d.el.children || [];
+    d.el.children.push(el);
+    return true;
+  }
+  const ds = d.cha ? d.cha.children : canh.elements;
+  const i = ds.indexOf(d.el);
+  ds.splice(kieu === 'truoc' ? i : i + 1, 0, el);
+  return true;
+}
+
 /* ---------- cảnh ---------- */
 
 function idCanhMoi(doc, goc = 'canh') {

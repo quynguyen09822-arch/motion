@@ -329,6 +329,30 @@ body:has(.keo-cot.dang-keo) iframe { pointer-events: none; }
 .lop-ten { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .lop-dau { margin-left: auto; font-size: 10px; color: var(--chu-mo-2); flex: none; }
 .lop-hang.dang .lop-dau { color: var(--tren-nhan); opacity: .7; }
+
+/* ---------- KÉO ĐỔI CHỖ TRONG CỘT THÀNH PHẦN ----------
+   Thứ tự trong danh sách chính là thứ tự vẽ, nên kéo ở đây đổi cả hình lẫn
+   nhịp bay vào. Vạch chỉ dẫn phải nói rõ SẼ RƠI VÀO ĐÂU trước khi người dùng
+   nhả tay: một vạch mảnh giữa hai hàng là "chen vào giữa", còn cả hàng sáng
+   lên là "vào trong cụm này". Thiếu phân biệt đó thì kéo vào cụm và kéo qua
+   cụm trông y hệt nhau. */
+.lop-hang { position: relative; }
+.lop-hang.dang-keo { opacity: .4; }
+.lop-hang.tha-tren::before,
+.lop-hang.tha-duoi::after {
+  content: ''; position: absolute; left: 6px; right: 6px; height: 2px;
+  background: var(--nhan); border-radius: 2px; pointer-events: none;
+}
+.lop-hang.tha-tren::before { top: -1px; }
+.lop-hang.tha-duoi::after { bottom: -1px; }
+.lop-hang.tha-vao {
+  background: var(--nhan-nhe);
+  box-shadow: inset 0 0 0 1px var(--nhan);
+  border-radius: var(--bo-nho);
+}
+/* Thả vào chỗ trống dưới danh sách = đem ra ngoài cùng. Đây là đường DUY NHẤT
+   lôi một món ra khỏi cụm, nên nó phải có dấu hiệu riêng. */
+.ds-lop.tha-cuoi { box-shadow: inset 0 -2px 0 var(--nhan); }
 .cot-trai .ds-canh { flex: 0 0 auto; max-height: 34%; }
 
 /* ============ BẢNG THUỘC TÍNH ============ */

@@ -282,6 +282,12 @@ node tools/kiem-kho-mon.mjs         # menu thêm: bày đủ 24 loại + 10 bộ
 npm run kiem:schema                 # CHẶN LỆCH SCHEMA giữa types.ts ↔ schema.js ↔ bộ dựng
 ```
 
+**`node tools/kiem-keo-lop.mjs`** chạy bằng Node trần — canh phép đổi chỗ trong
+cây lớp (kéo thả ở cột thành phần). Thứ tự trong `elements` là thứ tự VẼ và cũng
+là bậc trễ của `stagger`, nên một phép đổi chỗ sai không làm gãy gì cả: kịch bản
+vẫn hợp lệ, clip vẫn chạy, chỉ SAI HÌNH — kiểu hỏng không ai bắt được cho tới lúc
+xuất video.
+
 **`node tools/kiem-kho-rieng.mjs`** cũng chạy bằng Node trần — 44 mục, tự dựng hai
 máy chủ ở cổng 7894/7895, canh chuyện mỗi tài khoản một kho. Luật của chính nó:
 **không bao giờ ghi với tư cách chủ kho**, vì kho của chủ kho chính là `scenes/`
