@@ -1282,3 +1282,11 @@ a.nut svg { fill: none; stroke: currentColor; stroke-width: 1.6;
  */
 body.doi-cu .cot-trai,
 body.doi-cu .keo-cot[data-cot="trai"] { display: none; }
+
+/* Dòng chỉ đường dưới ô gõ của bảng "Sửa món" — chỉ hiện khi người dùng đã gõ.
+   Nói trước lúc họ chưa định làm gì là một dòng chữ thừa. */
+.sua-chi-duong {
+  margin: 6px 2px 0; font-size: var(--chu-nho); line-height: 1.5;
+  color: var(--chu-mo);
+}
+.sua-chi-duong.sua-can { color: #ffb4b4; }

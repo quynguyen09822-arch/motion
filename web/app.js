@@ -525,6 +525,12 @@ const thanhAI = taoThanhAI({
   dungKhungSua: (boc) => taoSuaMon(boc, {
     laySlug: () => kho.slug(),
     layChon: () => chon,
+    /* AI sửa món đọc bản ĐÃ LƯU trên máy chủ, không đọc bản đang mở. Đưa cờ này
+       vào để bảng tự chặn và nói rõ, thay vì để người dùng bấm rồi nhận
+       "Không thấy thành phần đang chọn" trong khi tên món đang hiện ngay trước
+       mắt họ. `kho.ban()` là tên thật của hàm — đừng viết `kho.chuaLuu?.()`,
+       optional chaining sẽ nuốt luôn cái sai. */
+    chuaLuu: () => kho.ban(),
     tenMon: (c) => {
       const t = timMon(kho.doc(), c.canhId, c.monId);
       return t ? tenMon(t.el) : c.monId;

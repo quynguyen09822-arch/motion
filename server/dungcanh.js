@@ -166,7 +166,12 @@ export async function dungCanh({ doc, anh, mime, y }) {
     if (!g.ok) return { loi: g.cau };
     const canh = bocJSON(g.chu);
     if (!canh) return { loi: 'AI trả về thứ không phải JSON.', model: g.model };
-    return { canh, model: g.model };
+    /* Lấp `x`/`y` VẮNG MẶT trước khi soát. Đường HTML đã làm việc này từ đầu,
+       đường ảnh thì quên — và hai đường dùng chung một bộ soát, nên chỗ quên
+       hiện ra thành "phần tử 9: `x` và `y` phải là số", đúng những món nằm
+       trong cụm. Lấp ở ĐÂY chứ không ở ngoài, để cả vòng sửa lại cũng được lấp
+       chứ không riêng lượt đầu. */
+    return { canh: chuanHoaCanh(canh), model: g.model };
   };
 
   let r = await goi();
