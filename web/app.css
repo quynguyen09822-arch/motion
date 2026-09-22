@@ -78,7 +78,13 @@ body {
   margin: 0;
   background: var(--trang-nen);
   color: var(--chu);
-  font: None var(--chu-vua)/1.5 var(--font);
+  /* KHÔNG có phần đậm nhạt ở đây. Bản trước lọt chữ `None` vào đúng chỗ này
+     (`font: None var(--chu-vua)/1.5 …`) — script đổi hàng loạt ghi ra giá trị
+     rỗng của Python. `font:` rút gọn mà sai một từ là trình duyệt VỨT CẢ DÒNG,
+     nên mất luôn cả cỡ chữ lẫn phông, và cả trình sửa rơi về Times New Roman.
+     Hỏng nhìn thấy ngay mà không ai báo, vì CSS không kêu bao giờ.
+     `tools/kiem-chu.mjs` bắt được ca này. */
+  font: var(--chu-vua)/1.5 var(--font);
   height: 100vh;
   overflow: hidden;
   -webkit-font-smoothing: antialiased;
