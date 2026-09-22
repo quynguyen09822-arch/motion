@@ -42,6 +42,7 @@ import { THU_MUC, danhSachVideo as nguonVideo, duongDanThat, locTen, tenBanChuye
 import { chanDoan, docKhung, suaKhung } from './khung.js';
 import { BO, danhSachVideo } from './videos.js';
 import { docJson, json, khop, loi, moSSE } from './router.js';
+import { duongAnh, luuAnh } from './anh.js';
 // Bộ soát nằm trong web/ vì trình duyệt cũng phải tải được nó — xem đầu file đó.
 import { soatChatLuong } from '../web/soat.js';
 
@@ -200,6 +201,30 @@ const server = http.createServer(async (req, res) => {
       // no-store: sửa kịch bản xong bấm F5 phải thấy bản mới, không thấy bản đệm.
       if (guiFile(req, res, path.join(PROJ, rel), { cache: 'no-store' })) return;
       return loi(res, 404, 'Không thấy file trong dự án clip.');
+    }
+
+    /* ---------- ẢNH NGƯỜI DÙNG MANG VÀO ----------
+     * Đường TUYỆT ĐỐI (`/anh/…`), không phải đường tương đối như `public/x.png`
+     * của dự án clip: bộ dựng dùng `src` Y NGUYÊN, mà nó chạy trong iframe mở từ
+     * `/clip/scene-player.html`, nên đường tương đối sẽ đi tìm trong dự án chung
+     * — đúng chỗ ảnh KHÔNG nằm. Đường tuyệt đối thì về thẳng máy chủ này, và nó
+     * biết hỏi đúng kho của người đang đăng nhập.
+     *
+     * Bộ xuất video cũng đi qua đây được: vé xuất đặt cookie ngay ở đầu vòng
+     * xử lý, nên mọi đường con của trang khung xem đều mang vé. */
+    if ((m = khop('/anh/:ten', p)) && req.method === 'GET') {
+      const duong = duongAnh(m.ten, kho);
+      if (!duong) return loi(res, 400, 'Tên ảnh không hợp lệ.');
+      /* Tên file là vân tay nội dung — nội dung đổi thì tên đổi. Nên bản đệm
+         không bao giờ cũ, và đệm được lâu. */
+      if (guiFile(req, res, duong, { cache: 'public, max-age=31536000, immutable' })) return;
+      return loi(res, 404, 'Không thấy ảnh này trong kho của bạn.');
+    }
+
+    if (p === '/api/anh' && req.method === 'POST') {
+      const kq = luuAnh(await docJson(req), kho);
+      if (!kq.ok) return json(res, kq.ma || 400, kq);
+      return json(res, 201, kq);
     }
 
     /* ---------- clip 15 giây đã giao trước đây, giữ link cũ sống ---------- */

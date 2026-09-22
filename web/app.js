@@ -18,6 +18,7 @@ import { taoDanhSach } from './layers.js';
 import { taoBang, tenMon } from './inspector/index.js';
 import { ganKeo } from './drag.js';
 import { ganKeoCo } from './keoco.js';
+import { ganNhapAnh } from './nhapanh.js';
 import { BO_KIT, BO_MON, KIT, MAU_MON, doiChoHopLe, doiChoMon, nhanBanCanh, nhanBanMon, themCanh, themKit, themMon, xoaCanh, xoaMon } from './them.js';
 import { taoBangXuat } from './exportpanel.js';
 import { taoKhung } from './khung.js';
@@ -212,6 +213,16 @@ const keoCo = ganKeoCo({
   layChon: () => chon,
   veLai: veLopPhu,
   sauKhiCo: () => bang.ve(),
+  bao,
+});
+
+/* Dán Ctrl+V hoặc kéo ảnh từ ngoài thả thẳng vào khung hình. Trước đây muốn
+   dùng một tấm ảnh mới thì phải chép file vào máy chủ rồi gõ tay đường dẫn — với
+   người dùng của công cụ này thì coi như không có đường. */
+ganNhapAnh({
+  bocKhung, player, kho,
+  veLai: () => bang.ve(),
+  datChon,
   bao,
 });
 

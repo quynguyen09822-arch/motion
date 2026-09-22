@@ -778,6 +778,22 @@ a.nut svg { fill: none; stroke: currentColor; stroke-width: 1.6;
 /* Đang phóng thì bỏ bo góc và bóng đổ: hai thứ đó bị phóng theo, thành ra viền
    dày cộp và bóng loang lổ ở mức 400%. */
 .boc-khung.dang-phong { border-radius: 0; box-shadow: none; }
+
+/* Đang kéo một tấm ảnh từ ngoài vào: nói rõ THẢ VÀO ĐÂY THÌ ĂN. Không có dấu
+   hiệu nào thì người ta thả vào giữa cửa sổ, trình duyệt mở luôn tấm ảnh thay
+   cả trang, và mất hết những gì chưa lưu. */
+.boc-khung.dang-tha-anh { outline: 3px dashed var(--nhan); outline-offset: -3px; }
+.boc-khung.dang-tha-anh::after {
+  content: 'Thả ảnh vào đây';
+  position: absolute; inset: auto 0 14px; text-align: center;
+  font-size: var(--chu-vua); font-weight: 600; pointer-events: none;
+  color: var(--tren-nhan); 
+}
+.boc-khung.dang-tha-anh::before {
+  content: ''; position: absolute; left: 50%; bottom: 10px; translate: -50% 0;
+  width: 160px; height: 30px; border-radius: 999px; background: var(--nhan);
+  pointer-events: none;
+}
 #san-clip.dang-doi { cursor: grabbing; }
 
 /* ---------- ảnh nhỏ của thành phần (kiểu bảng lớp Photoshop) ---------- */
