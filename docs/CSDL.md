@@ -1,395 +1,220 @@
-# Cấu trúc cơ sở dữ liệu — Motion
+# Cơ sở dữ liệu — Motion
 
-> Soạn 21/09/2026 theo yêu cầu của Quý: một cấu trúc CSDL hoàn chỉnh để trình bày
-> và bảo vệ dự án.
+> Bản 2, soạn 22/09/2026. Thay hẳn bản 1 (21/09), vì **kết luận trung tâm của
+> bản 1 đã sai**.
 >
-> **Đây là THIẾT KẾ, app hiện chưa dùng CSDL.** Mọi thứ đang nằm ở file. Phần
-> cuối nói rõ cái giá của việc chuyển, và vì sao có chỗ **không nên** chuyển.
+> Bản 1 kết luận: *"Thêm CSDL là phá luật zero-dependency của repo. Nếu mục tiêu
+> chỉ là clip không bay khi dựng lại thì gắn ổ lưu là xong."*
+>
+> Chỗ sai: bản ấy chỉ xét đúng **một** loại CSDL — PostgreSQL, kéo theo trình
+> điều khiển `pg` và `node_modules`. **Node 22 có sẵn `node:sqlite`.** Không cài
+> gì, không dựng gì, không thêm một dòng nào vào `package.json`. Luật giữ
+> nguyên, mà vẫn có SQL thật, giao dịch thật, ràng buộc thật.
+>
+> Bản này **có mã chạy được**: lược đồ ở `server/csdl/001-nen-mong.sql`, bộ mở
+> và di trú ở `server/csdl.js`, 45 mục kiểm ở `tools/kiem-csdl.mjs`. App
+> **chưa** dùng — đây là bước 1 trong bốn bước ở mục 6, và bước 1 lùi được bằng
+> cách xoá một file.
 
 ---
 
-## 0. Hiện trạng: app đang lưu ở đâu
+## 1. Ba lỗ hổng có thật mà CSDL vá được
 
-| Thứ | Đang nằm ở | Mất khi dựng lại container? |
+Không phải ba chuyện lý thuyết. Cả ba đều chỉ được ra đúng dòng mã hôm nay.
+
+### 1.1 Hạn mức chi tiêu đếm trong RAM — lỗ TIỀN
+
+`server/hanmuc.js:19` — `const so = new Map()`. Khởi động lại là bộ đếm về 0, ai
+cũng được cấp lại 300 lượt AI và 20.000 ký tự đọc trong cùng một ngày.
+
+Chính file ấy đã ghi lý do: *"Muốn chắc hơn thì phải ghi xuống đĩa, nhưng như
+vậy cần chỗ ghi bền — mà bản chạy trong container thì chưa có."* Ngày 22/09 ta
+gắn ổ lưu cho `kho/`, nên chướng ngại nó nêu đã hết.
+
+**Và còn một chuyện bản 1 không thấy: trần đang đếm theo LƯỢT, không theo TIỀN.**
+Một lượt hỏi 12 token và một lượt dựng cảnh từ ảnh 8.000 token đang được tính
+**như nhau**. Trần "300 lượt/ngày" vì thế vừa quá chặt với việc rẻ vừa quá lỏng
+với việc đắt. Bài kiểm mục 7 dựng đúng ca này: hai lượt, một lượt tốn gấp 80 lần
+lượt kia.
+
+### 1.2 Hàng đợi việc nằm trong RAM
+
+`server/jobs.js:27` — `const viec = new Map()`. Khởi động lại giữa chừng một lượt
+xuất video là việc biến mất, mà trình duyệt vẫn quay vòng chờ mãi không ai trả
+lời.
+
+Bảng `viec` dùng **hợp đồng thuê** (`thue_den`) chứ không dùng cờ "đang chạy": cờ
+không bao giờ tự tắt khi tiến trình chết, còn hợp đồng thì tự hết hạn và việc
+được nhặt lại. Kèm `lan_thu`/`toi_da_thu` để một việc luôn hỏng không thành vòng
+lặp đốt tiền.
+
+### 1.3 Không có bất kỳ phép kiểm xung đột nào — lỗ MẤT VIỆC
+
+`server/save.js` — `luuClip()` ghi thẳng, không hỏi ai. Mở một clip trên hai tab,
+sửa cả hai, bấm Lưu cả hai: **bản sau đè bản trước, im lặng**, và người mất bản
+sửa không hề được báo. (`catBanCu` có cất bản cũ, nên lấy lại được — nhưng chỉ
+khi người ta *biết* mình vừa mất và *biết* chỗ để tìm.)
+
+Cột `du_an.phien_ban` vá đúng chỗ đó: ghi kèm phiên bản đã đọc, không dòng nào
+đổi nghĩa là có người ghi trước → **hỏi người dùng**, đừng tự quyết hộ.
+
+---
+
+## 2. Ba thứ mới nó mở ra
+
+Đây là phần "phát triển mạnh mẽ hơn" — không phải vá lỗi, mà là năng lực hôm nay
+hoàn toàn chưa có.
+
+| Bảng | Mở ra điều gì | Hôm nay đang ra sao |
 |---|---|---|
-| Kịch bản clip | `scenes/<slug>.json` | **có**, nếu không gắn ổ lưu |
-| Kho riêng từng người | `kho/<mã>/scenes/` | **có** |
-| Bản nháp tự lưu | `.drafts/` | **có** |
-| Kho sao lưu | `.hub-video-backups/` | **có** |
-| Nhật ký lượt dùng | `.nhat-ky/dung.jsonl` | **có** |
-| Hạn mức chi tiêu ngày | **chỉ trong bộ nhớ** (`new Map()`) | **có, mỗi lần restart** |
-| Tài khoản + mật khẩu | biến môi trường | không |
-| Video đã xuất | `out/*.mp4` | **có** |
-| Giọng đọc AI | `public/voice/` | **có** |
+| `chia_se` | Cho người khác xem / góp ý / sửa một dự án | Kho riêng **tuyệt đối**. Sếp muốn xem thì phải xuất video gửi đi |
+| `gop_y` | Ghi chú neo vào **đúng cảnh, đúng món, đúng giây** | Góp ý qua chat: *"chữ ở đoạn giữa hơi nhỏ"* — không biết cảnh nào, món nào |
+| `thanh_phan` + `the` | Thư viện thành phần tự cất, có thẻ, có nguồn gốc, đếm lượt dùng | `KIT` ghi **cứng** trong `web/them.js`; thêm một mẫu phải sửa mã rồi triển khai lại |
 
-Hai dòng đáng chú ý:
+Cộng thêm hai thứ nhỏ hơn nhưng đáng kể:
 
-- **Hạn mức chi tiêu nằm trong RAM.** Restart là bộ đếm về 0 — ai cũng được cấp
-  lại 300 lượt AI và 20.000 ký tự đọc. Đây là lỗ thật về chi phí, và là lý do
-  mạnh nhất để có CSDL.
-- **Tài khoản khai bằng biến môi trường.** Thêm một người là phải sửa cấu hình
-  rồi triển khai lại. Không có "quên mật khẩu", không có phân quyền.
+- **`du_an.la_khuon`** — đánh dấu một dự án làm khuôn để nhân bản. Cờ trên chính
+  bảng dự án, không phải bảng riêng: một khuôn **vẫn là** một dự án, mở ra sửa
+  được y như mọi dự án khác.
+- **`tep` + `tep_dung`** — tệp khử trùng theo vân tay (đúng cách `/api/anh` đang
+  làm), cộng thêm thứ file thường không cho: **biết ai đang dùng tệp nào**, nên
+  dọn rác được mà không xoá nhầm. Không có bảng này thì thư mục ảnh chỉ phình
+  lên, không bao giờ nhỏ lại.
 
 ---
 
-## 1. Nguyên tắc: cái gì vào CSDL, cái gì KHÔNG
-
-Đây là phần quan trọng nhất của thiết kế, và cũng là chỗ dễ làm sai nhất.
-
-**Vào CSDL** — thứ cần hỏi, đếm, lọc, hoặc phải đúng khi nhiều người cùng ghi:
-tài khoản, dự án, phiên bản, nhật ký, hạn mức, hàng đợi việc.
-
-**KHÔNG vào CSDL** — file nhị phân lớn: video xuất ra, ảnh, file giọng đọc.
-Chúng đi vào **ổ lưu hoặc kho đối tượng**, CSDL chỉ giữ đường dẫn. Nhét video
-30 MB vào một cột `bytea` là biến bản sao lưu CSDL thành hàng chục GB, và mọi
-truy vấn chậm theo.
-
-**Kịch bản clip dùng `JSONB`, KHÔNG băm nhỏ thành bảng.** Một cảnh có cây thành
-phần lồng nhau nhiều tầng, mỗi loại trong 25 loại lại có bộ trường riêng. Băm ra
-thành `element` / `element_prop` là tự tạo cho mình một bộ ORM để rồi ghép lại
-y như cũ mỗi lần đọc — chậm hơn, và **`validateScene` vẫn là thẩm quyền quyết
-định hợp lệ**, không phải ràng buộc của bảng. PostgreSQL đánh chỉ mục được vào
-trong JSONB khi cần lọc.
-
----
-
-## 2. Sơ đồ quan hệ
+## 3. Sơ đồ
 
 ```
 nguoi_dung ──< kho ──< du_an ──< ban_luu
-     │                   │
-     │                   ├──< ban_nhap   (0..1 mỗi dự án)
-     │                   ├──< viec       (xuất video, kiểm bố cục)
-     │                   └──< tep        (video, giọng đọc, ảnh)
-     │
-     ├──< nhat_ky_dung
-     ├──< han_muc_ngay
+     │          │        ├──── ban_nhap   (0..1 mỗi dự án)
+     │          │        ├──< tep_dung >── tep
+     │          │        ├──< chia_se >── nguoi_dung
+     │          │        ├──< gop_y
+     │          │        └──< viec
+     │          └──< thanh_phan ──< the
+     ├──< nhat_ky        (sổ cái — hạn mức CỘNG từ đây)
      └──< phien
 ```
 
----
-
-## 3. Bảng
-
-### 3.1 `nguoi_dung` — tài khoản
-
-```sql
-CREATE TABLE nguoi_dung (
-  id            BIGSERIAL PRIMARY KEY,
-  email         CITEXT      NOT NULL UNIQUE,      -- không phân biệt hoa thường
-  ten           TEXT        NOT NULL DEFAULT '',
-  mat_khau_bam  TEXT,                             -- scrypt; NULL = chưa đặt
-  vai           TEXT        NOT NULL DEFAULT 'nguoi_dung'
-                CHECK (vai IN ('nguoi_dung', 'quan_tri')),
-  dang_hoat_dong BOOLEAN    NOT NULL DEFAULT TRUE,
-  tao_luc       TIMESTAMPTZ NOT NULL DEFAULT now(),
-  vao_lan_cuoi  TIMESTAMPTZ
-);
-```
-
-`CITEXT` chứ không phải `TEXT`: `Quy@matbao.com` và `quy@matbao.com` là **một
-người**. Để `TEXT` thì hai bản ghi cùng tồn tại và kho bị tách làm đôi.
-
-`mat_khau_bam` cho `NULL` để giữ đúng hành vi hiện tại — chưa đặt mật khẩu thì
-không hỏi ai. Chuỗi rỗng khác `NULL`: rỗng nghĩa là "cố ý không có".
-
-### 3.2 `kho` — kho dự án riêng
-
-```sql
-CREATE TABLE kho (
-  id            BIGSERIAL PRIMARY KEY,
-  chu_id        BIGINT      REFERENCES nguoi_dung(id) ON DELETE RESTRICT,
-  ma            TEXT        NOT NULL UNIQUE,      -- 'goc' hoặc mã băm theo email
-  la_goc        BOOLEAN     NOT NULL DEFAULT FALSE,
-  tao_luc       TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-CREATE UNIQUE INDEX kho_chi_mot_goc ON kho ((la_goc)) WHERE la_goc;
-```
-
-Chỉ được **một** kho gốc — chỉ mục riêng phần lo việc đó, không dựa vào kỷ luật
-của người viết code.
-
-`ON DELETE RESTRICT`: xoá người dùng **không** được kéo theo kho. Muốn xoá thì
-phải xử lý kho trước, có chủ đích.
-
-### 3.3 `du_an` — một clip
-
-```sql
-CREATE TABLE du_an (
-  id            BIGSERIAL PRIMARY KEY,
-  kho_id        BIGINT      NOT NULL REFERENCES kho(id) ON DELETE CASCADE,
-  slug          TEXT        NOT NULL,
-  ten           TEXT        NOT NULL,
-  doc           JSONB       NOT NULL,             -- cả kịch bản: meta + scenes
-  rong          INT         GENERATED ALWAYS AS ((doc->'meta'->>'width')::INT) STORED,
-  cao           INT         GENERATED ALWAYS AS ((doc->'meta'->>'height')::INT) STORED,
-  so_canh       INT         GENERATED ALWAYS AS (jsonb_array_length(doc->'scenes')) STORED,
-  xoa_luc       TIMESTAMPTZ,                      -- xoá mềm, xem ghi chú dưới
-  tao_luc       TIMESTAMPTZ NOT NULL DEFAULT now(),
-  sua_luc       TIMESTAMPTZ NOT NULL DEFAULT now(),
-  sua_boi       BIGINT      REFERENCES nguoi_dung(id),
-  UNIQUE (kho_id, slug)
-);
-CREATE INDEX du_an_kho_moi ON du_an (kho_id, sua_luc DESC) WHERE xoa_luc IS NULL;
-```
-
-Ba điều cố ý:
-
-- **`UNIQUE (kho_id, slug)`, không phải `UNIQUE (slug)`.** Hai người được có
-  dự án cùng tên trong kho riêng của mỗi người. Khoá toàn cục là vô tình cho
-  người vào trước chiếm mất cái tên.
-- **Cột suy ra (`GENERATED … STORED`)** cho khổ hình và số cảnh: màn hình kho
-  cần chúng để hiện thẻ, mà bóc JSONB mỗi lần thì chậm. Suy ra từ chính `doc`
-  nên **không bao giờ lệch** — khác hẳn việc chép tay vào một cột riêng.
-- **Xoá mềm (`xoa_luc`).** Tính năng xoá vừa làm đã cất bản lùi vào kho sao lưu;
-  ở CSDL thì đánh dấu rẻ hơn và lùi được ngay. Dọn hẳn bằng một việc chạy định
-  kỳ, sau 30 ngày.
-
-### 3.4 `ban_luu` — lịch sử từng lần lưu
-
-```sql
-CREATE TABLE ban_luu (
-  id            BIGSERIAL PRIMARY KEY,
-  du_an_id      BIGINT      NOT NULL REFERENCES du_an(id) ON DELETE CASCADE,
-  doc           JSONB       NOT NULL,
-  nhan          TEXT,                             -- "kéo đổi chỗ", "AI dựng cảnh"
-  luu_boi       BIGINT      REFERENCES nguoi_dung(id),
-  luu_luc       TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-CREATE INDEX ban_luu_theo_du_an ON ban_luu (du_an_id, luu_luc DESC);
-```
-
-Thay đúng vai trò của `.hub-video-backups/`. `nhan` lấy từ `kho.sua(nhãn, việc)`
-đang có sẵn trong `web/store.js` — nhãn tiếng Việt tả việc vừa làm, nên lịch sử
-đọc được chứ không phải một dãy thời gian.
-
-Dọn theo đúng luật đang chạy: giữ 50 bản gần nhất, cộng tất cả bản trong 7 ngày.
-
-### 3.5 `ban_nhap` — nháp tự lưu
-
-```sql
-CREATE TABLE ban_nhap (
-  du_an_id      BIGINT      PRIMARY KEY REFERENCES du_an(id) ON DELETE CASCADE,
-  doc           JSONB       NOT NULL,
-  sua_luc       TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-```
-
-Khoá chính **chính là** `du_an_id`: mỗi dự án nhiều nhất một nháp. Đây là cách
-ràng buộc "0..1" bằng cấu trúc thay vì bằng code.
-
-### 3.6 `tep` — video, giọng đọc, ảnh
-
-```sql
-CREATE TABLE tep (
-  id            BIGSERIAL PRIMARY KEY,
-  du_an_id      BIGINT      REFERENCES du_an(id) ON DELETE SET NULL,
-  loai          TEXT        NOT NULL
-                CHECK (loai IN ('video_xuat', 'giong_doc', 'anh', 'nhac', 'tieng_dong')),
-  duong_dan     TEXT        NOT NULL,             -- đường dẫn trên ổ lưu
-  ten_hien      TEXT        NOT NULL,
-  co_byte       BIGINT      NOT NULL,
-  dinh_dang     TEXT,                             -- mp4 · webm · gif · mp3
-  giay          NUMERIC(8,2),
-  bam_noi_dung  TEXT,                             -- sha256, để khỏi lưu trùng
-  tao_luc       TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-CREATE INDEX tep_theo_du_an ON tep (du_an_id, tao_luc DESC);
-```
-
-**CSDL giữ đường dẫn, không giữ byte.** `ON DELETE SET NULL` chứ không `CASCADE`:
-xoá dự án thì video đã xuất **vẫn còn** — người ta đã gửi nó cho khách rồi.
-
-### 3.7 `viec` — hàng đợi việc nặng
-
-```sql
-CREATE TABLE viec (
-  id            BIGSERIAL PRIMARY KEY,
-  du_an_id      BIGINT      REFERENCES du_an(id) ON DELETE CASCADE,
-  nguoi_id      BIGINT      REFERENCES nguoi_dung(id),
-  loai          TEXT        NOT NULL CHECK (loai IN ('xuat', 'kiem', 'chuyen')),
-  trang_thai    TEXT        NOT NULL DEFAULT 'dang_cho'
-                CHECK (trang_thai IN ('dang_cho', 'dang_chay', 'xong', 'hong', 'huy')),
-  tien_do       SMALLINT    NOT NULL DEFAULT 0 CHECK (tien_do BETWEEN 0 AND 100),
-  doan_giay     NUMERIC(8,2),
-  tham_so       JSONB       NOT NULL DEFAULT '{}',
-  ket_qua_tep   BIGINT      REFERENCES tep(id),
-  cau_loi       TEXT,
-  bat_dau       TIMESTAMPTZ,
-  ket_thuc      TIMESTAMPTZ,
-  tao_luc       TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-CREATE INDEX viec_dang_cho ON viec (tao_luc) WHERE trang_thai = 'dang_cho';
-```
-
-App đang giữ luật **một slot việc nặng, không bao giờ hai** (`jobs.js`) — vì bộ
-xuất để khung hình tạm theo `cwd`, hai lệnh song song đẻ ra hai video hỏng trong
-im lặng. Ở CSDL, luật đó giữ bằng:
-
-```sql
-CREATE UNIQUE INDEX viec_mot_slot ON viec ((1)) WHERE trang_thai = 'dang_chay';
-```
-
-Một chỉ mục thay cho một đoạn code mà ai cũng có thể quên.
-
-### 3.8 `nhat_ky_dung` — ai dùng gì, lúc nào
-
-```sql
-CREATE TABLE nhat_ky_dung (
-  id            BIGSERIAL PRIMARY KEY,
-  luc           TIMESTAMPTZ NOT NULL DEFAULT now(),
-  viec          TEXT        NOT NULL,             -- 'luu' · 'khoi-phuc' · 'xoa-du-an'
-  nguoi_id      BIGINT      REFERENCES nguoi_dung(id) ON DELETE SET NULL,
-  du_an_slug    TEXT,                             -- giữ CHUỖI, xem ghi chú
-  so_canh       INT,
-  them          JSONB
-);
-CREATE INDEX nhat_ky_theo_ngay ON nhat_ky_dung (luc DESC);
-```
-
-`du_an_slug` giữ **chuỗi** chứ không phải khoá ngoại: xoá dự án rồi thì con số
-thống kê *"tháng trước sửa 47 clip"* vẫn phải đúng. Nhật ký là sổ ghi chép,
-không phải bản sao của hiện trạng — và đây chính là lý do `nhatky.js` hiện tại
-ghi append-only, không bao giờ sửa dòng cũ.
-
-### 3.9 `han_muc_ngay` — trần chi tiêu
-
-```sql
-CREATE TABLE han_muc_ngay (
-  ngay          DATE        NOT NULL,             -- theo múi giờ VN
-  loai          TEXT        NOT NULL CHECK (loai IN ('goiAI', 'kyTu', 'xuat')),
-  nguoi_id      BIGINT      NOT NULL REFERENCES nguoi_dung(id) ON DELETE CASCADE,
-  da_dung       INT         NOT NULL DEFAULT 0,
-  PRIMARY KEY (ngay, loai, nguoi_id)
-);
-```
-
-**Đây là bảng đáng giá nhất trong cả thiết kế.** Hiện `hanmuc.js` đếm bằng
-`new Map()` trong RAM, nên **mỗi lần restart là bộ đếm về 0** — ai cũng được cấp
-lại 300 lượt gọi AI và 20.000 ký tự đọc. Đưa vào CSDL là bịt lỗ đó.
-
-Tăng bằng một câu, an toàn khi nhiều người cùng gọi:
-
-```sql
-INSERT INTO han_muc_ngay (ngay, loai, nguoi_id, da_dung)
-VALUES ($1, $2, $3, $4)
-ON CONFLICT (ngay, loai, nguoi_id)
-DO UPDATE SET da_dung = han_muc_ngay.da_dung + EXCLUDED.da_dung
-RETURNING da_dung;
-```
-
-### 3.10 `phien` — vé đăng nhập
-
-```sql
-CREATE TABLE phien (
-  id            UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
-  nguoi_id      BIGINT      NOT NULL REFERENCES nguoi_dung(id) ON DELETE CASCADE,
-  het_han       TIMESTAMPTZ NOT NULL,
-  tao_tu_ip     INET,
-  tao_luc       TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-CREATE INDEX phien_don_dep ON phien (het_han);
-```
-
-Có bảng này mới **thu hồi** được vé. Cách hiện tại (vé ký HMAC, không lưu) sống
-được qua restart nhưng **không đuổi ai ra giữa chừng được** — mất máy là vé còn
-dùng tới lúc hết hạn.
-
-### 3.11 `thanh_phan_luu` — kho thành phần người dùng tự lưu
-
-```sql
-CREATE TABLE thanh_phan_luu (
-  id            BIGSERIAL PRIMARY KEY,
-  kho_id        BIGINT      NOT NULL REFERENCES kho(id) ON DELETE CASCADE,
-  ten           TEXT        NOT NULL,
-  nhom          TEXT        NOT NULL DEFAULT 'khac',   -- 'nen' · 'cum' · 'chu'
-  noi_dung      JSONB       NOT NULL,             -- một món, hoặc một cụm
-  anh_nho       TEXT,                             -- đường dẫn ảnh xem trước
-  dung_bao_lan  INT         NOT NULL DEFAULT 0,
-  tao_luc       TIMESTAMPTZ NOT NULL DEFAULT now(),
-  UNIQUE (kho_id, ten)
-);
-```
-
-Bảng cho đúng tính năng Quý nêu: *"lưu các thành phần mới như là nền các thứ"*.
-`KIT` trong `web/them.js` hiện viết cứng; bảng này là phần **thêm vào**, không
-thay thế — bộ dựng sẵn của nhà vẫn nằm trong mã.
+14 bảng. DDL đầy đủ, kèm lý do từng quyết định, nằm ở
+**`server/csdl/001-nen-mong.sql`** — không chép lại vào đây, vì hai bản sẽ trôi
+khỏi nhau và rồi không ai biết bản nào đúng.
 
 ---
 
-## 4. Quyền xem: một người chỉ thấy kho của mình
+## 4. Bốn quyết định đáng tranh luận
 
-Đừng dựa vào câu `WHERE kho_id = $1` rải khắp nơi — sót một chỗ là lộ dữ liệu.
-PostgreSQL làm được ở tầng bảng:
+### 4.1 Kịch bản clip vào MỘT cột JSON, không băm nhỏ thành bảng
 
-```sql
-ALTER TABLE du_an ENABLE ROW LEVEL SECURITY;
+Giữ nguyên từ bản 1, và vẫn đúng. Cây thành phần lồng nhau nhiều tầng, 25 loại
+mỗi loại một bộ trường riêng. Băm thành `element` / `element_prop` là tự viết cho
+mình một bộ ORM để rồi ghép lại y như cũ mỗi lần đọc — chậm hơn, và
+**`validateScene` vẫn là thẩm quyền quyết định hợp lệ**, không phải ràng buộc của
+bảng.
 
-CREATE POLICY du_an_cua_toi ON du_an
-  USING (kho_id IN (
-    SELECT id FROM kho
-    WHERE chu_id = current_setting('app.nguoi_id')::BIGINT
-       OR la_goc AND current_setting('app.vai') = 'quan_tri'
-  ));
-```
+SQLite đọc được vào trong JSON (`json_extract`), nên `rong`/`cao`/`so_canh` là
+**cột suy ra có lưu** — lọc và đếm không phải mở JSON.
 
-Mỗi request đặt `SET LOCAL app.nguoi_id = …` sau khi xác thực. Từ đó **quên
-`WHERE` cũng không lộ**.
+### 4.2 KHÔNG có bảng `han_muc` riêng
+
+Một bảng đếm sẵn bên cạnh sổ cái là **hai nguồn sự thật**, và sớm muộn chúng
+lệch nhau — lúc ấy không ai biết tin cái nào. Hạn mức **cộng thẳng** từ `nhat_ky`;
+chỉ mục `(nguoi_id, ngay_vn, don_vi)` lo phần tốc độ.
+
+Bao giờ sổ cái lớn tới mức cộng chậm thì mới thêm bảng tổng theo ngày — và lúc
+đó nó là **bộ nhớ đệm dựng lại được**, không phải nguồn sự thật thứ hai.
+
+`ngay_vn` là cột suy ra: `date(luc, '+7 hours')`. "Hôm nay" của người dùng phải
+là hôm nay của họ — theo UTC thì 7 giờ sáng mới sang ngày mới, và hạn mức reset
+ngay giữa buổi làm việc. `hanmuc.js` đang cộng 7 tiếng bằng tay ở ba chỗ; cột tự
+tính thì không có chỗ nào quên.
+
+### 4.3 Tiền là SỐ NGUYÊN
+
+`chi_phi_micro` — phần triệu của một đồng. Tiền để số thực thì cộng một triệu
+dòng lại lệch, và lệch theo kiểu không ai truy ra được.
+
+Giữ luôn `don_vi`/`so_don_vi` để mấy trần cũ (`kyTu`, `goiAI`, `xuat`) vẫn chạy
+nguyên trong lúc chuyển dần sang trần tiền.
+
+### 4.4 File nhị phân KHÔNG vào CSDL
+
+Giữ nguyên từ bản 1. Video, ảnh, giọng đọc đi vào ổ lưu; CSDL chỉ giữ vân tay,
+kiểu và kích thước. Nhét một video 30 MB vào cột blob là biến bản sao lưu CSDL
+thành hàng chục GB, và mọi truy vấn chậm theo.
 
 ---
 
-## 5. Đường di trú — đi bốn bước, không đi một bước
+## 5. Cái giá, nói thẳng
+
+**`node:sqlite` còn mang nhãn thử nghiệm.** Node in ra một dòng cảnh báo mỗi lần
+chạy, và API có thể đổi ở bản Node sau. Giảm nhẹ: cả ứng dụng chỉ đụng thư viện
+ở **đúng một file** (`server/csdl.js`) — API đổi thì sửa ở đó, không lan ra chỗ
+khác.
+
+**Một người ghi tại một thời điểm.** SQLite khoá theo file. Với công cụ nội bộ
+vài người dùng thì thừa sức (và WAL cho người đọc không bị chặn); muốn hàng trăm
+người ghi song song thì mới cần PostgreSQL. Lược đồ viết bằng SQL chuẩn nhất có
+thể để lúc ấy chuyển đỡ đau — chỗ phải sửa là kiểu ngày tháng, `INTEGER PRIMARY
+KEY` → `BIGSERIAL`, và `COLLATE NOCASE` → `CITEXT`.
+
+**Đây là thêm một thứ để hỏng.** File CSDL cũng phải được ổ lưu che chở, cũng
+phải sao lưu, cũng có thể hỏng. Đặt ở `kho/motion.db` nên nó dùng chung ổ lưu
+`motion-kho` đã khai trong `docker-compose.yml` — không phải khai thêm ổ nào.
+
+**Không nên làm nếu** mục tiêu chỉ là "clip không bay khi dựng lại". Cái đó ổ lưu
+đã giải quyết xong hôm 22/09. CSDL đáng làm vì **ba lỗ ở mục 1** và **ba năng lực
+ở mục 2**, không vì chuyện lưu trữ.
+
+---
+
+## 6. Đường di trú — bốn bước, không đi một bước
 
 | Bước | Làm gì | Lùi được không |
 |---|---|---|
-| 1 | Dựng bảng, **chưa đụng app**. Viết script đổ dữ liệu từ file vào. | có, xoá CSDL là xong |
+| **1** | Dựng lược đồ + bộ di trú + bài kiểm. **App chưa đụng tới.** | có — xoá một file |
 | 2 | **Ghi hai nơi**: file vẫn là chính, CSDL ghi theo. Đối chiếu hằng ngày. | có |
-| 3 | Đọc từ CSDL, file thành bản lùi. | có, lật một cờ |
+| 3 | Đọc từ CSDL, file thành bản lùi. | có — lật một cờ |
 | 4 | Bỏ đường ghi file. | khó — chỉ làm sau khi bước 3 chạy êm vài tuần |
 
-Bước 2 là bước người ta hay bỏ qua, và là bước duy nhất cho biết cấu trúc mới có
-giữ đúng dữ liệu cũ hay không **trước khi** phụ thuộc vào nó.
+**Bước 1 đã xong** (22/09/2026): `server/csdl.js`, `server/csdl/001-nen-mong.sql`,
+`tools/kiem-csdl.mjs`.
+
+Bước 2 là bước người ta hay bỏ qua, và là bước **duy nhất** cho biết cấu trúc mới
+có giữ đúng dữ liệu cũ hay không **trước khi** phụ thuộc vào nó.
+
+### Thứ tự đề nghị cho bước 2
+
+Đi từ chỗ **rủi ro thấp nhất, lợi ích rõ nhất**, không đi từ chỗ to nhất:
+
+1. **`nhat_ky` + hạn mức** — chỉ ghi thêm, không đụng đường lưu clip. Vá xong lỗ
+   tiền ở mục 1.1 mà không thể làm hỏng dữ liệu của ai.
+2. **`viec`** — hàng đợi. Cũng không đụng clip.
+3. **`nguoi_dung` + `phien`** — gỡ tài khoản khỏi biến môi trường.
+4. **`du_an` + `ban_luu` + `phien_ban`** — chỗ đáng giá nhất nhưng cũng rủi ro
+   nhất, để sau cùng và chạy song song với file ít nhất hai tuần.
+5. `chia_se`, `gop_y`, `thanh_phan` — tính năng mới, dựng thẳng trên CSDL, không
+   có dữ liệu cũ để di trú.
 
 ---
 
-## 6. Cái giá phải nói thẳng
+## 7. Lược đồ có được kiểm không
 
-**Repo này có luật "không gói phụ thuộc, không bước dựng".** `package.json` không
-có `dependencies` nào, và đó là chủ ý — `server/router.js` ghi rõ lý do: công cụ
-mà người không rành kỹ thuật phải dựa vào thì không được có kiểu hỏng "cài gói
-thất bại".
+Có. `tools/kiem-csdl.mjs` — 45 mục, chạy bằng Node trần trên CSDL trong bộ nhớ,
+chưa tới một giây, không đụng file thật.
 
-Thêm CSDL là **phá luật đó**: cần trình điều khiển `pg`, cần `node_modules`,
-cần bước cài lúc dựng ảnh. Đây là quyết định kiến trúc, không phải một việc kỹ
-thuật.
+Mọi ràng buộc đều được thử bằng cách **cố tình làm sai** rồi xem có bị chặn
+không. Viết `UNIQUE` vào file rồi tin là nó chạy thì có ngày phát hiện **SQLite
+mặc định TẮT khoá ngoại** — lúc dữ liệu đã hỏng. (Bài kiểm mục 1 canh đúng
+`PRAGMA foreign_keys` cho ca đó.)
 
-Nên nói cho công bằng — **hai đường**:
+Mấy mục đáng chú ý:
 
-| | Gắn ổ lưu (volume) | Chuyển sang CSDL |
-|---|---|---|
-| Sửa mã | **không dòng nào** | đổi mọi đường đọc/ghi |
-| Giữ được luật zero-dependency | **có** | không |
-| Cứu được dữ liệu khi dựng lại | **có** | có |
-| Sửa lỗi hạn mức đếm trong RAM | không | **có** |
-| Nhiều người sửa cùng lúc | không | **có** |
-| Hỏi/đếm/báo cáo | phải đọc cả thư mục | **một câu SQL** |
-
-**Nếu mục tiêu chỉ là "clip không bay khi dựng lại" thì gắn ổ lưu là xong** —
-`docker-compose.yml` đã khai sẵn bốn ổ, chỉ thiếu `motion-kho:/app/kho`.
-
-**CSDL đáng làm khi** cần một trong ba thứ: nhiều người dùng thật, hạn mức chi
-tiêu đếm đúng qua restart, hoặc báo cáo số liệu cho cấp trên.
-
----
-
-## 7. Toàn bộ DDL
-
-Chạy được nguyên khối trên PostgreSQL 14 trở lên:
-
-```sql
-CREATE EXTENSION IF NOT EXISTS citext;
-CREATE EXTENSION IF NOT EXISTS pgcrypto;   -- cho gen_random_uuid()
-```
-
-Rồi 11 bảng theo thứ tự mục 3.1 → 3.11 (thứ tự đó đã đúng chiều khoá ngoại,
-chạy từ trên xuống không vướng).
+- Dựng lại **đúng ca hai tab cùng lưu**, và kiểm rằng nội dung của tab A **vẫn
+  còn nguyên** sau khi tab B bị chặn.
+- Dựng lại ca **máy chủ chết giữa lúc xuất video**: hợp đồng thuê hết hạn thì
+  việc được nhặt lại, và đếm đúng số lần đã thử.
+- Kiểm rằng **xoá người dùng thì số liệu chi tiêu vẫn còn** — không thì một lần
+  dọn tài khoản là mất hết số liệu để báo cáo.
+- Kiểm rằng `ngay_vn` tính theo **giờ Việt Nam**, không theo UTC.
