@@ -18,7 +18,7 @@ const el = (the, lop, chu) => {
   return n;
 };
 
-export function taoDungHinh(boc, { laySlug, bao, nhanCanh }) {
+export function taoDungHinh(boc, { laySlug, bao, nhanCanh, layKieuMay }) {
   const muc = el('div', 'muc-dung');
   let ketQua = null;       // { canh, vanDe, model, daSua }
   let dangDung = false;
@@ -43,6 +43,99 @@ export function taoDungHinh(boc, { laySlug, bao, nhanCanh }) {
   oHtml.placeholder = 'Hoặc dán mã HTML vào đây (Stitch xuất ra), hoặc một địa chỉ https://…';
   oHtml.setAttribute('aria-label', 'Dán HTML hoặc địa chỉ trang');
   oHtml.oninput = () => { ketQua = null; veKetQua(); veNut(); };
+
+  /* ---------- TẢ BẰNG LỜI → STITCH VẼ GIAO DIỆN ----------
+   * Đây là đường thứ BA vào cùng một việc, và là đường duy nhất không đòi người
+   * dùng phải có sẵn thứ gì. Hai đường kia bắt họ đi kiếm một tấm ảnh hoặc mở
+   * Stitch ở tab khác rồi chép mã về; đường này gõ một câu là xong.
+   *
+   * Kết quả đổ thẳng vào ô HTML bên trên chứ không đi đường riêng: từ đó trở đi
+   * nó là đúng một luồng đã chạy tốt từ trước, và người dùng XEM ĐƯỢC mã trước
+   * khi đồng ý dựng thành cảnh.
+   */
+  const oTa = el('textarea', 'o-nhap o-dung-ta');
+  oTa.rows = 2;
+  oTa.placeholder = 'Hoặc tả bằng lời để AI vẽ giao diện: "màn bảng giá ba gói hosting, nền trắng, nhấn xanh lá"…';
+  oTa.setAttribute('aria-label', 'Tả giao diện muốn có');
+
+  const nutTa = el('button', 'nut rong nut-ta', 'Vẽ giao diện từ lời tả');
+  nutTa.type = 'button';
+  nutTa.disabled = true;
+  const chuTa = el('p', 'num-goi ta-chang an');
+  oTa.oninput = () => veNutTa();
+
+  function veNutTa() {
+    const co = oTa.value.trim().length >= 10;
+    nutTa.disabled = dangVe || !co;
+    nutTa.textContent = dangVe ? 'Đang vẽ…' : co ? 'Vẽ giao diện từ lời tả' : 'Tả kỹ hơn một chút';
+  }
+
+  let dangVe = false;
+  let henHoi = null;
+
+  async function veGiaoDien() {
+    dangVe = true; veNutTa();
+    chuTa.classList.remove('an', 'ta-hong');
+    chuTa.textContent = 'Đang gửi lời tả…';
+    try {
+      const r = await fetch('/api/stitch', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ y: oTa.value.trim(), kieuMay: layKieuMay?.() || 'DESKTOP' }),
+      });
+      const d = await r.json();
+      if (!d.ok) throw new Error(d.loi || d.cau || 'Không bắt đầu được.');
+      await hoiToiXong(d.id);
+    } catch (e) {
+      chuTa.classList.add('ta-hong');
+      chuTa.textContent = e.message;
+    } finally {
+      dangVe = false; veNutTa();
+    }
+  }
+
+  /* Hỏi lại mỗi 4 giây. Cả quãng mất khoảng một phút rưỡi, nên hỏi dày hơn chỉ
+     tốn lượt gọi mà không sớm hơn được giây nào. */
+  function hoiToiXong(id) {
+    return new Promise((xong, hong) => {
+      clearInterval(henHoi);
+      const bat = Date.now();
+      henHoi = setInterval(async () => {
+        let d;
+        try { d = await (await fetch(`/api/stitch/${id}`)).json(); }
+        catch { return; }   // mạng chớp một nhịp thì hỏi lại, đừng bỏ cuộc
+        const giay = Math.round((Date.now() - bat) / 1000);
+        chuTa.textContent = `${d.chang || 'Đang làm'}… (${giay} giây)`;
+        if (d.trangThai === 'loi') {
+          clearInterval(henHoi); return hong(new Error(d.loi || 'Không vẽ được.'));
+        }
+        if (d.trangThai !== 'xong') return;
+        clearInterval(henHoi);
+        const full = await (await fetch(`/api/stitch/${id}?html=1`)).json();
+        if (!full.html) return hong(new Error('Vẽ xong nhưng không lấy được mã.'));
+        /* Đổ vào ô HTML rồi để luồng cũ lo phần còn lại. */
+        oHtml.value = full.html;
+        ketQua = null; veKetQua(); veNut();
+        chuTa.textContent = `Xong: "${full.tieuDe || 'giao diện mới'}" `
+          + `— ${Math.round(full.soByte / 1024)} KB mã. Bấm "Dựng từ trang" để đưa vào clip.`;
+        xong();
+      }, 4000);
+    });
+  }
+  nutTa.onclick = veGiaoDien;
+
+  /* GIẤU HẲN KHI MÁY CHỦ CHƯA CÓ KHOÁ.
+     Bày một ô mời người ta tả giao diện rồi mới báo "máy chủ chưa khai khoá" là
+     bắt họ gõ xong một đoạn văn để nhận lời từ chối. Hỏi trước, một lần. */
+  let hoiKhoa = false;
+  async function soatCoKhoa() {
+    if (hoiKhoa) return;
+    hoiKhoa = true;
+    try {
+      const d = await (await fetch('/api/toi-la-ai')).json();
+      if (!d.coStitch) for (const n of [oTa, nutTa, chuTa]) n.classList.add('an');
+    } catch { /* hỏi không được thì cứ bày ra, bấm vào sẽ nhận câu báo tử tế */ }
+  }
+  soatCoKhoa();
 
   const oY = el('textarea', 'o-nhap o-y o-dung-y');
   oY.rows = 2;
@@ -162,10 +255,10 @@ export function taoDungHinh(boc, { laySlug, bao, nhanCanh }) {
      "Nhận vào clip" ra ngoài tầm nhìn — mà đó là nút người dùng PHẢI bấm. */
   const trai = el('div', 'ai-cot');
   const phai = el('div', 'ai-cot');
-  trai.append(oAnh.node, oAnh.oFile, oHtml, oY, nut);
+  trai.append(oAnh.node, oAnh.oFile, oHtml, oTa, nutTa, chuTa, oY, nut);
   phai.append(kq);
   muc.append(trai, phai);
   boc.appendChild(muc);
-  veNut();
-  return { ve: () => { oAnh.ve(); veNut(); veKetQua(); } };
+  veNut(); veNutTa();
+  return { ve: () => { oAnh.ve(); veNut(); veNutTa(); veKetQua(); } };
 }

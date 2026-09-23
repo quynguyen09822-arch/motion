@@ -34,6 +34,7 @@ import { vietLoi } from './vietloi.js';
 import { hoiAI } from './hoiai.js';
 import { dungCanh } from './dungcanh.js';
 import { dungTuHtml } from './tuhtml.js';
+import { batDauSinh, coKhoa as coKhoaStitch, soatLoiTa, xemViec } from './stitch.js';
 import { daDung, ghiNhat, xin } from './hanmuc.js';
 import { thongKe } from './nhatky.js';
 import { suaMon } from './suamon.js';
@@ -178,6 +179,10 @@ const server = http.createServer(async (req, res) => {
         /* Chỉ nói CÓ giới hạn hay không, KHÔNG trả danh sách tài khoản ra trang
            đăng nhập — đó là danh sách người, không phải thứ để người lạ đọc. */
         coDanhSach: dsTaiKhoan().length > 0,
+        /* Máy chủ có khai khoá Stitch không. Giao diện phải biết TRƯỚC: bày nút
+           "Vẽ giao diện từ lời tả" trên một máy chủ không có khoá là để người
+           dùng gõ xong một đoạn tả rồi mới nhận lời từ chối. */
+        coStitch: coKhoaStitch(),
         hanMuc: daDung(aiDangVao(req)),
       });
     }
@@ -445,6 +450,54 @@ const server = http.createServer(async (req, res) => {
     /* DỰNG CẢNH TỪ HTML — đường Stitch → Motion.
        Khác `/api/dung-canh` ở chỗ nguồn vào là TRANG, không phải ảnh: ta đọc
        trang bằng trình duyệt nên có số đo thật, AI khỏi phải đoán từ pixel. */
+    /* ---------- SINH GIAO DIỆN BẰNG STITCH ----------
+     * Tả bằng lời → Stitch dựng một màn → ta lấy MÃ HTML của nó → đường
+     * `/api/tu-html` sẵn có biến nó thành cảnh.
+     *
+     * Vì sao tách làm hai đường chứ không gộp một: cả quãng mất khoảng hai phút
+     * rưỡi (sinh màn ~71 giây, dựng cảnh ~58 giây). Gộp một đường là bắt yêu
+     * cầu HTTP nằm chờ chừng ấy, mà Traefik cùng mọi proxy đứng giữa đều cắt
+     * trước khi xong — người dùng nhận một lỗi mạng không nói lên điều gì, và
+     * lượt gọi tốn tiền thì vẫn cứ chạy tiếp ở máy chủ.
+     *
+     * Tách ra còn được một cái nữa: người dùng XEM ĐƯỢC mã HTML trước khi đồng
+     * ý dựng thành cảnh, và sửa lời tả rồi sinh lại mà chưa tốn lượt AI nào của
+     * bước dựng cảnh. */
+    if (p === '/api/stitch' && req.method === 'POST') {
+      if (!coKhoaStitch()) {
+        return loi(res, 503, 'Máy chủ chưa khai khoá Stitch, nên chưa dựng giao diện từ lời tả được.');
+      }
+      const than = await docJson(req);
+      /* SOÁT LỜI TẢ TRƯỚC KHI TRỪ HẠN MỨC. Trừ trước rồi mới biết lời tả không
+         dùng được là bắt người dùng trả tiền cho cú gõ thiếu của chính họ. */
+      const soat = soatLoiTa(than?.y);
+      if (!soat.ok) return loi(res, 400, soat.cau);
+
+      const ai = aiDangVao(req);
+      /* Tính vào CÙNG hạn mức `goiAI`. Một lượt Stitch cũng là một lượt gọi mô
+         hình tốn tiền — để nó ngoài sổ là mở một đường lách qua trần chi tiêu. */
+      const q = xin('goiAI', ai);
+      if (!q.ok) return loi(res, 429, q.cau);
+      ghiNhat('goiAI', ai, 1, 'sinh giao diện Stitch');
+
+      const kq = batDauSinh({
+        y: than?.y,
+        /* Clip dọc thì xin màn điện thoại. Xin màn desktop rồi nhét vào khung
+           9:16 là bố cục ngang phải bóp lại, và mọi tỉ lệ sai hết. */
+        kieuMay: than?.kieuMay === 'MOBILE' ? 'MOBILE' : 'DESKTOP',
+        maDuAn: String(than?.maDuAn || ''),
+      });
+      if (!kq.ok) return json(res, 400, kq);
+      return json(res, 202, kq);
+    }
+
+    if ((m = khop('/api/stitch/:id', p)) && req.method === 'GET') {
+      const keHtml = url.searchParams.get('html') === '1';
+      const kq = xemViec(m.id, { keHtml });
+      if (!kq.ok) return json(res, kq.ma || 400, kq);
+      return json(res, 200, kq);
+    }
+
     if (p === '/api/tu-html' && req.method === 'POST') {
       const than = await docJson(req);
       {

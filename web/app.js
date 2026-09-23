@@ -524,6 +524,14 @@ const thanhAI = taoThanhAI({
   dungKhungHinh: (boc) => taoDungHinh(boc, {
     laySlug: () => kho.slug(),
     bao: (c, h) => bao(c, h),
+    /* Clip DỌC thì xin Stitch vẽ màn điện thoại. Xin màn desktop rồi nhét vào
+       khung 9:16 là bố cục ngang phải bóp lại, chữ tụt cỡ và mọi tỉ lệ sai hết
+       — đúng cái bệnh mà `docs/DOI-KHO-HINH.md` đã đo và kết luận là không nhân
+       co được, phải xếp lại. Chọn đúng kiểu máy ngay từ đầu thì khỏi phải xếp. */
+    layKieuMay: () => {
+      const m = kho.doc()?.meta;
+      return m && m.height > m.width ? 'MOBILE' : 'DESKTOP';
+    },
     nhanCanh: (canh) => {
       let idMoi = null;
       kho.sua('thêm cảnh AI dựng từ ảnh', (d) => {
