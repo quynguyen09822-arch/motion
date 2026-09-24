@@ -44,6 +44,7 @@ import { chanDoan, docKhung, suaKhung } from './khung.js';
 import { BO, danhSachVideo } from './videos.js';
 import { docJson, json, khop, loi, moSSE } from './router.js';
 import { duongAnh, luuAnh } from './anh.js';
+import { DUONG_MAC_DINH, moCSDL } from './csdl.js';
 // Bộ soát nằm trong web/ vì trình duyệt cũng phải tải được nó — xem đầu file đó.
 import { soatChatLuong } from '../web/soat.js';
 
@@ -826,6 +827,30 @@ server.listen(PORT, '0.0.0.0', () => {
   console.log(`🎬 Trình sửa clip đang chạy: http://127.0.0.1:${PORT}`);
   console.log(`   Dự án clip: ${PROJ}`);
   console.log(`   Kịch bản:   ${SCENES}`);
+
+  /* ---------- DỰNG CƠ SỞ DỮ LIỆU ----------
+   * Bước 1 của đường di trú bốn bước (xem `docs/CSDL.md`): dựng lược đồ, chạy
+   * các bước di trú, rồi ĐÓNG LẠI. App chưa đọc chưa ghi gì vào đây cả.
+   *
+   * Vì sao vẫn mở lúc khởi động dù chưa ai dùng: đây là cách duy nhất biết lược
+   * đồ có chạy được trên MÁY CHỦ THẬT hay không, trước khi có thứ gì phụ thuộc
+   * vào nó. Một bước di trú hỏng thì hỏng ở đây, lúc log còn được đọc — chứ
+   * không phải ba tuần nữa, giữa một lượt lưu clip.
+   *
+   * KHÔNG ĐƯỢC LÀM CHẾT APP. Cơ sở dữ liệu lúc này là thứ đi kèm, không phải
+   * thứ trình sửa cần để chạy. Ổ đĩa đầy hay quyền sai mà kéo cả app xuống thì
+   * ta vừa đổi một tính năng chưa ai dùng lấy toàn bộ công cụ. */
+  try {
+    const db = moCSDL();
+    const bang = db.prepare(
+      "SELECT COUNT(*) c FROM sqlite_master WHERE type='table'").get().c;
+    const buoc = db.prepare('SELECT COUNT(*) c FROM di_tru').get().c;
+    db.close();
+    console.log(`   CSDL:       ${DUONG_MAC_DINH} — ${bang} bảng, ${buoc} bước di trú`);
+  } catch (e) {
+    console.error(`   CSDL:       KHÔNG dựng được — ${e.message}`);
+    console.error('               (trình sửa vẫn chạy bình thường; xem docs/CSDL.md)');
+  }
   {
     const c = chuKho();
     console.log(c
