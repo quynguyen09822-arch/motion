@@ -613,7 +613,11 @@ $('the-video').onclick = () => { doiThe('video'); if (!bangVideo.coGi()) bangVid
   }
 
   const n = document.createElement('button');
-  n.className = 'nut nho rong nut-ra';
+  /* KHÔNG có `rong` ở đây. `.nut.rong` đặt `width: 100%`, dành cho nút nằm
+     trong CỘT DỌC (chiếm hết bề ngang cột). Nút này nằm trên THANH NGANG, nên
+     100% là 100% của ô tài khoản — đo thật: nút phình ra 163px và đè lên nhóm
+     nút ẩn cột 88 pixel, che mất chúng. */
+  n.className = 'nut nho nut-ra';
   n.type = 'button';
   n.textContent = 'Thoát';
   n.title = d.email ? `Đăng xuất ${d.email}` : 'Đăng xuất khỏi trình sửa';

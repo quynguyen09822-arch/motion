@@ -52,7 +52,19 @@ function hoiMatKhau(loiNhac) {
   });
 }
 
-const mk = process.env.MOTION_MK || await hoiMatKhau('Mật khẩu của bản chạy thật: ');
+/* Đọc mật khẩu từ FILE nếu được chỉ. Có người không gõ được vào terminal —
+   readline ẩn ký tự nên tưởng không nhập được, hoặc mật khẩu có ký tự đặc biệt
+   bị shell hiểu nhầm. Dán vào một file bằng trình soạn thảo thì né cả hai.
+   Đọc xong XOÁ NGAY, để mật khẩu không nằm lại trên đĩa. */
+async function docTuFile(duong) {
+  const { readFileSync, rmSync } = await import('node:fs');
+  const mk = readFileSync(duong, 'utf8').trim();
+  try { rmSync(duong); } catch { /* xoá không được thì thôi, đã đọc xong */ }
+  return mk;
+}
+const mkFile = lay('mk-file', '');
+const mk = mkFile ? await docTuFile(mkFile)
+  : (process.env.MOTION_MK || await hoiMatKhau('Mật khẩu của bản chạy thật: '));
 if (!mk) { console.error('Chưa có mật khẩu — không làm gì cả.'); process.exit(1); }
 
 /* ---------- đăng nhập ---------- */
@@ -95,13 +107,24 @@ let xong = 0;
 const hong = [];
 for (const c of canCuu) {
   try {
-    const k = await fetch(`${GOC}/api/tai-kich-ban/${encodeURIComponent(c.slug)}`, { headers: dem });
-    if (!k.ok) throw new Error(`mã ${k.status}`);
-    const chu = await k.text();
-    /* Đọc thử bằng JSON.parse trước khi ghi: một trang đăng nhập trả về mã 200
-       cũng "tải được", và lúc đó ta cất một file HTML rồi tưởng đã cứu xong. */
-    const doc = JSON.parse(chu);
-    if (!doc?.meta || !Array.isArray(doc?.scenes)) throw new Error('không phải kịch bản clip');
+    /* THỬ NHIỀU ĐƯỜNG, vì bản chạy thật có thể là bản CŨ. Bản mới có
+       `/api/tai-kich-ban` (trả kịch bản thẳng); bản cũ (21/09) chỉ có
+       `/api/clip/:slug` (trả {doc}) và `/api/kich-ban/:slug` (trả doc thẳng).
+       Không dò đúng đường thì mọi clip trả 404 và ta tưởng không có gì để cứu —
+       trong khi dữ liệu vẫn nằm đó. */
+    const s = encodeURIComponent(c.slug);
+    let doc = null;
+    for (const d of [`/api/tai-kich-ban/${s}`, `/api/kich-ban/${s}`, `/api/clip/${s}`]) {
+      const k = await fetch(`${GOC}${d}`, { headers: dem });
+      if (!k.ok) continue;
+      let j; try { j = JSON.parse(await k.text()); } catch { continue; }
+      /* `/api/clip` bọc trong {doc}; hai đường kia trả doc thẳng. */
+      const thu = (j && j.meta && Array.isArray(j.scenes)) ? j
+        : (j?.doc?.meta && Array.isArray(j.doc.scenes)) ? j.doc : null;
+      if (thu) { doc = thu; break; }
+    }
+    if (!doc) throw new Error('không đường nào trả về kịch bản');
+    const chu = JSON.stringify(doc, null, 2);
     writeFileSync(path.join(RA, `${c.slug}.json`), chu, 'utf8');
     console.log(`  ✓ ${c.slug} — ${doc.scenes.length} cảnh, ${Buffer.byteLength(chu)} byte`);
     xong += 1;
