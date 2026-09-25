@@ -80,6 +80,54 @@ const khongCo = await goi('/api/stitch/khong-he-co', null, 'GET');
 dat('hỏi một lượt không có thì báo rõ, không sập',
   khongCo.ma === 404 && khongCo.ok === false, khongCo.loi);
 
+/* ---------- 2b. giao diện: ba đường vào phải NÓI RA là ba đường ---------- */
+console.log('\n2b. Thẻ Dựng hình — ba đường vào');
+{
+  /* Ô Stitch từng nằm chồng giữa hai ô nhập khác mà không có nhãn nào, nên nhìn
+     vào chỉ thấy một đống ô — chủ dự án đã tưởng tính năng chưa được làm trong
+     khi nó đang hiện ngay trên màn hình. Nhãn là phần của tính năng, không phải
+     trang trí. */
+  const { createRequire } = await import('node:module');
+  const PROJ2 = process.env.PROJ_ROOT
+    || '/home/coder/workspace/projects/clipVibehost/hosting-animatic-production';
+  const { chromium } = createRequire(path.join(PROJ2, 'tools/'))('playwright');
+  const tr = await chromium.launch();
+  try {
+    const t = await tr.newPage({ viewport: { width: 1400, height: 950 } });
+    const loiJS = [];
+    t.on('pageerror', (e) => loiJS.push(String(e)));
+    await t.goto(`${GOC}/sua?clip=cta`, { waitUntil: 'load' });
+    await t.waitForTimeout(4000);
+    await t.evaluate(() => document.querySelector('.nut-ai')?.click());
+    await t.waitForTimeout(400);
+    await t.evaluate(() => { const a = [...document.querySelectorAll('.ai-the')]; a[2]?.click(); });
+    await t.waitForTimeout(600);
+
+    /* Gõ một lời tả hợp lệ TRƯỚC khi đọc nhãn nút: lúc ô còn trống, nút cố ý
+       ghi "Tả kỹ hơn một chút" — đọc lúc đó là đo nhầm trạng thái. */
+    await t.evaluate(() => {
+      const o = document.querySelector('.o-dung-ta');
+      o.value = 'Man hinh bang gia ba goi hosting, nen trang, nhan xanh la';
+      o.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await t.waitForTimeout(250);
+
+    const g = await t.evaluate(() => ({
+      nhan: [...document.querySelectorAll('.dung-nhan')].map((n) => n.textContent),
+      nhanNutTa: document.querySelector('.nut-ta')?.textContent || null,
+      coOTa: Boolean(document.querySelector('.o-dung-ta')),
+    }));
+    dat('có đủ ba nhãn cho ba đường vào', g.nhan.length === 3, g.nhan.join(' | '));
+    dat('nhãn thứ ba gọi tên Stitch', /Stitch/i.test(g.nhan[2] || ''), g.nhan[2]);
+    /* Nút phải nói nó làm CẢ HAI việc. Ghi "Vẽ giao diện" rồi lặng lẽ dựng luôn
+       thành cảnh là hứa một đằng làm một nẻo — dù làm nhiều hơn. */
+    dat('nút nói rõ nó vẽ XONG RỒI DỰNG luôn thành cảnh',
+      /dựng thành cảnh/i.test(g.nhanNutTa || ''), g.nhanNutTa);
+    dat('không có lỗi JS', loiJS.length === 0, loiJS.slice(0, 2).join(' | ') || 'sạch');
+    await t.close();
+  } finally { await tr.close(); }
+}
+
 /* ---------- 3. lượt gọi thật ---------- */
 console.log('\n3. Gọi Stitch thật');
 if (!THAT) {

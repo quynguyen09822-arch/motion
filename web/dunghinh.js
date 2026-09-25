@@ -40,7 +40,7 @@ export function taoDungHinh(boc, { laySlug, bao, nhanCanh, layKieuMay }) {
      không phải đoán lại màu với số đo từ pixel. */
   const oHtml = el('textarea', 'o-nhap o-dung-html');
   oHtml.rows = 3;
-  oHtml.placeholder = 'Hoặc dán mã HTML vào đây (Stitch xuất ra), hoặc một địa chỉ https://…';
+  oHtml.placeholder = 'Dán mã HTML vào đây, hoặc một địa chỉ https://…';
   oHtml.setAttribute('aria-label', 'Dán HTML hoặc địa chỉ trang');
   oHtml.oninput = () => { ketQua = null; veKetQua(); veNut(); };
 
@@ -55,10 +55,10 @@ export function taoDungHinh(boc, { laySlug, bao, nhanCanh, layKieuMay }) {
    */
   const oTa = el('textarea', 'o-nhap o-dung-ta');
   oTa.rows = 2;
-  oTa.placeholder = 'Hoặc tả bằng lời để AI vẽ giao diện: "màn bảng giá ba gói hosting, nền trắng, nhấn xanh lá"…';
+  oTa.placeholder = 'Ví dụ: "màn bảng giá ba gói hosting, nền trắng, nhấn xanh lá, mỗi gói một thẻ có giá và danh sách tính năng"';
   oTa.setAttribute('aria-label', 'Tả giao diện muốn có');
 
-  const nutTa = el('button', 'nut rong nut-ta', 'Vẽ giao diện từ lời tả');
+  const nutTa = el('button', 'nut rong nut-ta', 'Vẽ giao diện rồi dựng thành cảnh');
   nutTa.type = 'button';
   nutTa.disabled = true;
   const chuTa = el('p', 'num-goi ta-chang an');
@@ -67,7 +67,7 @@ export function taoDungHinh(boc, { laySlug, bao, nhanCanh, layKieuMay }) {
   function veNutTa() {
     const co = oTa.value.trim().length >= 10;
     nutTa.disabled = dangVe || !co;
-    nutTa.textContent = dangVe ? 'Đang vẽ…' : co ? 'Vẽ giao diện từ lời tả' : 'Tả kỹ hơn một chút';
+    nutTa.textContent = dangVe ? 'Đang vẽ…' : co ? 'Vẽ giao diện rồi dựng thành cảnh' : 'Tả kỹ hơn một chút';
   }
 
   let dangVe = false;
@@ -115,9 +115,16 @@ export function taoDungHinh(boc, { laySlug, bao, nhanCanh, layKieuMay }) {
         /* Đổ vào ô HTML rồi để luồng cũ lo phần còn lại. */
         oHtml.value = full.html;
         ketQua = null; veKetQua(); veNut();
-        chuTa.textContent = `Xong: "${full.tieuDe || 'giao diện mới'}" `
-          + `— ${Math.round(full.soByte / 1024)} KB mã. Bấm "Dựng từ trang" để đưa vào clip.`;
+        chuTa.textContent = `Stitch vẽ xong: "${full.tieuDe || 'giao diện mới'}" `
+          + `(${Math.round(full.soByte / 1024)} KB). Đang dựng thành cảnh…`;
+        /* ĐI TIẾP LUÔN, không bắt bấm nút thứ hai. Mã đã nằm trong ô HTML nên
+           người dùng vẫn xem lại được, và vẫn phải bấm "Nhận vào clip" ở cuối —
+           chỗ chặn thật sự nằm ở đó, không phải ở một nút trung gian. */
         xong();
+        chayDung().then(() => {
+          chuTa.textContent = `Từ lời tả: "${full.tieuDe || 'giao diện mới'}". `
+            + 'Xem cây món bên phải rồi bấm "Nhận vào clip".';
+        });
       }, 4000);
     });
   }
@@ -215,7 +222,9 @@ export function taoDungHinh(boc, { laySlug, bao, nhanCanh, layKieuMay }) {
     kq.appendChild(hang);
   }
 
-  nut.onclick = async () => {
+  /* Tách khỏi `nut.onclick` để luồng Stitch gọi lại được. Anh Quý muốn gõ một
+     lời tả rồi RA CẢNH, không phải bấm hai nút rồi tự nối hai bước bằng tay. */
+  async function chayDung() {
     const slug = laySlug?.();
     const n = nguon();
     if (!n || dangDung) return;
@@ -249,13 +258,27 @@ export function taoDungHinh(boc, { laySlug, bao, nhanCanh, layKieuMay }) {
       kq.classList.add('hong'); kq.innerHTML = '';
       kq.appendChild(el('p', 'dung-loi', `AI dựng hỏng — ${String(e.message || e).slice(0, 80)}`));
     } finally { dangDung = false; veNut(); }
-  };
+  }
+  nut.onclick = chayDung;
 
   /* HAI CỘT: nạp ảnh bên trái, kết quả bên phải. Xếp dọc hết thì ô ảnh đẩy nút
      "Nhận vào clip" ra ngoài tầm nhìn — mà đó là nút người dùng PHẢI bấm. */
   const trai = el('div', 'ai-cot');
   const phai = el('div', 'ai-cot');
-  trai.append(oAnh.node, oAnh.oFile, oHtml, oTa, nutTa, chuTa, oY, nut);
+  /* BA ĐƯỜNG VÀO CÙNG MỘT VIỆC, và phải NÓI RA là ba đường.
+     Trước đây ba ô nhập nằm chồng nhau không nhãn, nên người dùng nhìn vào chỉ
+     thấy một đống ô — anh Quý đã tưởng tính năng Stitch chưa được làm trong khi
+     nó đang hiện ngay trên màn hình. Một dòng nhãn cho mỗi đường là đủ. */
+  const nhan = (chu) => {
+    const n = el('p', 'dung-nhan', chu);
+    return n;
+  };
+  trai.append(
+    nhan('① Có sẵn ảnh chụp màn hình?'), oAnh.node, oAnh.oFile,
+    nhan('② Có sẵn mã HTML hoặc địa chỉ trang?'), oHtml,
+    nhan('③ Chưa có gì — tả bằng lời, Stitch vẽ hộ'), oTa, nutTa, chuTa,
+    oY, nut,
+  );
   phai.append(kq);
   muc.append(trai, phai);
   boc.appendChild(muc);
