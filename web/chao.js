@@ -76,6 +76,14 @@ async function veTaiKhoan() {
     return;
   }
 
+  /* Mục "Người dùng" chỉ hiện với người quản trị. Giấu bằng lớp `an` chứ không
+     dựng có điều kiện: đường API vẫn tự kiểm quyền, giấu ở đây chỉ là cho gọn
+     mắt người không cần tới nó. */
+  if (d.laQuanTri) {
+    $('nguoi').classList.remove('an');
+    napNguoi().catch((e) => bao(e.message, true));
+  }
+
   if (d.email) {
     const e = document.createElement('span');
     e.className = 'chip-ai';
@@ -361,6 +369,128 @@ $('thoi').onclick = () => oTao.close();
 oTen.oninput = dongBoNum;
 oMau.onchange = dongBoNum;
 $('phieu').onsubmit = (ev) => { ev.preventDefault(); taoThat(); };
+
+/* ---------- NGƯỜI DÙNG (chỉ người quản trị) ----------
+ *
+ * Trước đây muốn cho một khách hàng vào dùng thì phải sửa biến môi trường trên
+ * Vibe Host rồi triển khai lại — nghĩa là chỉ người viết code làm được, nên
+ * thực tế không ai được thêm. Nay chủ kho tự làm ở đây.
+ *
+ * MẬT KHẨU HIỆN ĐÚNG MỘT LẦN. Máy chủ chỉ cất bản băm; không có đường nào đọc
+ * lại. Nói rõ điều đó ngay trên ô, chứ không để người ta đóng ô rồi mới biết.
+ */
+const oNguoi = $('o-nguoi');
+const oMatKhau = $('o-mat-khau');
+
+function khoeMatKhau(email, mk) {
+  $('mk-khoe').textContent = `Trang: ${location.origin}\nEmail: ${email}\nMật khẩu: ${mk}`;
+  oMatKhau.showModal();
+}
+$('mk-chep').onclick = async () => {
+  try {
+    await navigator.clipboard.writeText($('mk-khoe').textContent);
+    bao('Đã chép. Dán cho họ là xong.');
+  } catch { bao('Trình duyệt không cho chép tự động — bôi đen rồi Ctrl+C.', true); }
+};
+
+async function goi(duong, cach, than) {
+  const r = await fetch(duong, { method: cach,
+    ...(than ? { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(than) } : {}) });
+  const d = await r.json().catch(() => ({}));
+  if (!d.ok) throw new Error(d.loi || d.cau || `Máy chủ trả mã ${r.status}.`);
+  return d;
+}
+
+function veNguoi(ds, toi) {
+  const boc = $('bang-nguoi');
+  boc.innerHTML = '';
+  for (const n of ds) {
+    const hang = document.createElement('div');
+    hang.className = 'hang-nguoi' + (n.dangHoatDong ? '' : ' khoa');
+
+    const trai = document.createElement('div');
+    trai.className = 'nguoi-ten';
+    const b = document.createElement('b');
+    b.textContent = n.email;
+    trai.appendChild(b);
+    const phu = document.createElement('span');
+    phu.className = 'phu';
+    phu.textContent = [n.ten, n.vai === 'quan_tri' ? 'quản trị' : null,
+      n.dangHoatDong ? null : 'đang khoá',
+      n.vaoLanCuoi ? `vào lần cuối ${luc(Date.parse(n.vaoLanCuoi))}` : 'chưa vào lần nào',
+    ].filter(Boolean).join(' · ');
+    trai.appendChild(phu);
+    /* Ai còn dùng mật khẩu chung cũ thì nói ra — đó là những tài khoản chép sang
+       từ danh sách cũ, và mật khẩu ấy thì nhiều người biết. */
+    if (n.matKhauChung) {
+      const c = document.createElement('span');
+      c.className = 'chip-canh-bao';
+      c.textContent = 'còn dùng mật khẩu chung';
+      c.title = 'Tài khoản này vẫn dùng đúng mật khẩu chung cũ mà nhiều người biết. Bấm "Đặt lại mật khẩu" để cho riêng.';
+      trai.appendChild(c);
+    }
+    hang.appendChild(trai);
+
+    const nut = document.createElement('div');
+    nut.className = 'nguoi-nut';
+    const them = (chu, lam, lop = 'nut nho') => {
+      const x = document.createElement('button');
+      x.type = 'button'; x.className = lop; x.textContent = chu;
+      x.onclick = async () => {
+        x.disabled = true;
+        try { await lam(); await napNguoi(); }
+        catch (e) { bao(e.message, true); x.disabled = false; }
+      };
+      nut.appendChild(x);
+    };
+    them('Đặt lại mật khẩu', async () => {
+      const d = await goi(`/api/nguoi-dung/${encodeURIComponent(n.email)}`, 'PATCH', { matKhau: '' });
+      khoeMatKhau(d.email, d.matKhau);
+    });
+    them(n.dangHoatDong ? 'Khoá' : 'Mở khoá', () => goi(
+      `/api/nguoi-dung/${encodeURIComponent(n.email)}`, 'PATCH', { dangHoatDong: !n.dangHoatDong }));
+    if (n.email !== toi) {
+      them('Xoá', async () => {
+        if (!confirm(`Xoá ${n.email} khỏi danh sách?\n\nKho dự án của họ KHÔNG bị xoá — thêm lại đúng email này là thấy lại.`)) {
+          throw new Error('Đã thôi.');
+        }
+        await goi(`/api/nguoi-dung/${encodeURIComponent(n.email)}`, 'DELETE');
+      }, 'nut nho xau');
+    }
+    hang.appendChild(nut);
+    boc.appendChild(hang);
+  }
+}
+
+async function napNguoi() {
+  const d = await goi('/api/nguoi-dung', 'GET');
+  veNguoi(d.nguoi, d.toi);
+}
+
+$('nut-them-nguoi').onclick = () => {
+  $('nguoi-email').value = ''; $('nguoi-ten').value = '';
+  $('nguoi-loi').classList.add('an');
+  oNguoi.showModal();
+  $('nguoi-email').focus();
+};
+$('phieu-nguoi').onsubmit = async (ev) => {
+  /* Nút "Thôi" cũng là submit (để `<dialog>` tự đóng) — phân biệt bằng value,
+     không thì bấm Thôi lại đi tạo tài khoản. */
+  if (ev.submitter?.value !== 'tao') return;
+  ev.preventDefault();
+  const nut = $('nguoi-xong');
+  nut.disabled = true;
+  try {
+    const d = await goi('/api/nguoi-dung', 'POST', {
+      email: $('nguoi-email').value.trim(), ten: $('nguoi-ten').value.trim(), vai: $('nguoi-vai').value });
+    oNguoi.close();
+    await napNguoi();
+    khoeMatKhau(d.email, d.matKhau);
+  } catch (e) {
+    const l = $('nguoi-loi');
+    l.textContent = e.message; l.classList.remove('an');
+  } finally { nut.disabled = false; }
+};
 
 /* ---------- chạy ---------- */
 veTaiKhoan();

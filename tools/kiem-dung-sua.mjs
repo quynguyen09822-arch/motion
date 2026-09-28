@@ -289,7 +289,7 @@ try {
   await tr.waitForTimeout(200);
   dat('dán địa chỉ trang thì nút mở ra',
     await tr.evaluate(() => !document.querySelector('.nut-dung').disabled
-      && /Dựng từ trang/.test(document.querySelector('.nut-dung').textContent)));
+      && /Chụp trang để xem trước/.test(document.querySelector('.nut-dung').textContent)));
   await tr.evaluate(() => {
     const o = document.querySelector('.o-dung-html');
     o.value = '';

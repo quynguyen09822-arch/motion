@@ -40,8 +40,14 @@ import { dsTaiKhoan, duoiEmail, layCauHinh } from './dangnhap.js';
 
 const GOC = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
-/** Nơi để kho của những người KHÔNG phải chủ. Đã `.gitignore`. */
-export const GOC_KHO = path.join(GOC, 'kho');
+/**
+ * Nơi để kho của những người KHÔNG phải chủ. Đã `.gitignore`.
+ *
+ * `MOTION_GOC_KHO` để bài kiểm trỏ sang thư mục tạm. Bài kiểm ghi vào kho thật
+ * rồi dọn trong `finally` là cách cũ, và một lần `finally` không chạy (máy chủ
+ * chết giữa chừng, Ctrl+C) là rác nằm lại trong kho của người dùng thật.
+ */
+export const GOC_KHO = (process.env.MOTION_GOC_KHO || '').trim() || path.join(GOC, 'kho');
 
 /**
  * Ai là chủ kho gốc.

@@ -11,6 +11,7 @@
  */
 import { spawn } from 'node:child_process';
 import { chmodSync, existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -43,6 +44,10 @@ async function dungMayChu({ cong, mk, taiKhoan }) {
   const mc = spawn('node', [path.join(M, 'server', 'main.js')], {
     cwd: M, stdio: ['ignore', 'pipe', 'pipe'],
     env: { ...process.env, PORT: String(cong), MOTION_KHOA_PHIEN: 'kiem-nhat-ky',
+      /* CSDL RIÊNG cho bài này. Ba bài cùng ghi vào một CSDL thì bài chạy
+         trước chép danh sách tài khoản của nó vào bảng, và bài sau không đăng
+         nhập nổi bằng tài khoản của chính nó (28/09). */
+      MOTION_CSDL: path.join(tmpdir(), 'motion-kiem-nhat-ky.db'),
            MOTION_MAT_KHAU_HASH: bam(mk), MOTION_DUOI_EMAIL: '@matbao.com',
            MOTION_TAI_KHOAN: taiKhoan },
   });

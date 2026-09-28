@@ -35,6 +35,8 @@ import { hoiAI } from './hoiai.js';
 import { dungCanh } from './dungcanh.js';
 import { dungTuHtml } from './tuhtml.js';
 import { CSP_DO_TRANG, layTrang, luuTrang } from './dotrang.js';
+import { banDoPhan, chupTrang, layChup } from './chuptrang.js';
+import { doCanh } from './docanh.js';
 import { batDauSinh, coKhoa as coKhoaStitch, soatLoiTa, xemViec } from './stitch.js';
 import { daDung, ghiNhat, xin } from './hanmuc.js';
 import { thongKe } from './nhatky.js';
@@ -45,7 +47,9 @@ import { chanDoan, docKhung, suaKhung } from './khung.js';
 import { BO, danhSachVideo } from './videos.js';
 import { docJson, json, khop, loi, moSSE } from './router.js';
 import { duongAnh, luuAnh } from './anh.js';
-import { DUONG_MAC_DINH, moCSDL } from './csdl.js';
+import { DUONG_MAC_DINH, layCSDL, moCSDL } from './csdl.js';
+import { chepTuEnv, coNguoi, doiMatKhau, doiVai, dsNguoi, datHoatDong, khopBam, kiemVao,
+  laQuanTri, layNguoi, themNguoi, xoaNguoi } from './nguoidung.js';
 // Bộ soát nằm trong web/ vì trình duyệt cũng phải tải được nó — xem đầu file đó.
 import { soatChatLuong } from '../web/soat.js';
 
@@ -124,6 +128,22 @@ const server = http.createServer(async (req, res) => {
 
       /* Email sai khuôn thì báo NGAY và KHÔNG tính vào số lần gõ sai mật khẩu.
          Gõ nhầm địa chỉ là chuyện thường, không phải dấu hiệu ai đó đang dò. */
+      /* BẢNG `nguoi_dung` QUYẾT ĐỊNH, nếu có ai trong đó. Mỗi người một mật
+         khẩu riêng — xem đầu `server/nguoidung.js`. Bảng trống (bài kiểm, máy
+         chạy thử, hoặc CSDL hỏng) thì rơi xuống đường cũ bên dưới. */
+      const db = layCSDL();
+      const theoBang = db ? kiemVao(db, than?.email, than?.mk) : null;
+      if (theoBang) {
+        if (!theoBang.ok) {
+          const con3 = ghiSai(ip, tk);
+          return loi(res, 401, con3 > 0 && con3 <= 3 && /chưa đúng/.test(theoBang.cau)
+            ? `${theoBang.cau} Còn ${con3} lần trước khi bị khoá 15 phút.` : theoBang.cau);
+        }
+        xoaSai(ip, tk);
+        res.setHeader('Set-Cookie', datCookie(req, taoVe(theoBang.email)));
+        return json(res, 200, { ok: true, email: theoBang.email, vai: theoBang.vai });
+      }
+
       const em = kiemEmail(than?.email);
       if (!em.ok) return loi(res, 400, em.cau);
 
@@ -136,6 +156,74 @@ const server = http.createServer(async (req, res) => {
       xoaSai(ip, tk);
       res.setHeader('Set-Cookie', datCookie(req, taoVe(em.email)));
       return json(res, 200, { ok: true, email: em.email });
+    }
+
+    /* ---------- NGƯỜI DÙNG ----------
+     * Chủ kho tự thêm khách hàng ngay trong app, thay vì sửa biến môi trường
+     * trên Vibe Host rồi triển khai lại. Xem `server/nguoidung.js`.
+     *
+     * CHỈ NGƯỜI QUẢN TRỊ. Kiểm ở TỪNG đường, không kiểm một chỗ rồi tin: thêm
+     * một đường mới mà quên kiểm là cả bảng tài khoản phơi ra.
+     */
+    if (p.startsWith('/api/nguoi-dung')) {
+      const db = layCSDL();
+      if (!db) return loi(res, 503, 'Chưa dùng được phần tài khoản (CSDL không mở được).');
+      const toi = aiDangVao(req);
+      /* Bảng còn trống thì chưa có ai là quản trị — lúc ấy app đang chạy kiểu
+         cũ, và phần này chưa mở. Nói thẳng chứ đừng để bấm vào rồi im lặng. */
+      if (!coNguoi(db)) return loi(res, 409, 'Máy chủ chưa đặt mật khẩu nên chưa có danh sách tài khoản.');
+      if (!laQuanTri(db, toi)) return loi(res, 403, 'Chỉ người quản trị mới xem được danh sách tài khoản.');
+
+      if (p === '/api/nguoi-dung' && req.method === 'GET') {
+        return json(res, 200, { ok: true, toi, nguoi: dsNguoi(db) });
+      }
+      if (p === '/api/nguoi-dung' && req.method === 'POST') {
+        const than = await docJson(req);
+        const kq = themNguoi(db, { email: than?.email, ten: than?.ten, vai: than?.vai });
+        if (!kq.ok) return loi(res, 400, kq.cau);
+        /* Mật khẩu trả về ĐÚNG MỘT LẦN, ngay lúc tạo. Không cất lại đâu cả nên
+           không đường nào đọc lại được — quên thì đặt lại cái mới. */
+        return json(res, 200, kq);
+      }
+      /* Biến RIÊNG, không dùng `m` chung của cả hàm: `m` khai bằng `let` ở dưới
+         khối này nên đụng vào đây là "Cannot access before initialization" — lỗi
+         500 cho mọi lượt sửa tài khoản. */
+      const mNg = khop('/api/nguoi-dung/:email', p);
+      if (mNg && req.method === 'DELETE') {
+        const kq = xoaNguoi(db, mNg.email);
+        return kq.ok ? json(res, 200, kq) : loi(res, 400, kq.cau);
+      }
+      if (mNg && req.method === 'PATCH') {
+        const than = await docJson(req);
+        if (than?.matKhau !== undefined) {
+          const kq = doiMatKhau(db, mNg.email, String(than.matKhau || ''));
+          return kq.ok ? json(res, 200, kq) : loi(res, 400, kq.cau);
+        }
+        if (than?.dangHoatDong !== undefined) {
+          const kq = datHoatDong(db, mNg.email, Boolean(than.dangHoatDong));
+          return kq.ok ? json(res, 200, kq) : loi(res, 400, kq.cau);
+        }
+        if (than?.vai !== undefined) {
+          const kq = doiVai(db, mNg.email, String(than.vai));
+          return kq.ok ? json(res, 200, kq) : loi(res, 400, kq.cau);
+        }
+        return loi(res, 400, 'Không rõ muốn đổi gì.');
+      }
+      return loi(res, 404, `Không có đường dẫn ${p}.`);
+    }
+
+    /* ĐỔI MẬT KHẨU CỦA CHÍNH MÌNH — ai cũng làm được, và phải gõ đúng mật khẩu
+       cũ. Đây là đường để thoát khỏi mật khẩu chung. */
+    if (p === '/api/doi-mat-khau-cua-toi' && req.method === 'POST') {
+      const db = layCSDL();
+      const toi = aiDangVao(req);
+      if (!db || !coNguoi(db)) return loi(res, 409, 'Máy chủ này chưa dùng tài khoản riêng.');
+      if (!toi) return loi(res, 401, 'Chưa đăng nhập.');
+      const than = await docJson(req);
+      const n = layNguoi(db, toi);
+      if (!n || !khopBam(than?.cu, n.mat_khau_bam)) return loi(res, 401, 'Mật khẩu hiện tại không đúng.');
+      const kq = doiMatKhau(db, toi, String(than?.moi || ''));
+      return kq.ok ? json(res, 200, { ok: true }) : loi(res, 400, kq.cau);
     }
 
     if (p === '/api/dang-xuat' && req.method === 'POST') {
@@ -185,6 +273,13 @@ const server = http.createServer(async (req, res) => {
            "Vẽ giao diện từ lời tả" trên một máy chủ không có khoá là để người
            dùng gõ xong một đoạn tả rồi mới nhận lời từ chối. */
         coStitch: coKhoaStitch(),
+        /* Có phải người quản trị không — để trang chào biết có bày mục "Người
+           dùng" hay không. Hỏi CSDL chứ đừng suy từ email: chủ kho theo env và
+           quản trị theo bảng là hai chuyện, và chúng lệch nhau được. */
+        laQuanTri: (() => {
+          const db = layCSDL();
+          return Boolean(db && coNguoi(db) && laQuanTri(db, aiDangVao(req)));
+        })(),
         hanMuc: daDung(aiDangVao(req)),
       });
     }
@@ -520,6 +615,30 @@ const server = http.createServer(async (req, res) => {
       return res.end(html);
     }
 
+    /* CHỤP TRANG BẰNG TRÌNH DUYỆT THẬT TRÊN MÁY CHỦ — ô ② của thẻ Dựng hình.
+     * Người dùng XEM ảnh chụp để kiểm đúng trang mình muốn, chọn một phần, rồi
+     * mới gọi AI. Xem `server/chuptrang.js`. Máy không có Chromium thì trả
+     * `khongCo` để trình duyệt lùi về đường đo cũ (`/api/do-trang`). */
+    if (p === '/api/chup-trang' && req.method === 'POST') {
+      const than = await docJson(req);
+      const url = String(than?.url || '').trim();
+      const html = String(than?.html || '');
+      if (url && !/^https?:\/\//i.test(url)) {
+        return loi(res, 400, 'Địa chỉ phải bắt đầu bằng http:// hoặc https://');
+      }
+      const kq = await chupTrang({ url: url || null, html: url ? null : html, chu: aiDangVao(req) });
+      if (!kq.ok) return json(res, kq.khongCo ? 200 : 400, kq);
+      return json(res, 200, kq);
+    }
+    if ((m = khop('/api/chup-trang/:id/anh', p) || khop('/api/chup-trang/:id/phan/:pid', p))
+      && req.method === 'GET') {
+      const v = layChup(m.id, aiDangVao(req));
+      const anh = !v ? null : m.pid ? v.phan.find((x) => x.id === m.pid)?.anh : v.anh;
+      if (!anh) return loi(res, 404, 'Ảnh chụp đã hết hạn — chụp lại trang.');
+      res.writeHead(200, { 'Content-Type': 'image/jpeg', 'Cache-Control': 'private, max-age=900' });
+      return res.end(anh);
+    }
+
     if (p === '/api/tu-html' && req.method === 'POST') {
       const than = await docJson(req);
       {
@@ -533,6 +652,19 @@ const server = http.createServer(async (req, res) => {
       const c = docClip(slug, kho);
       if (!c) return loi(res, 404, `Không thấy clip "${slug}".`);
 
+      /* Đã chụp trên máy chủ và người dùng đã chọn một phần: lấy bản đồ + ảnh
+         của đúng phần ấy. Ảnh đi kèm cho AI NHÌN — số đo vẫn lấy từ bản đồ. */
+      if (than?.chupId) {
+        const v = layChup(than.chupId, aiDangVao(req));
+        if (!v) return loi(res, 404, 'Ảnh chụp trang đã hết hạn — bấm chụp lại.');
+        const bp = banDoPhan(v, String(than.phanId || ''));
+        if (!bp) return loi(res, 400, 'Chưa chọn phần nào của trang.');
+        const email = aiDangVao(req);
+        const d = await dungTuHtml({ doc: c.doc, y: than?.y, banDo: bp.banDo, anh: bp.anh,
+          doThat: (canh) => doCanh({ goc: `http://127.0.0.1:${PORT}`, meta: c.doc.meta, canh, email }) });
+        if (d.cau && !d.canh) return loi(res, 400, d.cau);
+        return json(res, 200, d);
+      }
       const html = String(than?.html || '');
       const url = String(than?.url || '').trim();
       if (!html && !url && !than?.banDo) return loi(res, 400, 'Chưa dán HTML hay địa chỉ trang.');
@@ -862,12 +994,21 @@ server.listen(PORT, '0.0.0.0', () => {
    * thứ trình sửa cần để chạy. Ổ đĩa đầy hay quyền sai mà kéo cả app xuống thì
    * ta vừa đổi một tính năng chưa ai dùng lấy toàn bộ công cụ. */
   try {
-    const db = moCSDL();
+    const db = layCSDL();
+    if (!db) throw new Error('không mở được');
     const bang = db.prepare(
       "SELECT COUNT(*) c FROM sqlite_master WHERE type='table'").get().c;
     const buoc = db.prepare('SELECT COUNT(*) c FROM di_tru').get().c;
-    db.close();
     console.log(`   CSDL:       ${DUONG_MAC_DINH} — ${bang} bảng, ${buoc} bước di trú`);
+    /* Chép danh sách tài khoản cũ (env) vào bảng — một lần, xem
+       `server/nguoidung.js`. Không ai bị đá ra, không ai được thêm quyền. */
+    const chep = chepTuEnv(db, { chuKho: chuKho() });
+    if (chep) console.log(`   Tài khoản:  chép ${chep} tài khoản từ danh sách cũ vào CSDL`);
+    if (coNguoi(db)) {
+      const n = dsNguoi(db);
+      console.log(`   Tài khoản:  ${n.length} người (${n.filter((x) => x.vai === 'quan_tri').length} quản trị)`
+        + `${n.some((x) => x.matKhauChung) ? ` — ${n.filter((x) => x.matKhauChung).length} người còn dùng mật khẩu chung` : ''}`);
+    }
   } catch (e) {
     console.error(`   CSDL:       KHÔNG dựng được — ${e.message}`);
     console.error('               (trình sửa vẫn chạy bình thường; xem docs/CSDL.md)');

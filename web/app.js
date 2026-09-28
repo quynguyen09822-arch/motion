@@ -45,6 +45,7 @@ const kho = taoKho();
 const doMon = taoDo(player);
 const lopPhu = taoLopPhu($('lop-phu'), player);
 const bang = taoBang($('bang-thuoc-tinh'), kho, player);
+bang.khiDoiLop(() => { const d = kho.doc(); if (d && chon?.canhId) dsLop.ve(d, chon.canhId); });
 const anhNho = taoAnhNho(player);
 const dsLop = taoDanhSach($('ds-lop'), {
   anhNho,

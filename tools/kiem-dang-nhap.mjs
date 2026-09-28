@@ -18,6 +18,7 @@
 import { createRequire } from 'node:module';
 import { spawn } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -47,6 +48,10 @@ function moMayChu(cong, them) {
     /* `MOTION_KHOA_PHIEN` truyền vào để `dangnhap.js` KHỎI tự sinh rồi ghi vào
        `.env` thật — bài kiểm không được để lại dấu vết trong cấu hình. */
     env: { ...process.env, PORT: String(cong), MOTION_KHOA_PHIEN: 'khoa-kiem-thu',
+      /* CSDL RIÊNG cho bài này. Ba bài cùng ghi vào một CSDL thì bài chạy
+         trước chép danh sách tài khoản của nó vào bảng, và bài sau không đăng
+         nhập nổi bằng tài khoản của chính nó (28/09). */
+      MOTION_CSDL: path.join(tmpdir(), 'motion-kiem-dang-nhap.db'),
       MOTION_DUOI_EMAIL: DUOI, MOTION_TAI_KHOAN: TK, ...them },
   });
   return con;

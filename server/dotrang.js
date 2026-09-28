@@ -65,7 +65,7 @@ function ipNoiBo(ip) {
     || t.startsWith('::ffff:192.168.') || t.startsWith('::ffff:169.254.');
 }
 
-async function kiemDiaChi(u) {
+export async function kiemDiaChi(u) {
   let url;
   try { url = new URL(u); } catch { return 'Địa chỉ không hợp lệ.'; }
   if (!/^https?:$/.test(url.protocol)) return 'Địa chỉ phải bắt đầu bằng http:// hoặc https://';
