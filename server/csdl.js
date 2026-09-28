@@ -217,3 +217,32 @@ export function layCSDL() {
   }
   return noiChung;
 }
+
+/* ══════════ ĐANG LÀM DỞ Ở ĐÂU ══════════
+ *
+ * Người dùng đóng tab rồi mở lại thì về đúng dự án đang làm, đúng cảnh, đúng
+ * giây. Xem `server/csdl/003-cho-lam-viec.sql`.
+ *
+ * KHÔNG ĐƯỢC LÀM CHẾT ĐƯỜNG NÀO. Đây là tiện nghi, không phải dữ liệu. CSDL
+ * hỏng thì app vẫn phải mở clip bình thường, chỉ là mở dự án đầu danh sách.
+ */
+export function luuChoLam(db, email, { slug, canh = '', giay = 0 }) {
+  if (!db || !email || !slug) return false;
+  try {
+    db.prepare(`INSERT INTO cho_lam_viec (email, slug, canh, giay, sua_luc)
+      VALUES (?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+      ON CONFLICT(email) DO UPDATE SET slug = excluded.slug, canh = excluded.canh,
+        giay = excluded.giay, sua_luc = excluded.sua_luc`)
+      .run(String(email), String(slug), String(canh || '').slice(0, 80), Number(giay) || 0);
+    return true;
+  } catch { return false; }
+}
+
+export function layChoLam(db, email) {
+  if (!db || !email) return null;
+  try {
+    const r = db.prepare('SELECT slug, canh, giay, sua_luc FROM cho_lam_viec WHERE email = ?')
+      .get(String(email));
+    return r ? { slug: r.slug, canh: r.canh, giay: r.giay, suaLuc: r.sua_luc } : null;
+  } catch { return null; }
+}

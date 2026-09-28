@@ -99,6 +99,20 @@ try {
   const veChu = chuVao.ve, veBan = banVao.ve;
 
   /* ---------- ⑤ quyền ---------- */
+  /* ---------- ⑨ gõ TÊN TRỐNG cũng vào được ----------
+   * Người quản trị đưa khách cái tên `demo12345`; khách gõ đúng cái tên ấy mà
+   * bị từ chối vì ô đăng nhập đòi email đầy đủ. Anh Quý vấp đúng chỗ này
+   * (28/09) và kết luận là "chưa tạo được tài khoản dùng bình thường", trong
+   * khi tài khoản có thật và chạy tốt.
+   */
+  console.log('\n⑨ Gõ tên trống (không có @) cũng đăng nhập được');
+  const tenTron = await vao(CHU.split('@')[0], MK_CHUNG);
+  dat('chủ kho gõ mỗi tên vẫn vào được', tenTron.ok === true, tenTron.loi || tenTron.email);
+  dat('và vào đúng tài khoản ấy, không phải ai khác', tenTron.email === CHU, tenTron.email);
+  const hoaThuong = await vao(CHU.toUpperCase(), MK_CHUNG);
+  dat('gõ HOA cũng vào được', hoaThuong.ok === true, hoaThuong.loi);
+  dat('gõ tên không có thật thì vẫn bị từ chối', (await vao('khong-co-ai', MK_CHUNG)).ok !== true);
+
   console.log('\n⑤ Chỉ người quản trị mở được danh sách');
   dat('người thường bị từ chối', (await goi('/api/nguoi-dung', { ve: veBan })).ma === 403);
   dat('chưa đăng nhập cũng bị từ chối', [401, 403, 302].includes((await goi('/api/nguoi-dung')).ma));
@@ -120,6 +134,18 @@ try {
     (await vao('khach@congty.com', MK_CHUNG)).ok !== true);
   dat('khách KHÔNG mượn được email của chủ kho với mật khẩu của mình',
     (await vao(CHU, them.matKhau)).ok !== true);
+  /* Người quản trị GÕ SẴN mật khẩu — họ đã hứa một mật khẩu với khách rồi. */
+  const tuGo = await goi('/api/nguoi-dung', { cach: 'POST', ve: veChu,
+    than: { email: 'khach-tu-go@congty.com', matKhau: 'Demo@12345' } });
+  dat('gõ sẵn mật khẩu thì dùng đúng cái đó', tuGo.ok === true && tuGo.matKhau === 'Demo@12345',
+    tuGo.loi || tuGo.matKhau);
+  dat('và vào được bằng chính nó', (await vao('khach-tu-go@congty.com', 'Demo@12345')).ok === true);
+  const ngan = await goi('/api/nguoi-dung', { cach: 'POST', ve: veChu,
+    than: { email: 'mk-ngan@congty.com', matKhau: 'abc' } });
+  dat('mật khẩu quá ngắn bị từ chối ngay lúc tạo', ngan.ok !== true, (ngan.loi || '').slice(0, 40));
+  dat('và KHÔNG tạo ra tài khoản nửa vời',
+    (await goi('/api/nguoi-dung', { ve: veChu })).nguoi.every((n) => n.email !== 'mk-ngan@congty.com'));
+
   dat('thêm trùng email thì báo, không đè lên tài khoản cũ',
     (await goi('/api/nguoi-dung', { cach: 'POST', ve: veChu, than: { email: 'khach@congty.com' } })).ok !== true);
   const veKhach = khachVao.ve;

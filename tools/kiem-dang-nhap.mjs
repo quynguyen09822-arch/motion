@@ -247,7 +247,11 @@ try {
   dat('có ô email', t.coEmail);
   /* Gợi ý phải lấy đuôi TỪ MÁY CHỦ. Viết cứng ở trang thì đổi đuôi trong `.env`
      mà chỗ này vẫn ghi đuôi cũ — tức là nói dối người dùng. */
-  dat('gợi ý email lấy đúng đuôi máy chủ khai', String(t.goiY || '').endsWith(DUOI), t.goiY);
+  /* `includes` chứ không `endsWith`: gợi ý nay còn mách thêm "hoặc gõ mỗi
+     ten.ban" — vì gõ tên trống cũng đăng nhập được (28/09). Điều bài này canh
+     là ĐUÔI CÓ TRONG GỢI Ý, không phải gợi ý dài đúng bằng cái đuôi. */
+  dat('gợi ý email lấy đúng đuôi máy chủ khai', String(t.goiY || '').includes(DUOI), t.goiY);
+  dat('và mách rằng gõ mỗi tên cũng được', /gõ mỗi/i.test(String(t.goiY || '')), t.goiY);
   dat('hai ô rộng bằng nhau', t.rongBang);
   dat('con trỏ nhảy sẵn vào ô đầu', t.troVao === 'email');
   dat('có nút hiện/ẩn mật khẩu', t.hien);

@@ -302,6 +302,10 @@ là bậc trễ của `stagger`, nên một phép đổi chỗ sai không làm g
 vẫn hợp lệ, clip vẫn chạy, chỉ SAI HÌNH — kiểu hỏng không ai bắt được cho tới lúc
 xuất video.
 
+**`node tools/kiem-phien-lam.mjs`** chạy bằng Node trần — canh chuyện "đóng tab
+rồi mở lại về đúng chỗ": dự án của ai nấy giữ, nháp gửi bằng `sendBeacon` (POST,
+không phải PUT), và chỗ làm việc đi theo TÀI KHOẢN chứ không theo vé đăng nhập.
+
 **`node tools/kiem-nguoi-dung.mjs`** chạy bằng Node trần — 36 mục, tự dựng máy
 chủ CÓ mật khẩu ở cổng 7896, canh tài khoản khách hàng: mật khẩu riêng, kho
 riêng, và **không bao giờ khoá hết người quản trị**. CSDL/kho đặt ở thư mục tạm

@@ -67,7 +67,9 @@ Hai quyền: **Người dùng** (chỉ làm clip trong kho của mình) và **Qu
 | `server/csdl.js` | `layCSDL()` — kết nối dùng chung, hỏng thì `null` |
 | `server/main.js` | `/api/nguoi-dung` (GET·POST·PATCH·DELETE), `/api/doi-mat-khau-cua-toi`, nhánh mới trong `/api/dang-nhap` |
 | `web/chao.js` + `chao.html` + `chao.css` | mục *Người dùng* ở trang chào |
-| `tools/kiem-nguoi-dung.mjs` | 36 mục, tự dựng máy chủ CÓ mật khẩu ở cổng 7896 |
+| `tools/kiem-nguoi-dung.mjs` | 40 mục, tự dựng máy chủ CÓ mật khẩu ở cổng 7896 |
+| `server/csdl.js` (`luuChoLam`/`layChoLam`) + `csdl/003-cho-lam-viec.sql` | nhớ chỗ làm việc của từng tài khoản |
+| `tools/kiem-phien-lam.mjs` | 15 mục: dự án riêng · nháp gửi lúc đóng tab · về đúng chỗ cũ |
 
 Bảng `nguoi_dung` đã có sẵn trong `server/csdl/001-nen-mong.sql` từ 26/09 —
 không phải thêm bước di trú nào.
@@ -83,6 +85,32 @@ kho CHÍNH LÀ `scenes/` thật của dự án clip (447 MB, không có git). N�
 `cua-chu-kho.json` nằm giữa 11 clip thật. Đã xoá, và bài kiểm nay dùng **hai
 khách hàng** để thử chuyện kho riêng. Cùng luật với `kiem-kho-rieng.mjs`:
 **không bao giờ ghi với tư cách chủ kho.**
+
+## Mỗi tài khoản giữ chỗ làm việc của mình
+
+Anh Quý dặn "lưu phiên làm mỗi lần out ra". Ba lớp, tách bạch:
+
+| Lớp | Ở đâu | Giữ gì |
+|---|---|---|
+| **Dự án** | `kho/<mã>/scenes/` — mỗi tài khoản một thư mục | clip đã lưu |
+| **Nháp** | `kho/<mã>/.drafts/` | bản đang sửa dở, chưa bấm Lưu |
+| **Chỗ làm việc** | bảng `cho_lam_viec` trong CSDL, khoá theo email | dự án nào, cảnh nào, giây nào |
+
+Đóng tab thì trình duyệt gửi nốt cả hai thứ sau bằng `navigator.sendBeacon`.
+Phải là beacon chứ không phải `fetch`: lúc trang đang đóng, `fetch` bị huỷ giữa
+chừng. Và beacon **luôn là POST**, nên máy chủ nhận cả POST ở
+`/api/draft/:slug` và `/api/cho-lam-viec` — thiếu nhánh POST thì đúng những sửa
+đổi cuối cùng, thứ người ta tiếc nhất, không được lưu.
+
+Bắt cả `pagehide` lẫn `visibilitychange`: trên điện thoại, chuyển sang app khác
+rồi bị hệ điều hành thu hồi tab thì `beforeunload` không chạy.
+
+Mở app lên mà không chỉ định dự án (`/sua` trơn) thì về **đúng dự án đang làm
+dở, đúng giây**. Clip bị cắt ngắn đi thì không nhảy tới giây cũ nữa — nhảy tới
+một giây không còn tồn tại là màn hình trắng mà không ai hiểu vì sao.
+
+**Nháp vẫn chỉ là đề xuất.** Mở lại thấy nháp mới hơn file thật thì app HỎI,
+không tự áp — luật cũ của `drafts.js`, không đổi.
 
 ## Chưa làm
 

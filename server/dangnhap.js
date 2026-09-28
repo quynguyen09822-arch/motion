@@ -115,8 +115,26 @@ export function dsTaiKhoan() {
  * phải email của ai cả, và nếu chỉ kiểm đuôi thì chuỗi rỗng phía trước lọt qua,
  * rồi hiện lên thanh trên thành một cái tên trống trơn.
  */
-export function kiemEmail(em) {
+/**
+ * GÕ TÊN TRỐNG CŨNG ĐƯỢC, không bắt gõ đủ email.
+ *
+ * `MOTION_TAI_KHOAN` từ đầu đã cho khai `motion11011` rồi tự ghép đuôi. Nhưng ô
+ * đăng nhập thì lại đòi email đầy đủ — người quản trị đưa khách cái tên
+ * `demo12345`, khách gõ đúng cái tên ấy vào và bị từ chối. Đã xảy ra thật với
+ * anh Quý (28/09): "chưa tạo một tài khoản dùng bình thường", trong khi tài
+ * khoản có thật và chạy tốt.
+ *
+ * Chỉ ghép khi máy chủ có khai đuôi, và chỉ khi chuỗi gõ vào không có `@`.
+ */
+export function chuanEmail(em) {
   const e = String(em || '').trim().toLowerCase();
+  if (!e || e.includes('@')) return e;
+  const duoi = duoiEmail();
+  return duoi ? e + duoi : e;
+}
+
+export function kiemEmail(em) {
+  const e = chuanEmail(em);
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)) {
     return { ok: false, cau: 'Email chưa đúng khuôn. Ví dụ: ten.ban@matbao.com' };
   }

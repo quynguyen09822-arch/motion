@@ -463,7 +463,11 @@ function veNguoi(ds, toi) {
       continue;
     }
     them('Đặt lại mật khẩu', async () => {
-      const d = await goi(`/api/nguoi-dung/${encodeURIComponent(n.email)}`, 'PATCH', { matKhau: '' });
+      /* Hỏi trước: bỏ trống thì máy sinh hộ, gõ vào thì dùng đúng cái đó. Không
+         hỏi thì người quản trị không đặt được mật khẩu họ đã hứa với khách. */
+      const go = prompt(`Mật khẩu mới cho ${n.email}\n\nBỏ trống = máy tự đặt hộ một mật khẩu khó đoán.`, '');
+      if (go === null) throw new Error('Đã thôi.');
+      const d = await goi(`/api/nguoi-dung/${encodeURIComponent(n.email)}`, 'PATCH', { matKhau: go.trim() });
       khoeMatKhau(d.email, d.matKhau);
     });
     them(n.dangHoatDong ? 'Khoá' : 'Mở khoá', () => goi(
@@ -487,7 +491,7 @@ async function napNguoi() {
 }
 
 $('nut-them-nguoi').onclick = () => {
-  $('nguoi-email').value = ''; $('nguoi-ten').value = '';
+  $('nguoi-email').value = ''; $('nguoi-ten').value = ''; $('nguoi-mk').value = '';
   $('nguoi-loi').classList.add('an');
   oNguoi.showModal();
   $('nguoi-email').focus();
@@ -501,7 +505,10 @@ $('phieu-nguoi').onsubmit = async (ev) => {
   nut.disabled = true;
   try {
     const d = await goi('/api/nguoi-dung', 'POST', {
-      email: $('nguoi-email').value.trim(), ten: $('nguoi-ten').value.trim(), vai: $('nguoi-vai').value });
+      email: $('nguoi-email').value.trim(), ten: $('nguoi-ten').value.trim(),
+      /* Bỏ trống thì để máy chủ tự sinh — nó sinh chuỗi khó đoán mà vẫn đọc
+         được qua điện thoại. Người tự gõ thì gõ mật khẩu họ nhớ được. */
+      matKhau: $('nguoi-mk').value, vai: $('nguoi-vai').value });
     oNguoi.close();
     await napNguoi();
     khoeMatKhau(d.email, d.matKhau);

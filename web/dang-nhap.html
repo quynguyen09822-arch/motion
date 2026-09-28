@@ -34,7 +34,7 @@
   </div>
 
   <form id="phieu" novalidate>
-    <label class="nhan" for="email">Email công ty</label>
+    <label class="nhan" for="email">Email hoặc tên đăng nhập</label>
     <input id="email" name="email" type="email" class="o o-email" inputmode="email"
            autocomplete="username" placeholder="ten.ban@matbao.com" autofocus required
            aria-describedby="loi">
@@ -70,7 +70,7 @@ try {
 /* Đuôi email do máy chủ quy định, không viết cứng ở đây — đổi đuôi trong `.env`
    mà chỗ này vẫn ghi đuôi cũ là nói dối người dùng. */
 fetch('/api/toi-la-ai').then((r) => r.json()).then((d) => {
-  if (d?.duoi) email.placeholder = `ten.ban${d.duoi}`;
+  if (d?.duoi) email.placeholder = `ten.ban${d.duoi} — hoặc gõ mỗi "ten.ban"`;
   /* Có danh sách tài khoản thì nói rõ là KHÔNG phải email công ty nào cũng vào
      được — người gõ đúng email của mình mà bị từ chối sẽ tưởng hệ thống hỏng. */
   if (d?.coGoogle) document.getElementById('boc-google').classList.remove('an');

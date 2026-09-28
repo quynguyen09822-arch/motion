@@ -19,7 +19,7 @@ import { fileURLToPath } from 'node:url';
 import { PROJ, SCENES, kiemTraDuAn, soatKichBan } from './proj.js';
 import { duocPhucVu, guiFile } from './static.js';
 import { aiDangVao, daDatMatKhau, dangBiKhoa, datCookie, diaChi, dsTaiKhoan, duocVao,
-  duocVaoKhiXuat, duoiEmail, ghiSai, kiemEmail, kiemMatKhau, moVe, SONG_VE_XUAT, taoVe,
+  chuanEmail, duocVaoKhiXuat, duoiEmail, ghiSai, kiemEmail, kiemMatKhau, moVe, SONG_VE_XUAT, taoVe,
   taoVeXuat, xoaCookie, xoaSai, docCookie } from './dangnhap.js';
 import { canhMau } from './canhmau.js';
 import { danhSachClip, docClip, duongDanXem, locSlug } from './clips.js';
@@ -47,7 +47,7 @@ import { chanDoan, docKhung, suaKhung } from './khung.js';
 import { BO, danhSachVideo } from './videos.js';
 import { docJson, json, khop, loi, moSSE } from './router.js';
 import { duongAnh, luuAnh } from './anh.js';
-import { DUONG_MAC_DINH, layCSDL, moCSDL } from './csdl.js';
+import { DUONG_MAC_DINH, layCSDL, layChoLam, luuChoLam, moCSDL } from './csdl.js';
 import { batDau as batDauGoogle, coGoogle, nhanVeGoogle, xoaCookieG, TEN_COOKIE_G } from './google.js';
 import { chepTuEnv, coNguoi, doiMatKhau, duyetNguoi, vaoBangGoogle, doiVai, dsNguoi, datHoatDong, khopBam, kiemVao,
   laQuanTri, layNguoi, themNguoi, xoaNguoi } from './nguoidung.js';
@@ -142,7 +142,10 @@ const server = http.createServer(async (req, res) => {
       const than = await docJson(req);
       /* Khoá đếm gồm CẢ tài khoản: dò một tài khoản từ nhiều máy vẫn bị chặn.
          Đọc thân yêu cầu TRƯỚC khi kiểm khoá vì cần biết đang gõ tài khoản nào. */
-      const tk = `tk:${String(than?.email || '').trim().toLowerCase()}`;
+      /* Ghép đuôi NGAY TỪ ĐẦU: khoá đếm gõ sai, tra CSDL và kiểm danh sách đều
+         phải nói về cùng một người, dù họ gõ `demo12345` hay gõ đủ email. */
+      const emGo = chuanEmail(than?.email);
+      const tk = `tk:${emGo}`;
       const con = dangBiKhoa(ip, tk);
       if (con) return loi(res, 429, `Gõ sai nhiều lần quá. Thử lại sau ${con} phút.`);
       if (!daDatMatKhau()) return loi(res, 400, 'Máy chủ chưa đặt mật khẩu nào.');
@@ -153,7 +156,7 @@ const server = http.createServer(async (req, res) => {
          khẩu riêng — xem đầu `server/nguoidung.js`. Bảng trống (bài kiểm, máy
          chạy thử, hoặc CSDL hỏng) thì rơi xuống đường cũ bên dưới. */
       const db = layCSDL();
-      const theoBang = db ? kiemVao(db, than?.email, than?.mk) : null;
+      const theoBang = db ? kiemVao(db, emGo, than?.mk) : null;
       if (theoBang) {
         if (!theoBang.ok) {
           const con3 = ghiSai(ip, tk);
@@ -165,7 +168,7 @@ const server = http.createServer(async (req, res) => {
         return json(res, 200, { ok: true, email: theoBang.email, vai: theoBang.vai });
       }
 
-      const em = kiemEmail(than?.email);
+      const em = kiemEmail(emGo);
       if (!em.ok) return loi(res, 400, em.cau);
 
       if (!kiemMatKhau(than?.mk)) {
@@ -242,7 +245,10 @@ const server = http.createServer(async (req, res) => {
       }
       if (p === '/api/nguoi-dung' && req.method === 'POST') {
         const than = await docJson(req);
-        const kq = themNguoi(db, { email: than?.email, ten: than?.ten, vai: than?.vai });
+        const kq = themNguoi(db, { email: than?.email, ten: than?.ten, vai: than?.vai,
+          /* Người quản trị gõ sẵn mật khẩu thì dùng đúng cái đó; bỏ trống thì
+             `themNguoi` sinh hộ. Cách nào cũng chỉ hiện đúng một lần. */
+          matKhau: String(than?.matKhau || '') });
         if (!kq.ok) return loi(res, 400, kq.cau);
         /* Mật khẩu trả về ĐÚNG MỘT LẦN, ngay lúc tạo. Không cất lại đâu cả nên
            không đường nào đọc lại được — quên thì đặt lại cái mới. */
@@ -519,7 +525,24 @@ const server = http.createServer(async (req, res) => {
       return json(res, 200, { ...kq, suaLuc: docClip(slug, kho).suaLuc });
     }
 
-    if ((m = khop('/api/draft/:slug', p)) && req.method === 'PUT') {
+    /* ---------- ĐANG LÀM DỞ Ở ĐÂU ----------
+     * Mở app lên là về đúng dự án đang làm, đúng cảnh, đúng giây. Lưu theo tài
+     * khoản nên đổi máy vẫn theo được. */
+    if (p === '/api/cho-lam-viec' && req.method === 'GET') {
+      return json(res, 200, { ok: true, cho: layChoLam(layCSDL(), aiDangVao(req) || '') });
+    }
+    if (p === '/api/cho-lam-viec' && (req.method === 'PUT' || req.method === 'POST')) {
+      const than = await docJson(req);
+      const slug = locSlug(than?.slug);
+      if (!slug) return loi(res, 400, 'Tên clip không hợp lệ.');
+      luuChoLam(layCSDL(), aiDangVao(req) || '', { slug, canh: than?.canh, giay: than?.giay });
+      return json(res, 200, { ok: true });
+    }
+
+    /* `POST` cũng nhận, không chỉ `PUT`: lúc đóng tab trình duyệt chỉ gửi được
+       bằng `navigator.sendBeacon`, mà beacon thì LUÔN là POST. Thiếu nhánh này
+       thì đúng những sửa đổi cuối cùng — thứ dễ mất nhất — không được lưu. */
+    if ((m = khop('/api/draft/:slug', p)) && (req.method === 'PUT' || req.method === 'POST')) {
       const slug = locSlug(m.slug);
       if (!slug) return loi(res, 400, 'Tên clip không hợp lệ.');
       const than = await docJson(req);
