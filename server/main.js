@@ -20,7 +20,7 @@ import { PROJ, SCENES, kiemTraDuAn, soatKichBan } from './proj.js';
 import { duocPhucVu, guiFile } from './static.js';
 import { aiDangVao, daDatMatKhau, dangBiKhoa, datCookie, diaChi, dsTaiKhoan, duocVao,
   duocVaoKhiXuat, duoiEmail, ghiSai, kiemEmail, kiemMatKhau, moVe, SONG_VE_XUAT, taoVe,
-  taoVeXuat, xoaCookie, xoaSai } from './dangnhap.js';
+  taoVeXuat, xoaCookie, xoaSai, docCookie } from './dangnhap.js';
 import { canhMau } from './canhmau.js';
 import { danhSachClip, docClip, duongDanXem, locSlug } from './clips.js';
 import { chuKho, khoCua, oLuuBenVung, soDuAn } from './kho.js';
@@ -48,7 +48,8 @@ import { BO, danhSachVideo } from './videos.js';
 import { docJson, json, khop, loi, moSSE } from './router.js';
 import { duongAnh, luuAnh } from './anh.js';
 import { DUONG_MAC_DINH, layCSDL, moCSDL } from './csdl.js';
-import { chepTuEnv, coNguoi, doiMatKhau, doiVai, dsNguoi, datHoatDong, khopBam, kiemVao,
+import { batDau as batDauGoogle, coGoogle, nhanVeGoogle, xoaCookieG, TEN_COOKIE_G } from './google.js';
+import { chepTuEnv, coNguoi, doiMatKhau, duyetNguoi, vaoBangGoogle, doiVai, dsNguoi, datHoatDong, khopBam, kiemVao,
   laQuanTri, layNguoi, themNguoi, xoaNguoi } from './nguoidung.js';
 // Bộ soát nằm trong web/ vì trình duyệt cũng phải tải được nó — xem đầu file đó.
 import { soatChatLuong } from '../web/soat.js';
@@ -61,6 +62,26 @@ const CLIP15 = path.join(GOC, 'clip-15s');
 // 7800/7801/7802 (dự án clip, motion-ui-graphic, clipvibe-studio) và 7810
 // (Library-Source), là những cổng đã có chủ trong ~/.claude/mb-ports.tsv.
 const PORT = Number(process.env.PORT) || 7803;
+
+/**
+ * Trang báo cho luồng Google — người dùng đang ở một lượt CHUYỂN TRANG, không
+ * phải một lời gọi API, nên trả JSON là họ nhìn thấy một đống dấu ngoặc.
+ *
+ * Tự chứa, không nạp CSS ngoài: nó phải hiện đúng kể cả khi có chuyện gì đó
+ * đang hỏng. Chèn chữ bằng `escape` chứ đừng nối thẳng — câu báo có thể mang
+ * chữ từ Google gửi về.
+ */
+function trangBaoGoogle(cau) {
+  const an = String(cau).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  return `<!doctype html><html lang="vi"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>Đăng nhập — Motion</title>
+<style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#000;color:#fff;
+font-family:system-ui,sans-serif;padding:24px}.h{max-width:420px;text-align:center;background:#121212;
+border:1px solid #262626;border-radius:14px;padding:28px}p{color:#b3b3b3;line-height:1.6;margin:0 0 18px}
+a{display:inline-block;padding:10px 18px;border-radius:999px;background:#31d975;color:#06140c;
+text-decoration:none;font-weight:600}</style></head><body><div class="h">
+<p>${an}</p><a href="/dang-nhap">Quay lại trang đăng nhập</a></div></body></html>`;
+}
 
 kiemTraDuAn();
 
@@ -158,6 +179,48 @@ const server = http.createServer(async (req, res) => {
       return json(res, 200, { ok: true, email: em.email });
     }
 
+    /* ---------- ĐĂNG NHẬP BẰNG GOOGLE ----------
+     * Hai chặng: sang Google xin phép, rồi Google gọi ngược về đây kèm `code`.
+     * Bốn cửa kiểm (state · nonce · chữ ký · email đã xác minh) nằm trong
+     * `server/google.js`. Người mới vào hàng CHỜ DUYỆT, xem `nguoidung.js`.
+     */
+    if (p === '/dang-nhap/google' && req.method === 'GET') {
+      if (!coGoogle()) return loi(res, 503, 'Máy chủ chưa khai khoá Google.');
+      const b = batDauGoogle(req, { quayVe: url.searchParams.get('ve') || '/' });
+      res.setHeader('Set-Cookie', b.cookie);
+      res.writeHead(302, { Location: b.diaChi });
+      return res.end();
+    }
+    if (p === '/dang-nhap/google/tra-ve' && req.method === 'GET') {
+      if (!coGoogle()) return loi(res, 503, 'Máy chủ chưa khai khoá Google.');
+      /* Cookie tạm XOÁ NGAY dù thành hay bại: một `state` chỉ dùng đúng một lần,
+         để lại là dùng lại được. */
+      const vePhu = [xoaCookieG()];
+      const veTrang = (cau, ma = 400) => {
+        res.setHeader('Set-Cookie', vePhu);
+        res.writeHead(ma, { 'Content-Type': 'text/html; charset=utf-8' });
+        return res.end(trangBaoGoogle(cau));
+      };
+      /* Người dùng bấm "Huỷ" bên Google — không phải lỗi, đừng doạ họ. */
+      if (url.searchParams.get('error')) {
+        return veTrang('Bạn đã huỷ đăng nhập bằng Google.', 200);
+      }
+      const kq = await nhanVeGoogle(req, {
+        code: url.searchParams.get('code'), state: url.searchParams.get('state'),
+        cookie: docCookie(req, TEN_COOKIE_G),
+      });
+      if (!kq.ok) return veTrang(kq.cau);
+
+      const db = layCSDL();
+      if (!db) return veTrang('Máy chủ chưa dùng được phần tài khoản (CSDL không mở được).', 503);
+      const vao = vaoBangGoogle(db, kq);
+      if (!vao.ok) return veTrang(vao.cau, vao.choDuyet ? 200 : 403);
+      vePhu.push(datCookie(req, taoVe(vao.email)));
+      res.setHeader('Set-Cookie', vePhu);
+      res.writeHead(302, { Location: kq.ve.startsWith('/') ? kq.ve : '/' });
+      return res.end();
+    }
+
     /* ---------- NGƯỜI DÙNG ----------
      * Chủ kho tự thêm khách hàng ngay trong app, thay vì sửa biến môi trường
      * trên Vibe Host rồi triển khai lại. Xem `server/nguoidung.js`.
@@ -195,6 +258,10 @@ const server = http.createServer(async (req, res) => {
       }
       if (mNg && req.method === 'PATCH') {
         const than = await docJson(req);
+        if (than?.duyet) {
+          const kq = duyetNguoi(db, mNg.email);
+          return kq.ok ? json(res, 200, kq) : loi(res, 400, kq.cau);
+        }
         if (than?.matKhau !== undefined) {
           const kq = doiMatKhau(db, mNg.email, String(than.matKhau || ''));
           return kq.ok ? json(res, 200, kq) : loi(res, 400, kq.cau);
@@ -273,6 +340,8 @@ const server = http.createServer(async (req, res) => {
            "Vẽ giao diện từ lời tả" trên một máy chủ không có khoá là để người
            dùng gõ xong một đoạn tả rồi mới nhận lời từ chối. */
         coStitch: coKhoaStitch(),
+        /* Có bày nút "Đăng nhập bằng Google" không — hỏi trước, y như Stitch. */
+        coGoogle: coGoogle(),
         /* Có phải người quản trị không — để trang chào biết có bày mục "Người
            dùng" hay không. Hỏi CSDL chứ đừng suy từ email: chủ kho theo env và
            quản trị theo bảng là hai chuyện, và chúng lệch nhau được. */

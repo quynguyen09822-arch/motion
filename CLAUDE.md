@@ -64,6 +64,7 @@ clip. Node 22 tự lột kiểu file `.ts` nên `types.ts` nạp thẳng đượ
 | `nguonvideo.js` | liệt kê `public/video/`, **đo codec** để biết file nào trình duyệt mở được |
 | `chuptrang.js` | **Chromium trên máy chủ** qua CDP (không gói npm): chụp trang, chia phần, chặn mạng nội bộ — xem `docs/CHUP-TRANG.md` |
 | `nguoidung.js` | **tài khoản khách hàng** trong CSDL: mỗi người một mật khẩu, thêm/khoá/xoá trong app — xem `docs/NGUOI-DUNG.md` |
+| `google.js` | **đăng nhập bằng Google** (OAuth/OIDC viết tay, không gói npm): state một-lần · nonce · chữ ký RS256 · email đã xác minh — xem `docs/DANG-NHAP-GOOGLE.md` |
 | `docanh.js` + `soatvideo.js` | cảnh AI dựng: vẽ thật rồi đo (bị cắt, đè nhau) + soát JSON (chữ nhỏ, ngoài vùng máy quay) |
 
 `server/main.js` có một import đi ngược sang `web/`: `soatChatLuong` từ

@@ -438,3 +438,4 @@ h3 { font-size: 18px; margin: 0; letter-spacing: -.3px; }
 .mk-khoe { padding: 11px 13px; border-radius: var(--bo); background: var(--nen-3);
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: var(--chu-vua);
   white-space: pre-wrap; word-break: break-all; user-select: all; margin: 0 0 12px; }
+.hang-nguoi.cho-duyet { opacity: 1; border-color: color-mix(in srgb, var(--cam) 55%, transparent); }

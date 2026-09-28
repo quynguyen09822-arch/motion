@@ -319,6 +319,9 @@ export function xoaSai(...khoa) { for (const k of khoa.filter(Boolean)) soSai.de
    đã đặt mật khẩu chưa, đuôi email là gì, và ai đang đăng nhập (rỗng nếu chưa). */
 const MO = new Set(['/dang-nhap', '/api/dang-nhap', '/api/dang-xuat', '/api/toi-la-ai',
   '/health', '/api/health',
+  /* Hai chặng của đăng nhập Google — chạy TRƯỚC khi có vé, nên phải mở. Chúng
+     tự kiểm bằng `state` ký HMAC trong cookie, xem `server/google.js`. */
+  '/dang-nhap/google', '/dang-nhap/google/tra-ve',
   '/dang-nhap.css', '/logo/motion-mark.png', '/logo/motion-full.png', '/logo/favicon.png']);
 
 /* Bộ chữ tự chứa phải đi được TRƯỚC cửa: trang đăng nhập cũng cần đúng mặt chữ.

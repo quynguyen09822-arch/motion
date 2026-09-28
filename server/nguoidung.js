@@ -30,7 +30,7 @@
  * là thấy lại kho cũ.
  */
 import { randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
-import { bam, dsTaiKhoan, layCauHinh } from './dangnhap.js';
+import { bam, dsTaiKhoan, duoiEmail, layCauHinh } from './dangnhap.js';
 
 /** Mật khẩu ngắn thì khoá nào cũng vô nghĩa. */
 export const DAI_TOI_THIEU = 8;
@@ -81,15 +81,19 @@ export function chepTuEnv(db, { chuKho = '' } = {}) {
   return n;
 }
 
-/** @returns {{email,ten,vai,dangHoatDong,taoLuc,vaoLanCuoi,matKhauChung}[]} */
+/** @returns {{email,ten,vai,dangHoatDong,choDuyet,coGoogle,taoLuc,vaoLanCuoi,matKhauChung}[]} */
 export function dsNguoi(db) {
   const bamChung = layCauHinh('MOTION_MAT_KHAU_HASH').trim();
-  return db.prepare(`SELECT email, ten, vai, dang_hoat_dong, tao_luc, vao_lan_cuoi, mat_khau_bam
-    FROM nguoi_dung ORDER BY vai = 'quan_tri' DESC, email`).all().map((r) => ({
+  return db.prepare(`SELECT email, ten, vai, dang_hoat_dong, tao_luc, vao_lan_cuoi, mat_khau_bam,
+    google_sub, cho_duyet, anh
+    FROM nguoi_dung ORDER BY cho_duyet DESC, vai = 'quan_tri' DESC, email`).all().map((r) => ({
     email: r.email,
     ten: r.ten || '',
     vai: r.vai,
     dangHoatDong: r.dang_hoat_dong === 1,
+    choDuyet: r.cho_duyet === 1,
+    coGoogle: Boolean(r.google_sub),
+    anh: r.anh || '',
     taoLuc: r.tao_luc,
     vaoLanCuoi: r.vao_lan_cuoi,
     /* Ai còn dùng mật khẩu chung thì nói ra, để chủ kho biết mà đổi. Đây không
@@ -99,13 +103,100 @@ export function dsNguoi(db) {
 }
 
 export const layNguoi = (db, email) => db.prepare(
-  'SELECT email, ten, vai, dang_hoat_dong, mat_khau_bam FROM nguoi_dung WHERE email = ?')
-  .get(chuan(email)) || null;
+  `SELECT email, ten, vai, dang_hoat_dong, mat_khau_bam, google_sub, cho_duyet
+   FROM nguoi_dung WHERE email = ?`).get(chuan(email)) || null;
+
+/**
+ * Tìm theo MÃ GOOGLE trước, rồi mới tới email.
+ *
+ * Google Workspace đổi được email của một người mà `sub` giữ nguyên; ngược lại
+ * một email đã nghỉ việc có thể được cấp lại cho người mới. Gắn theo `sub` là
+ * gắn đúng con người, không gắn vào cái nhãn.
+ */
+export const layTheoGoogle = (db, sub) => db.prepare(
+  `SELECT email, ten, vai, dang_hoat_dong, mat_khau_bam, google_sub, cho_duyet
+   FROM nguoi_dung WHERE google_sub = ?`).get(String(sub || '')) || null;
 
 export const laQuanTri = (db, email) => {
   const n = layNguoi(db, email);
-  return Boolean(n && n.vai === 'quan_tri' && n.dang_hoat_dong === 1);
+  return Boolean(n && n.vai === 'quan_tri' && n.dang_hoat_dong === 1 && n.cho_duyet !== 1);
 };
+
+/**
+ * VÀO BẰNG GOOGLE — tìm người, hoặc ghi một người mới đang CHỜ DUYỆT.
+ *
+ * Người mới KHÔNG được dùng ngay. Ai có tài khoản Google cũng bấm đăng nhập
+ * được; cho vào thẳng là người lạ tiêu hạn mức AI của chủ kho và chiếm chỗ
+ * trong kho. Người quản trị duyệt từng người — trừ khi email đúng đuôi đã khai
+ * ở `MOTION_TU_DUYET_DUOI` (vd `@matbao.com`), tức người trong nhà.
+ *
+ * @returns {{ok:true, email, moi, choDuyet}|{ok:false, cau}}
+ */
+export function vaoBangGoogle(db, { email, sub, ten = '', anh = '' }) {
+  const e = chuan(email);
+  const s = String(sub || '');
+  if (!e || !s) return { ok: false, cau: 'Google không trả về đủ thông tin.' };
+
+  const theoSub = layTheoGoogle(db, s);
+  const theoEmail = layNguoi(db, e);
+
+  /* Đã gắn Google rồi: dùng chính dòng ấy, kể cả khi email bên Google vừa đổi. */
+  if (theoSub) {
+    if (theoSub.email !== e) db.prepare('UPDATE nguoi_dung SET email = ? WHERE google_sub = ?').run(e, s);
+    return ketQuaVao(db, layTheoGoogle(db, s));
+  }
+
+  /* Có sẵn tài khoản mật khẩu cùng email → GẮN Google vào đúng dòng đó. Không
+     đẻ dòng thứ hai: hai dòng cùng email là kho bị tách làm đôi, và người dùng
+     mở app lên thấy mất sạch clip (xem chú thích COLLATE NOCASE ở lược đồ). */
+  if (theoEmail) {
+    db.prepare('UPDATE nguoi_dung SET google_sub = ?, anh = COALESCE(NULLIF(?, \'\'), anh), ten = COALESCE(NULLIF(ten, \'\'), ?) WHERE email = ?')
+      .run(s, anh, ten, e);
+    return ketQuaVao(db, layNguoi(db, e));
+  }
+
+  const tuDuyet = tuDuyetDuoc(e);
+  db.prepare(`INSERT INTO nguoi_dung (email, ten, vai, google_sub, anh, cho_duyet, dang_hoat_dong)
+    VALUES (?, ?, 'nguoi_dung', ?, ?, ?, 1)`).run(e, ten, s, anh, tuDuyet ? 0 : 1);
+  return tuDuyet
+    ? { ok: true, email: e, moi: true, choDuyet: false }
+    : { ok: false, moi: true, choDuyet: true,
+      cau: 'Đã ghi nhận. Tài khoản của bạn đang chờ người quản trị duyệt.' };
+}
+
+function ketQuaVao(db, n) {
+  if (!n) return { ok: false, cau: 'Không tìm thấy tài khoản.' };
+  if (n.cho_duyet === 1) {
+    return { ok: false, choDuyet: true, cau: 'Tài khoản của bạn đang chờ người quản trị duyệt.' };
+  }
+  if (n.dang_hoat_dong !== 1) return { ok: false, cau: 'Tài khoản này đang bị khoá. Hỏi người quản trị.' };
+  db.prepare("UPDATE nguoi_dung SET vao_lan_cuoi = strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE email = ?")
+    .run(n.email);
+  return { ok: true, email: n.email, vai: n.vai };
+}
+
+/**
+ * Email này có được vào thẳng không, khỏi chờ duyệt.
+ *
+ * `MOTION_TU_DUYET_DUOI` khai đuôi (vd `@matbao.com,@matbao.net`). KHÔNG mặc
+ * định lấy `MOTION_DUOI_EMAIL`: hai biến ấy nói hai chuyện khác nhau, và suy
+ * bừa ở đây là mở cửa cho cả một tên miền mà không ai cố ý khai.
+ */
+export function tuDuyetDuoc(email) {
+  const e = chuan(email);
+  const ds = layCauHinh('MOTION_TU_DUYET_DUOI').split(',').map((x) => x.trim().toLowerCase())
+    .filter(Boolean).map((x) => (x.startsWith('@') ? x : `@${x}`));
+  return ds.some((d) => e.endsWith(d));
+}
+
+/** Duyệt một người đang chờ. */
+export function duyetNguoi(db, email) {
+  const n = layNguoi(db, email);
+  if (!n) return { ok: false, cau: 'Không có tài khoản này.' };
+  if (n.cho_duyet !== 1) return { ok: false, cau: 'Tài khoản này không ở diện chờ duyệt.' };
+  db.prepare('UPDATE nguoi_dung SET cho_duyet = 0, dang_hoat_dong = 1 WHERE email = ?').run(n.email);
+  return { ok: true };
+}
 
 /**
  * Thêm một người. `matKhau` bỏ trống thì sinh hộ và TRẢ VỀ NGUYÊN VĂN — chỗ gọi
@@ -215,6 +306,7 @@ export function kiemVao(db, email, matKhau) {
      Xoá người vẫn có hiệu lực: `xoaNguoi` KHÓA thay vì xoá hẳn khi email ấy còn
      nằm trong danh sách env — khoá thì bảng vẫn "biết", nên vẫn chặn được. */
   if (!n) return null;
+  if (n.cho_duyet === 1) return { ok: false, cau: 'Tài khoản đang chờ người quản trị duyệt.' };
   if (n.dang_hoat_dong !== 1) return { ok: false, cau: 'Tài khoản này đang bị khoá. Hỏi người quản trị.' };
   if (!khopBam(matKhau, n.mat_khau_bam)) return chung;
   db.prepare("UPDATE nguoi_dung SET vao_lan_cuoi = strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE email = ?")

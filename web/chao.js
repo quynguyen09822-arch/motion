@@ -406,7 +406,8 @@ function veNguoi(ds, toi) {
   boc.innerHTML = '';
   for (const n of ds) {
     const hang = document.createElement('div');
-    hang.className = 'hang-nguoi' + (n.dangHoatDong ? '' : ' khoa');
+    hang.className = 'hang-nguoi' + (n.dangHoatDong && !n.choDuyet ? '' : ' khoa')
+      + (n.choDuyet ? ' cho-duyet' : '');
 
     const trai = document.createElement('div');
     trai.className = 'nguoi-ten';
@@ -415,7 +416,8 @@ function veNguoi(ds, toi) {
     trai.appendChild(b);
     const phu = document.createElement('span');
     phu.className = 'phu';
-    phu.textContent = [n.ten, n.vai === 'quan_tri' ? 'quản trị' : null,
+    phu.textContent = [n.ten, n.coGoogle ? 'vào bằng Google' : null,
+      n.vai === 'quan_tri' ? 'quản trị' : null,
       n.dangHoatDong ? null : 'đang khoá',
       n.vaoLanCuoi ? `vào lần cuối ${luc(Date.parse(n.vaoLanCuoi))}` : 'chưa vào lần nào',
     ].filter(Boolean).join(' · ');
@@ -443,6 +445,23 @@ function veNguoi(ds, toi) {
       };
       nut.appendChild(x);
     };
+    /* CHỜ DUYỆT lên trước mọi nút khác: đây là việc người quản trị phải quyết,
+       và để lẫn giữa mấy nút kia thì họ không thấy có ai đang chờ. */
+    if (n.choDuyet) {
+      const c = document.createElement('span');
+      c.className = 'chip-canh-bao';
+      c.textContent = 'đang chờ duyệt';
+      trai.appendChild(c);
+      them('Duyệt cho vào', () => goi(`/api/nguoi-dung/${encodeURIComponent(n.email)}`, 'PATCH', { duyet: true }),
+        'nut nho chinh');
+      them('Từ chối', async () => {
+        if (!confirm(`Từ chối ${n.email}?`)) throw new Error('Đã thôi.');
+        await goi(`/api/nguoi-dung/${encodeURIComponent(n.email)}`, 'DELETE');
+      }, 'nut nho xau');
+      hang.appendChild(nut);
+      boc.appendChild(hang);
+      continue;
+    }
     them('Đặt lại mật khẩu', async () => {
       const d = await goi(`/api/nguoi-dung/${encodeURIComponent(n.email)}`, 'PATCH', { matKhau: '' });
       khoeMatKhau(d.email, d.matKhau);
