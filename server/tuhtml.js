@@ -76,7 +76,7 @@ function bot(khoi) {
     .sort((a, b) => (a.y - b.y) || (a.x - b.x));   // trả lại thứ tự đọc từ trên xuống
 }
 
-function loiNhac(meta, banDo, y, vanDeCu, canhCu) {
+function loiNhac(meta, banDo, y, vanDeCu, canhCu, mayTruoc) {
   const mau = mauThat();
   const viDu = ['text', 'nut', 'panel', 'card', 'group', 'image', 'huyhieu', 'chip']
     .filter((k) => mau[k]).map((k) => `  ${JSON.stringify(mau[k])}`).join('\n');
@@ -144,6 +144,19 @@ LUẬT
    con để \`x:0, y:0\`.
 10. Hiệu ứng vào: \`"in":{"kind":"rise"|"fade"|"pop","ease":"out","dur":0.6}\`,
     \`at\` tăng dần để món vào lần lượt. \`duration\` khoảng 4–6 giây.
+11. MÁY QUAY. Khai \`"camera":{"x":<số>,"y":<số>,"scale":<số>}\`, kèm
+    \`"cameraMove":0.8\` và \`"cameraEase":"inOut"\`.
+    Bộ dựng KHÔNG cắt cứng — nó bay mượt từ máy quay cảnh TRƯỚC sang cảnh này.
+    Con số bạn chọn là "bay TỚI ĐÂU", không phải "đặt máy ở đâu".
+    ${mayTruoc
+      ? `Cảnh TRƯỚC đang ở: x=${mayTruoc.x || 0}, y=${mayTruoc.y || 0}, scale=${mayTruoc.scale ?? 1}. Chọn khác đi thì mới có chuyển động.\n       RÀNG BUỘC: scale của cảnh này phải chênh cảnh trước ÍT NHẤT 0,2 —\n       chênh dưới 0,05 là máy quay ĐỨNG IM và cảnh trông như ảnh tĩnh.\n       Chỉ cố ý để đứng im khi cảnh này là phần tiếp NGUYÊN VẸN của cảnh trước.`
+      : 'Đây là cảnh ĐẦU — không có gì để bay tới, để x=0, y=0, scale=1.'}
+    Ba nhịp, chọn một: DỒN VÀO (tăng \`scale\` 0,3–0,5 và ngắm tới chi tiết cần
+    đọc) · LƯỚT NGANG (giữ \`scale\`, chỉ đổi \`x\`) · THỞ RA (kéo \`scale\` về
+    1,0–1,1, \`x\`/\`y\` về gần 0 để kết đoạn).
+    \`scale\` trong khoảng 1,0–2,0 — quá 2,0 là vỡ hình vì bộ dựng phóng chính
+    khung hình chứ không vẽ lại. \`x\`/\`y\` tính bằng pixel trên khung
+    ${meta.width}×${meta.height}, gốc ở giữa.
 
 ${String(y || '').trim() ? `NGƯỜI DÙNG DẶN THÊM\n${String(y).trim()}\n` : ''}
 CHỈ TRẢ VỀ JSON. Không rào đầu, không giải thích, không dấu \`\`\`.${suaLai}`;
@@ -169,6 +182,8 @@ function bocJSON(chu) {
  */
 export async function dungTuHtml({ doc, html, url, y }) {
   const meta = doc?.meta;
+  /* Máy quay cảnh cuối clip — xem ghi chú cùng chỗ trong `dungcanh.js`. */
+  const mayTruoc = doc?.scenes?.length ? (doc.scenes[doc.scenes.length - 1].camera || null) : null;
   if (!meta?.width) return { ok: false, cau: 'Clip chưa có khổ hình.' };
   if (!html && !url) return { ok: false, cau: 'Chưa có HTML hay địa chỉ trang.' };
 
@@ -185,7 +200,7 @@ export async function dungTuHtml({ doc, html, url, y }) {
   }
 
   const goi = async (vanDeCu, canhCu) => {
-    const g = await goiGemini(loiNhac(meta, banDo, y, vanDeCu, canhCu),
+    const g = await goiGemini(loiNhac(meta, banDo, y, vanDeCu, canhCu, mayTruoc),
       { nong: 0.3, toiDa: 8000, nghi: true, hanGiay: HAN_GIAY_ANH });
     if (!g.ok) return { loi: g.cau };
     const canh = bocJSON(g.chu);

@@ -154,6 +154,17 @@ export function oLuuBenVung() {
      như đang ở máy thật — im lặng. */
   if (!existsSync('/.dockerenv')) return { hopLe: true, lyDo: 'không chạy trong container' };
 
+  /* NHƯNG "trong container" KHÔNG đủ để kết luận là bản triển khai.
+     Workspace Coder mà lập trình viên đang ngồi cũng là một container, nên
+     cảnh báo này hét lên mỗi lần chạy `npm run dev` — trong khi ở đó dữ liệu
+     nằm trên đĩa workspace và chẳng mất đi đâu cả.
+     Báo sai dạy người ta bỏ qua, rồi tới lần báo ĐÚNG họ cũng bỏ qua nốt —
+     đúng bài học đã ghi ở mục 5.1 của CLAUDE.md. `NODE_ENV=production` do
+     Dockerfile đặt, và chỉ bản triển khai mới có. */
+  if (process.env.NODE_ENV !== 'production') {
+    return { hopLe: true, lyDo: 'không phải bản triển khai (NODE_ENV khác production)' };
+  }
+
   let mount = '';
   try { mount = readFileSync('/proc/self/mountinfo', 'utf8'); }
   catch { return { hopLe: true, lyDo: 'không đọc được bảng ổ đĩa' }; }
