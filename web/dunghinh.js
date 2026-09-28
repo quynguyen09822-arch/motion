@@ -10,6 +10,7 @@
  *   Người dùng phải quyết định nhận hay bỏ, mà muốn quyết thì phải thấy.
  */
 import { taoThaAnh } from './thaanh.js';
+import { doTrang } from './dotrang.js';
 
 const el = (the, lop, chu) => {
   const n = document.createElement(the);
@@ -18,7 +19,7 @@ const el = (the, lop, chu) => {
   return n;
 };
 
-export function taoDungHinh(boc, { laySlug, bao, nhanCanh, layKieuMay }) {
+export function taoDungHinh(boc, { laySlug, bao, nhanCanh, layKieuMay, layMeta }) {
   const muc = el('div', 'muc-dung');
   let ketQua = null;       // { canh, vanDe, model, daSua }
   let dangDung = false;
@@ -240,9 +241,20 @@ export function taoDungHinh(boc, { laySlug, bao, nhanCanh, layKieuMay }) {
       : 'Đang mở trang để đo bố cục rồi mới dựng — thường mất 2–3 phút…'));
     try {
       const duong = n.loai === 'anh' ? '/api/dung-canh' : '/api/tu-html';
-      const than = n.loai === 'anh'
-        ? { slug, anh: n.anh.b64, mime: n.anh.mime, y: oY.value.trim() }
-        : { slug, html: n.html, url: n.url, y: oY.value.trim() };
+      let than;
+      if (n.loai === 'anh') {
+        than = { slug, anh: n.anh.b64, mime: n.anh.mime, y: oY.value.trim() };
+      } else {
+        /* ĐO TRANG NGAY TRONG TRÌNH DUYỆT NÀY rồi mới gửi bản đồ lên. Bản triển
+           khai không có Chromium nên máy chủ không tự đo được — gửi thẳng HTML
+           lên là nhận lại "Cannot find module '/app/tools/doc-html.mjs'". */
+        const m = layMeta?.() || { width: 1280, height: 720 };
+        const tomTat = kq.querySelector('.dung-tom');
+        if (tomTat) tomTat.textContent = 'Đang mở trang ngay trong trình duyệt này để đo bố cục…';
+        const banDo = await doTrang({ html: n.html, url: n.url, rong: m.width, cao: m.height });
+        if (tomTat) tomTat.textContent = `Đã đo ${banDo.khoi.length} khối. AI đang dựng thành cảnh — thường mất nửa phút…`;
+        than = { slug, banDo, y: oY.value.trim() };
+      }
       const r = await fetch(duong, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(than),

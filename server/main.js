@@ -34,6 +34,7 @@ import { vietLoi } from './vietloi.js';
 import { hoiAI } from './hoiai.js';
 import { dungCanh } from './dungcanh.js';
 import { dungTuHtml } from './tuhtml.js';
+import { CSP_DO_TRANG, layTrang, luuTrang } from './dotrang.js';
 import { batDauSinh, coKhoa as coKhoaStitch, soatLoiTa, xemViec } from './stitch.js';
 import { daDung, ghiNhat, xin } from './hanmuc.js';
 import { thongKe } from './nhatky.js';
@@ -499,6 +500,26 @@ const server = http.createServer(async (req, res) => {
       return json(res, 200, kq);
     }
 
+    /* ---------- ĐO TRANG TRONG TRÌNH DUYỆT NGƯỜI DÙNG ----------
+     * Bản triển khai không có Chromium, nên máy chủ không tự đo được. Thay vào đó:
+     * cất trang lại (tải hộ nếu là địa chỉ), trình duyệt mở nó trong iframe ẩn,
+     * đo bằng `web/dobocuc.js`, rồi gửi bản đồ về `/api/tu-html`.
+     * Xem `server/dotrang.js` về CSP riêng và vì sao không dùng `srcdoc`. */
+    if (p === '/api/do-trang' && req.method === 'POST') {
+      const than = await docJson(req);
+      const kq = await luuTrang({ html: than?.html, url: than?.url, chu: aiDangVao(req) });
+      if (!kq.ok) return loi(res, 400, kq.cau);
+      return json(res, 200, kq);
+    }
+    if ((m = khop('/do-trang/:id', p)) && req.method === 'GET') {
+      const html = layTrang(m.id, aiDangVao(req));
+      if (!html) return loi(res, 404, 'Trang đo đã hết hạn — thử lại.');
+      /* GHI ĐÈ CSP chung của app. Xem ghi chú đầu `server/dotrang.js`. */
+      res.setHeader('Content-Security-Policy', CSP_DO_TRANG);
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
+      return res.end(html);
+    }
+
     if (p === '/api/tu-html' && req.method === 'POST') {
       const than = await docJson(req);
       {
@@ -514,13 +535,13 @@ const server = http.createServer(async (req, res) => {
 
       const html = String(than?.html || '');
       const url = String(than?.url || '').trim();
-      if (!html && !url) return loi(res, 400, 'Chưa dán HTML hay địa chỉ trang.');
+      if (!html && !url && !than?.banDo) return loi(res, 400, 'Chưa dán HTML hay địa chỉ trang.');
       /* Chỉ nhận http(s). Cho `file:` là mở cửa đọc mọi file trên máy chủ qua
          một đường API ai đăng nhập cũng gọi được. */
       if (url && !/^https?:\/\//i.test(url)) {
         return loi(res, 400, 'Địa chỉ phải bắt đầu bằng http:// hoặc https://');
       }
-      const d = await dungTuHtml({ doc: c.doc, html, url, y: than?.y });
+      const d = await dungTuHtml({ doc: c.doc, html, url, y: than?.y, banDo: than?.banDo });
       if (d.cau && !d.canh) return loi(res, 400, d.cau);
       return json(res, 200, d);
     }

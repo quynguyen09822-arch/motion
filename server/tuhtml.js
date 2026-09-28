@@ -63,6 +63,37 @@ async function docBanDo({ html, url, rong, cao }) {
 }
 
 /**
+ * LÀM SẠCH BẢN ĐỒ DO TRÌNH DUYỆT GỬI LÊN.
+ *
+ * Bản đồ này không còn do máy chủ tự đo mà do trình duyệt đo rồi gửi về — tức
+ * là dữ liệu từ bên ngoài. Nó chỉ đi vào lời nhắc AI nên không mở được cửa nào,
+ * nhưng vẫn phải chặn hai thứ: một khối chữ dài 1 MB (đốt sạch hạn mức token
+ * trong một lượt) và những trường lạ không ai đọc (mỗi trường là token trả tiền).
+ * Giữ ĐÚNG các trường `web/dobocuc.js` sinh ra, cắt chữ về đúng độ dài nó cắt.
+ */
+function lamSachBanDo(b) {
+  if (!b || typeof b !== 'object' || !Array.isArray(b.khoi)) return null;
+  const so = (v) => (Number.isFinite(Number(v)) ? Math.round(Number(v)) : undefined);
+  const chuoi = (v, n) => (typeof v === 'string' ? v.slice(0, n) : undefined);
+  const mau = (v) => (typeof v === 'string' && /^#[0-9a-f]{6}$/i.test(v) ? v : undefined);
+  const khoi = b.khoi.slice(0, 3000).filter((k) => k && typeof k === 'object').map((k) => ({
+    the: chuoi(k.the, 16), sau: so(k.sau),
+    x: so(k.x) ?? 0, y: so(k.y) ?? 0, w: so(k.w) ?? 0, h: so(k.h) ?? 0,
+    chu: chuoi(k.chu, 160), bieuTuong: chuoi(k.bieuTuong, 40),
+    nen: mau(k.nen), mauChu: mau(k.mauChu), coChu: so(k.coChu), damChu: so(k.damChu),
+    canChu: chuoi(k.canChu, 12), dem: so(k.dem), demNgang: so(k.demNgang),
+    boTron: so(k.boTron), vien: mau(k.vien), anh: chuoi(k.anh, 120),
+    laAnh: k.laAnh === true || undefined,
+  }));
+  return JSON.parse(JSON.stringify({
+    tieuDe: chuoi(b.tieuDe, 200) || '',
+    khung: { rong: so(b.khung?.rong) ?? 0, cao: so(b.khung?.cao) ?? 0 },
+    nenTrang: mau(b.nenTrang),
+    khoi,
+  }));
+}
+
+/**
  * Bớt khối cho vừa lời nhắc.
  *
  * Xếp theo "đáng kể" chứ không cắt từ dưới lên: một khối chữ 12px ở cuối trang
@@ -180,20 +211,33 @@ function bocJSON(chu) {
  * @param {string} [y.url]  hoặc một địa chỉ trang
  * @returns { ok, canh, vanDe[], chimNen[], banDo, model, daSua } hoặc { ok:false, cau }
  */
-export async function dungTuHtml({ doc, html, url, y }) {
+export async function dungTuHtml({ doc, html, url, y, banDo: banDoGui }) {
   const meta = doc?.meta;
   /* Máy quay cảnh cuối clip — xem ghi chú cùng chỗ trong `dungcanh.js`. */
   const mayTruoc = doc?.scenes?.length ? (doc.scenes[doc.scenes.length - 1].camera || null) : null;
   if (!meta?.width) return { ok: false, cau: 'Clip chưa có khổ hình.' };
-  if (!html && !url) return { ok: false, cau: 'Chưa có HTML hay địa chỉ trang.' };
+  /* ĐO SẴN THÌ DÙNG LUÔN. Trình duyệt người dùng đã đo rồi gửi lên — đó là đường
+     của bản triển khai, nơi không có Chromium. Xem `server/dotrang.js`. */
+  let banDo = banDoGui ? lamSachBanDo(banDoGui) : null;
+  if (banDoGui && !banDo) return { ok: false, cau: 'Bản đồ trang gửi lên không đúng khuôn.' };
 
-  let banDo;
-  try {
-    banDo = await docBanDo({ html, url, rong: meta.width, cao: meta.height });
-  } catch (e) {
-    /* Nói rõ HỎNG Ở BƯỚC NÀO. "Không dựng được" chung chung thì người dùng không
-       biết nên sửa HTML hay thử lại sau. */
-    return { ok: false, cau: `Không đọc được trang: ${e.message?.slice(0, 200) || e}` };
+  if (!banDo) {
+    if (!html && !url) return { ok: false, cau: 'Chưa có HTML hay địa chỉ trang.' };
+    try {
+      banDo = await docBanDo({ html, url, rong: meta.width, cao: meta.height });
+    } catch (e) {
+      /* Máy này không tự đo được (không có Chromium — bản triển khai là vậy).
+         KHÔNG đổ stack trace ra: anh Quý đã nhận nguyên vệt "Cannot find module
+         '/app/tools/doc-html.mjs'" đúng ở chỗ này. Nói bằng tiếng người, và
+         nói việc phải làm. */
+      if (/Cannot find module|playwright|chromium|ENOENT/i.test(String(e.message))) {
+        return { ok: false, cau: 'Máy chủ này không tự mở trang để đo được. Tải lại trang '
+          + 'trình sửa rồi thử lại — bản mới đo ngay trong trình duyệt của bạn.' };
+      }
+      /* Nói rõ HỎNG Ở BƯỚC NÀO. "Không dựng được" chung chung thì người dùng không
+         biết nên sửa HTML hay thử lại sau. */
+      return { ok: false, cau: `Không đọc được trang: ${e.message?.slice(0, 200) || e}` };
+    }
   }
   if (!banDo?.khoi?.length) {
     return { ok: false, cau: 'Trang này không có khối nào nhìn thấy được — kiểm lại HTML.' };

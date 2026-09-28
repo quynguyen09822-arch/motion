@@ -528,6 +528,8 @@ const thanhAI = taoThanhAI({
        khung 9:16 là bố cục ngang phải bóp lại, chữ tụt cỡ và mọi tỉ lệ sai hết
        — đúng cái bệnh mà `docs/DOI-KHO-HINH.md` đã đo và kết luận là không nhân
        co được, phải xếp lại. Chọn đúng kiểu máy ngay từ đầu thì khỏi phải xếp. */
+    /* Khổ clip đang mở — trang cần đo phải được dàn đúng bề rộng này. */
+    layMeta: () => kho.doc()?.meta,
     layKieuMay: () => {
       const m = kho.doc()?.meta;
       return m && m.height > m.width ? 'MOBILE' : 'DESKTOP';
