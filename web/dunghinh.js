@@ -268,7 +268,13 @@ export function taoDungHinh(boc, { laySlug, bao, nhanCanh, layKieuMay, layMeta }
       ketQua = d; veKetQua();
     } catch (e) {
       kq.classList.add('hong'); kq.innerHTML = '';
-      kq.appendChild(el('p', 'dung-loi', `AI dựng hỏng — ${String(e.message || e).slice(0, 80)}`));
+      /* KHÔNG gắn "AI dựng hỏng —" và KHÔNG cắt ở 80 ký tự.
+         Lỗi ở đây giờ có thể đến từ bước ĐO TRANG, không phải từ AI — gắn nhãn
+         "AI hỏng" là nói sai chỗ hỏng. Và câu báo của bước đo dặn người dùng
+         phải làm gì tiếp ("chụp màn hình rồi dùng ô ①…") — cắt ở 80 ký tự là cắt
+         đúng trước phần ấy, đo thật trên matbao.net: người dùng chỉ đọc được
+         "…nên chỉ đo được trang bá". */
+      kq.appendChild(el('p', 'dung-loi', String(e.message || e).slice(0, 400)));
     } finally { dangDung = false; veNut(); }
   }
   nut.onclick = chayDung;
