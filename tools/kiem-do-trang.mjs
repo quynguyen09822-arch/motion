@@ -26,6 +26,7 @@ const PROJ = process.env.PROJ_ROOT
   || '/home/coder/workspace/projects/clipVibehost/hosting-animatic-production';
 const { chromium } = createRequire(path.join(PROJ, 'tools/'))('playwright');
 const GOC = process.env.MOTION_GOC || process.argv[2] || 'http://127.0.0.1:7803';
+const M = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
 
 let hong = 0;
 const dat = (ten, ok, them = '') => {
@@ -71,6 +72,29 @@ console.log('\n④ Bản đồ trình duyệt gửi lên được làm sạch');
   const sai = await goi('/api/tu-html', { slug: 'cta', banDo: { khoi: 'không phải mảng' } });
   dat('bản đồ sai khuôn bị từ chối', sai.ok === false && /khuôn/.test(sai.loi || sai.cau || ''),
     (sai.loi || sai.cau || '').slice(0, 50));
+}
+
+/* ---------- ⑤ không bao giờ nhận trang lỗi làm kết quả ---------- */
+console.log('\n⑤ Trang báo lỗi KHÔNG được tính là đo thành công');
+{
+  /* Đã xảy ra thật với `matbao.net` (28/09): JS của trang nổ trong sandbox,
+     framework thay cả trang bằng "This page couldn't load", ta đo ra 4 khối của
+     trang lỗi, và AI dựng thành "cảnh 7 món". Thành công GIẢ, không một lời báo. */
+  const { trangHong } = await import(path.join(M, 'web', 'dotrang.js'));
+  const trangLoi = { khoi: [
+    { chu: 'This page couldn’t load' }, { chu: 'Reload to try again, or go back.' },
+    { chu: 'Reload' }, { chu: 'Back' } ] };
+  dat('đúng bốn khối trang lỗi của matbao.net thì CHẶN', Boolean(trangHong(trangLoi, [])));
+  dat('câu chặn chỉ đường khác đi được (ảnh hoặc Stitch)',
+    /ô ①|ô ③/.test(trangHong(trangLoi, []) || ''));
+  dat('trang nghèo KÈM lỗi JS thì chặn',
+    Boolean(trangHong({ khoi: [{ chu: 'x' }, { chu: 'y' }] }, ['ReferenceError: a is not defined'])));
+  /* Chỉ chặn khi CHẮC. Chặn nhầm một trang Stitch sạch là tắt tính năng đúng lúc
+     nó làm việc tốt nhất. */
+  const sach = { khoi: Array.from({ length: 15 }, (_, i) => ({ chu: `Mục ${i}` })) };
+  dat('trang sạch nhiều khối, không lỗi JS → KHÔNG chặn', trangHong(sach, []) === null);
+  dat('trang ít khối nhưng KHÔNG có lỗi JS → không chặn (có thể là trang tối giản thật)',
+    trangHong({ khoi: [{ chu: 'Xin chào' }] }, []) === null);
 }
 
 /* ---------- ③ đo thật trong trình duyệt, có CDN ---------- */

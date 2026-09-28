@@ -116,8 +116,50 @@ export async function taiHtml(u) {
  * (`/style.css`); phục vụ lại từ máy chủ này thì chúng trỏ nhầm sang máy chủ này.
  * Đặt `<base>` ở ĐẦU `<head>` — sau thẻ nào đã dùng đường tương đối thì vô tác dụng.
  */
+/**
+ * ĐOẠN VÁ ĐẶT TRƯỚC MỌI SCRIPT CỦA TRANG.
+ *
+ * Trang đo chạy ở origin RỖNG (sandbox). Ở đó chỉ cần ĐỌC `localStorage` hay
+ * `document.cookie` là ném SecurityError — và rất nhiều website làm đúng việc ấy
+ * ngay dòng đầu. Đo thật `matbao.net` 28/09: JS của trang nổ, framework của họ
+ * THAY TOÀN BỘ nội dung bằng trang "This page couldn't load", và ta đo ra đúng
+ * bốn khối của trang lỗi ấy — rồi AI vui vẻ dựng thành "cảnh 7 món". Thành công
+ * giả, không một lời báo.
+ *
+ * Nên: cho trang một kho nhớ tạm trong RAM thay cho `localStorage`/`cookie` —
+ * không phải cửa sau, vì nó chỉ sống trong đúng iframe này và mất khi iframe bị
+ * gỡ. Và ghi lại mọi lỗi JS của trang, để phía trình duyệt biết đo có đáng tin
+ * không.
+ */
+const VA_TRUOC = `<script>
+(function () {
+  var nho = function () {
+    var m = new Map();
+    return { getItem: function (k) { return m.has(k) ? m.get(k) : null; },
+      setItem: function (k, v) { m.set(k, String(v)); }, removeItem: function (k) { m.delete(k); },
+      clear: function () { m.clear(); }, key: function (i) { return Array.from(m.keys())[i] || null; },
+      get length() { return m.size; } };
+  };
+  ['localStorage', 'sessionStorage'].forEach(function (t) {
+    try { window[t].length; } catch (e) {
+      try { Object.defineProperty(window, t, { value: nho(), configurable: true }); } catch (e2) {}
+    }
+  });
+  try { document.cookie; } catch (e) {
+    var c = '';
+    try { Object.defineProperty(document, 'cookie', { get: function () { return c; },
+      set: function (v) { c = String(v); }, configurable: true }); } catch (e2) {}
+  }
+  window.__motionLoi = [];
+  addEventListener('error', function (e) { window.__motionLoi.push(String(e.message || 'lỗi')); });
+  addEventListener('unhandledrejection', function (e) {
+    window.__motionLoi.push(String((e.reason && e.reason.message) || e.reason || 'promise hỏng'));
+  });
+})();
+</script>`;
+
 function chenDo(html, id, url) {
-  const base = url ? `<base href="${url.replace(/"/g, '&quot;')}">` : '';
+  const base = (url ? `<base href="${url.replace(/"/g, '&quot;')}">` : '') + VA_TRUOC;
   const script = `<script>
 (async () => {
   const doBoCuc = ${doBoCuc.toString()};
@@ -130,16 +172,16 @@ function chenDo(html, id, url) {
     /* Tailwind bản CDN sinh CSS bằng JS SAU khi trang nạp xong; đo sớm quá là
        đo một trang chưa có style. */
     await new Promise((r) => setTimeout(r, 900));
-    gui({ banDo: doBoCuc() });
+    gui({ banDo: doBoCuc(), loiJS: (window.__motionLoi || []).slice(0, 5) });
   } catch (e) {
     gui({ loi: String((e && e.message) || e) });
   }
 })();
 </script>`;
   let h = String(html);
-  if (base) {
-    h = /<head[^>]*>/i.test(h) ? h.replace(/<head[^>]*>/i, (m) => m + base) : base + h;
-  }
+  /* Chèn ĐẦU <head>: `<base>` sau thẻ đã dùng đường tương đối là vô tác dụng, và
+     đoạn vá sau script của trang là vá khi trang đã nổ rồi. */
+  h = /<head[^>]*>/i.test(h) ? h.replace(/<head[^>]*>/i, (m) => m + base) : base + h;
   return /<\/body>/i.test(h) ? h.replace(/<\/body>(?![\s\S]*<\/body>)/i, script + '</body>') : h + script;
 }
 
