@@ -48,6 +48,7 @@ import { BO, danhSachVideo } from './videos.js';
 import { docJson, json, khop, loi, moSSE } from './router.js';
 import { duongAnh, luuAnh } from './anh.js';
 import { DUONG_MAC_DINH, layCSDL, layChoLam, luuChoLam, moCSDL } from './csdl.js';
+import { docDiaChi, voiCSDL } from './pg.js';
 import { batDau as batDauGoogle, coGoogle, nhanVeGoogle, xoaCookieG, TEN_COOKIE_G } from './google.js';
 import { chepTuEnv, coNguoi, doiMatKhau, duyetNguoi, vaoBangGoogle, doiVai, dsNguoi, datHoatDong, khopBam, kiemVao,
   laQuanTri, layNguoi, themNguoi, xoaNguoi } from './nguoidung.js';
@@ -1105,6 +1106,34 @@ server.listen(PORT, '0.0.0.0', () => {
     console.error(`   CSDL:       KHÔNG dựng được — ${e.message}`);
     console.error('               (trình sửa vẫn chạy bình thường; xem docs/CSDL.md)');
   }
+  /* ---------- CSDL NGOÀI (Postgres của Vibe Host) ----------
+   *
+   * Chỉ KIỂM TRA và báo, chưa dùng để chạy. Anh Quý gắn một Postgres vào dự án
+   * (29/09); trước khi chuyển bất cứ thứ gì sang đó thì phải biết chắc nó nối
+   * được, chứ không phải đoán. Xem `docs/CSDL-NGOAI.md`.
+   *
+   * KHÔNG ĐƯỢC LÀM CHẾT APP. Chạy nền, hỏng thì chỉ in một dòng.
+   */
+  (async () => {
+    const dc = (process.env.DATABASE_URL || process.env.POSTGRES_URL || '').trim();
+    if (!dc) return;
+    let ten = '?';
+    try { ten = `${docDiaChi(dc).host}/${docDiaChi(dc).ten}`; } catch { /* địa chỉ méo, báo ở dưới */ }
+    try {
+      const t = Date.now();
+      const kq = await voiCSDL(dc, async (db) => ({
+        ban: (await db.hoi('select version() as v')).dong[0]?.v || '?',
+        bang: (await db.hoi(
+          "select count(*)::int as n from information_schema.tables where table_schema = 'public'")).dong[0]?.n,
+      }));
+      console.log(`   CSDL ngoài: ${ten} — NỐI ĐƯỢC (${Date.now() - t}ms) · ${kq.bang} bảng`);
+      console.log(`               ${String(kq.ban).split(',')[0]}`);
+    } catch (e) {
+      console.error(`   CSDL ngoài: ${ten} — KHÔNG nối được: ${e.message}`);
+      console.error('               (trình sửa vẫn chạy bình thường bằng SQLite)');
+    }
+  })();
+
   {
     const c = chuKho();
     console.log(c

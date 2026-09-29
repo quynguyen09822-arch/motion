@@ -18,7 +18,15 @@ WORKDIR /app
 # `chromium-headless-shell` chứ không phải `chromium` đầy đủ: đúng việc (chỉ chạy
 # ngầm, không cần giao diện) và ảnh nhẹ hơn 350 MB. Nó KHÔNG nhận cờ `--headless`
 # — `server/chuptrang.js` nhận ra qua tên file mà bỏ cờ ấy đi.
-RUN apk add --no-cache chromium-headless-shell font-noto
+# THỬ LẠI, VÀ HỎNG THÌ KHÔNG KÉO CẢ BẢN TRIỂN KHAI XUỐNG THEO.
+#
+# Gói này nặng ~300 MB; máy dựng mất mạng giữa chừng là cả lượt triển khai đỏ,
+# trong khi app KHÔNG cần Chromium để chạy — thiếu nó thì riêng ô ② lùi về cách
+# đo trong trình duyệt người dùng (`server/dotrang.js`), mọi thứ khác nguyên vẹn.
+# Đã vấp thật 29/09: lượt triển khai thử lại 3 lần vì "fetch failed" ở bước này.
+RUN apk add --no-cache chromium-headless-shell font-noto \
+ || apk add --no-cache chromium-headless-shell font-noto \
+ || echo '!!! Khong cai duoc Chromium — "Dung tu trang" se dung duong lui trong trinh duyet.'
 ENV MOTION_CHROMIUM=/usr/bin/chromium-headless-shell
 
 # Mã nguồn.
