@@ -32,6 +32,59 @@ Chưa đặt mật khẩu thì app chạy mở, không hỏi đăng nhập — t
 
 ---
 
+## Hướng dẫn sử dụng
+
+### Đăng nhập
+
+Mở app → nhập tên tài khoản và mật khẩu → bấm **Đăng nhập**. Mỗi người có kho
+dự án riêng, không ai nhìn thấy dự án của người khác.
+
+### Tạo dự án mới
+
+Bấm **Tạo dự án mới** ở trang chủ → đặt tên → chọn khổ hình (ngang 16:9, dọc
+9:16, hoặc vuông 1:1 tuỳ nơi bạn định đăng) → bấm **Tạo**. Dự án mới xuất hiện
+ngay trong kho của bạn.
+
+### Sửa clip
+
+1. Mở dự án từ kho → trình sửa hiện ra với ba cột:
+   - **Cột trái**: cây lớp — liệt kê mọi thành phần trong cảnh (chữ, ảnh, khối).
+   - **Cột giữa**: khung hình — bấm thẳng vào thành phần để chọn, kéo để dời,
+     kéo tay nắm ở góc để co giãn.
+   - **Cột phải**: bảng thuộc tính — chỉnh nội dung chữ, cỡ chữ, màu sắc, cách
+     bay vào, thời lượng hiển thị…
+2. Mọi thay đổi thấy ngay trên khung hình. Lỡ tay thì **Ctrl+Z** để hoàn tác.
+3. Bấm **Lưu** (hoặc Ctrl+S) khi đã vừa ý — hệ thống tự cất bản cũ lại phòng
+   khi cần quay về.
+
+### Dùng AI dựng cảnh
+
+Bấm nút **AI** trong trình sửa, chọn một trong bốn lối:
+
+| Lối | Bạn đưa vào | Khi nào dùng |
+|---|---|---|
+| Từ ảnh | ảnh chụp màn hình hoặc bản thiết kế | có sẵn hình mẫu |
+| Từ trang web | địa chỉ trang hoặc mã HTML | muốn biến một trang thật thành clip |
+| Từ lời tả | viết một câu mô tả bằng tiếng Việt | chưa có gì trong tay |
+| Sửa món | "cho chữ to hơn", "đổi sang tông tối" | đã có cảnh, muốn chỉnh lại |
+
+AI dựng xong → bạn xem trước → sửa thêm bằng chuột nếu cần.
+
+### Xuất video
+
+1. Bấm **Xuất** ở thanh trên.
+2. Chọn định dạng: MP4, WebM, GIF, hoặc chuỗi ảnh PNG.
+3. Chọn khổ hình phù hợp nơi đăng.
+4. Chờ xuất xong → tải file về máy.
+
+### Mẹo nhỏ
+
+- **Ctrl+Z / Ctrl+Y**: hoàn tác / làm lại.
+- **Kéo thứ tự** trong cây lớp (cột trái) để đưa thành phần lên trước hoặc ra sau.
+- Dự án của bạn lưu trên máy chủ — đổi máy tính hay trình duyệt vẫn thấy lại đầy đủ.
+
+---
+
 ## Làm được gì
 
 **Sửa bằng chuột.** Bấm vào chữ, khối, nút trên khung hình là bảng thuộc tính
