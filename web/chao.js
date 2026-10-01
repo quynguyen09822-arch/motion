@@ -91,6 +91,10 @@ async function veTaiKhoan() {
     e.textContent = d.email.split('@')[0];
     e.title = `Đang đăng nhập: ${d.email}`;
     boc.appendChild(e);
+    if (!location.hash) {
+      const kho = document.getElementById('kho');
+      if (kho) kho.scrollIntoView({ behavior: 'instant' });
+    }
   }
 
   const n = document.createElement('button');
