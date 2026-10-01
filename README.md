@@ -150,6 +150,26 @@ Chi tiết: [`docs/ARCH.md`](docs/ARCH.md) · 30 tài liệu khác trong [`docs/
 
 ---
 
+## Cơ sở dữ liệu
+
+App dùng **SQLite** (`node:sqlite` sẵn trong Node 22) với **16 bảng** và hệ thống
+di trú tự động (`server/csdl.js`).
+
+| Bảng | Chức năng |
+|---|---|
+| `nguoi_dung` | Tài khoản, mật khẩu riêng (scrypt), vai trò, Google OAuth |
+| `du_an` | Dự án clip của từng người dùng |
+| `di_tru` | Theo dõi phiên bản lược đồ, chạy tự động khi khởi động |
+| `cho_lam` | Hàng đợi việc xuất video |
+
+Mỗi tài khoản có **kho riêng** — dữ liệu tách biệt hoàn toàn. Mật khẩu băm
+bằng `scrypt`, phiên đăng nhập ký bằng HMAC, không lưu trong bộ nhớ.
+
+Ngoài ra có trình nối **PostgreSQL viết tay** (`server/pg.js`) — tự thực hiện
+giao thức wire và xác thực SCRAM-SHA-256, không dùng gói npm nào.
+
+---
+
 ## Giới hạn
 
 - **Website chạy JavaScript nặng** (kiểu `matbao.net`) có thể chặn trình duyệt
