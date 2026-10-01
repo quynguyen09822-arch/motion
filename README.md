@@ -1,7 +1,6 @@
 # Motion — trình sửa clip trực quan
 
 > Dựng clip quảng bá bằng chuột, không phải bằng cách gõ JSON.
-> **Chạy thử:** [motion.n1.tinhgon.xyz](https://motion.n1.tinhgon.xyz) · tài khoản `demo12345` / `Demo@12345`
 
 | | |
 |---|---|
@@ -147,25 +146,11 @@ Luồng dữ liệu **một chiều**: iframe là cái để nhìn, không bao g
 thật. Mọi thay đổi đi qua đúng một cổng (`kho.sua`) — đó là thứ khiến hoàn tác
 luôn đúng.
 
-Chi tiết: [`docs/ARCH.md`](docs/ARCH.md) · [`CLAUDE.md`](CLAUDE.md) (luật cứng
-của repo, đọc trước khi sửa) · 30 tài liệu khác trong [`docs/`](docs/).
+Chi tiết: [`docs/ARCH.md`](docs/ARCH.md) · 30 tài liệu khác trong [`docs/`](docs/).
 
 ---
 
-## Bản đã triển khai
-
-| | |
-|---|---|
-| Địa chỉ | [motion.n1.tinhgon.xyz](https://motion.n1.tinhgon.xyz) |
-| Tài khoản thử | `demo12345` · mật khẩu `Demo@12345` |
-| Hạ tầng | Vibe Host (Mắt Bão), Docker, triển khai thẳng từ nhánh `main` |
-
-Tài khoản thử có **kho riêng, trống**, không thấy và không sửa được dự án của
-người khác.
-
----
-
-## Giới hạn — nói thẳng
+## Giới hạn
 
 - **Website chạy JavaScript nặng** (kiểu `matbao.net`) có thể chặn trình duyệt
   tự động. Lúc đó app **báo thật** và chỉ sang lối ① (chụp màn hình), chứ không
@@ -176,6 +161,3 @@ người khác.
 - **AI cần khoá riêng** (Google AI Studio, ElevenLabs, Stitch). Không khai khoá
   thì các nút ấy **ẩn đi**, không bày ra rồi báo lỗi.
 
-## Giấy phép
-
-Dự án nội bộ Mắt Bão.
